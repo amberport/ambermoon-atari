@@ -1,0 +1,16 @@
+# Test package of the st branch (tools/testpaket.py on main; format in its
+# header).
+#
+#   Test     number from the test list (docs/05c-ST.md; until main is
+#            merged in, docs/05 of this worktree)
+#   Machine  falcon, st or beide
+#   Source   relative to the root of this worktree
+#   Name     8.3, lands in AMBFILES\ beside the game data; - for a folder,
+#            which is laid over the root of ATARI\ (the whole build)
+#
+# Whoever puts a test here leaves its build in place until the date;
+# afterwards the lines go.
+
+# The whole ATARI/ of this worktree is not laid over main's: it carries
+# older Falcon programs.  The ST engine goes under its own name instead and
+# is started directly; the game files are the same as main's.

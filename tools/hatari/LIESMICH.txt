@@ -1,0 +1,75 @@
+Vorabtest in Hatari
+===================
+
+Zweck
+-----
+Ein Lauf auf echter Hardware kostet einen Weg zum Geraet.  Hatari faengt
+vorher das ab, was sich ohne Hardware entscheiden laesst: stuerzt es ab,
+kommt das Programm ueberhaupt hoch, steht das richtige Bild.
+
+Wofuer das taugt -- und wofuer nicht
+------------------------------------
+Der Emulator beantwortet zwei Fragen zuverlaessig:
+
+    stuerzt es ab?          ja
+    stimmt das Bild?        ja
+
+Und zwei nicht:
+
+    Mauszeiger              nein
+    Zeitverhalten           nein
+
+Das ist keine Vorsicht, sondern Erfahrung.  Die Flackersuche am Mauszeiger
+hat vier Umbauten gekostet, weil die Aussage des Emulators ueberdehnt wurde
+(Erkenntnis 49 in ../../docs/04-Erkenntnisse.md).  Wer hier eine Frage
+stellt, die in der oberen Liste nicht steht, sucht danach an der falschen
+Stelle.
+
+Aufruf
+------
+    sh tools/hatari/teste.sh
+    sh tools/hatari/teste.sh -v 800,2000,6000
+    sh tools/hatari/teste.sh -p FANTASY.TOS -l intro
+
+    -v   Marken in VBLs, an denen ein Abzug entsteht (Vorgabe 1500)
+    -p   Programm auf dem Laufwerk (Vorgabe ENGINE.TOS)
+    -l   Verzeichnis, das als Laufwerk C dient (Vorgabe ATARI/)
+    -o   Zielverzeichnis fuer die Abzuege (Vorgabe hatari-abzuege/)
+
+Die Abzuege sind PNG in voller Emulatoraufloesung, mit Hataris Statuszeile
+am unteren Rand.
+
+Emulierte Maschine
+------------------
+Falcon030, 68030 at 16 MHz, 14 MB, DSP, VGA, cycle exact CPU with
+prefetch and data cache (set explicitly, see the comment in teste.sh), so
+the machine the measurements were made on.  TOS 4.04 is not part of the
+repository; the path is a default in the script and can be overridden
+with AMBER_TOS:
+
+    AMBER_TOS=/pfad/zu/TOS404.IMG sh tools/hatari/teste.sh
+
+Der Lauf ist fensterlos
+-----------------------
+SDL_VIDEODRIVER=offscreen, das Skript beendet den Emulator selbst.  Ohne das
+laeuft Hatari im Schnellvorlauf und sieht dabei eingefroren aus -- was schon
+zweimal zu der Annahme gefuehrt hat, es haenge.
+
+Wie das Skript arbeitet
+-----------------------
+Hatari kann Debugger-Kommandos aus einer Datei ausfuehren (--parse) und an
+einem bedingten Haltepunkt eine weitere Datei nachladen.  Daraus wird eine
+Kette: Haltepunkt bei der ersten Marke, dort Abzug und Haltepunkt fuer die
+zweite, und so fort; die letzte Datei beendet den Emulator.
+
+Zeitrechnung
+------------
+Gemessen mit der gebauten Engine: TOS ist bei etwa VBL 450 durch, das
+Kartenbild steht ab VBL 600.  Bei 60 Hz sind 1500 VBLs 25 Sekunden
+emulierte Zeit -- im Schnellvorlauf dauert der Lauf deutlich weniger.
+
+Bekannte Meldung
+----------------
+"symbol table missing from the program" ist keine Stoerung.  Die Engine
+wird ohne Symboltabelle gebaut; Hatari haelt das fuer einen Fehler, das
+Skript filtert die Meldung weg.

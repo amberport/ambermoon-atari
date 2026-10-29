@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" width="960" height="700" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="960" height="700" rx="12" fill="#ffffff"/>
+  <text x="24" y="38" font-size="20" font-weight="bold" fill="#222">The layers: Thalion's code, the library that was AM2_CPU, the hardware</text>
+
+  <!-- top: include file and game sources -->
+  <rect x="24" y="60" width="250" height="92" rx="6" fill="#fbe9e6" stroke="#b04a3a"/>
+  <text x="38" y="84" font-size="14" font-weight="bold" fill="#222">Thalion's include file</text>
+  <text x="38" y="104" font-size="12" fill="#333">constants, offsets, macros</text>
+  <text x="38" y="122" font-size="12" fill="#333">never released; rebuilt:</text>
+  <text x="38" y="140" font-size="12" font-weight="bold" fill="#b04a3a">tools/originalcode/vorspann.i</text>
+
+  <rect x="290" y="60" width="646" height="92" rx="6" fill="#e8eef7" stroke="#5b7bb0"/>
+  <text x="306" y="84" font-size="14" font-weight="bold" fill="#222">Thalion's game sources · released, assembled unchanged</text>
+  <text x="306" y="106" font-size="12" fill="#333">the game: MAIN.S, MODULES.S, MAP/, EVENTS.S, PLACES.S, INVENTOR.S, MAGIC.S, COMBAT/ …</text>
+  <text x="306" y="124" font-size="12" fill="#333">Thalion's toolkit HULL/: module stack, windows, buttons, text, fades, HDOBs</text>
+  <text x="306" y="142" font-size="12" fill="#555">40 files, 50 723 lines</text>
+  <line x1="274" y1="106" x2="290" y2="106" stroke="#555" stroke-width="1.4"/>
+
+  <!-- name boundary -->
+  <line x1="24" y1="176" x2="936" y2="176" stroke="#b04a3a" stroke-width="2" stroke-dasharray="8 5"/>
+  <rect x="250" y="166" width="460" height="20" fill="#ffffff"/>
+  <text x="480" y="181" font-size="13" font-weight="bold" fill="#b04a3a" text-anchor="middle">name boundary: 425 names the game uses (appendix B)</text>
+
+  <!-- library layer -->
+  <rect x="24" y="196" width="912" height="246" rx="8" fill="#f6f6f6" stroke="#888"/>
+  <text x="40" y="220" font-size="15" font-weight="bold" fill="#222">The library · in 1993 compiled into AM2_CPU · today our library engine/src/</text>
+  <text x="40" y="240" font-size="12" fill="#555">everything the game asks for goes through our library; what it serves comes three ways:</text>
+
+  <rect x="40" y="254" width="880" height="54" rx="6" fill="#fdf1dc" stroke="#c08a2b"/>
+  <text x="54" y="276" font-size="13" font-weight="bold" fill="#222">1 · taken from AM2_CPU at build time</text>
+  <text x="54" y="296" font-size="12" fill="#333">palettes · icons and window frames · mouse pointers · game tables · character set · 3D rasterisers · Fade_colour · LOB loop · music player</text>
+
+  <rect x="40" y="316" width="880" height="54" rx="6" fill="#e9f5ec" stroke="#4f9a63"/>
+  <text x="54" y="338" font-size="13" font-weight="bold" fill="#222">2 · written by us, to Thalion's contract</text>
+  <text x="54" y="358" font-size="12" fill="#333">drawing · double buffer · mouse and keys · memory handles · file access, decrypt, unpack · fades and colour banks · sound output</text>
+
+  <rect x="40" y="378" width="880" height="54" rx="6" fill="#f1e9f7" stroke="#8a5bb0"/>
+  <text x="54" y="400" font-size="13" font-weight="bold" fill="#222">3 · read from the game files at run time</text>
+  <text x="54" y="420" font-size="12" fill="#333">the library's texts (Text.amb) · the item table (Objects.amb) · button graphics</text>
+
+  <!-- split into machines -->
+  <line x1="250" y1="442" x2="250" y2="470" stroke="#555" stroke-width="1.6" marker-end="url(#pfeil)"/>
+  <line x1="710" y1="442" x2="710" y2="470" stroke="#555" stroke-width="1.6" marker-end="url(#pfeil)"/>
+  <text x="480" y="462" font-size="12" fill="#555" text-anchor="middle">LIBRARY.S: Thalion's names and the shared part, then the machine part</text>
+
+  <rect x="24" y="474" width="452" height="96" rx="6" fill="#e3f0f4" stroke="#3f8aa0"/>
+  <text x="40" y="498" font-size="14" font-weight="bold" fill="#222">Falcon part</text>
+  <text x="40" y="518" font-size="12" fill="#333">FALCON_LIB.S: 8 planes, colour banks, tile cache</text>
+  <text x="40" y="536" font-size="12" fill="#333">FALCON.S: screen · RASTER.S: banks and gradients</text>
+  <text x="40" y="554" font-size="12" fill="#333">musik/: Paula mixed on the DSP or the CPU</text>
+
+  <rect x="484" y="474" width="452" height="96" rx="6" fill="#e3f0f4" stroke="#3f8aa0"/>
+  <text x="500" y="498" font-size="14" font-weight="bold" fill="#222">ST part</text>
+  <text x="500" y="518" font-size="12" fill="#333">ST_LIB.S: 4 planes, 32 colours on 16, Timer B</text>
+  <text x="500" y="536" font-size="12" fill="#333">ST.S: screen, STE detection</text>
+  <text x="500" y="554" font-size="12" fill="#333">MUSIK_YM.S: Big Alec's YM version</text>
+
+  <!-- hardware -->
+  <line x1="250" y1="570" x2="250" y2="596" stroke="#555" stroke-width="1.6" marker-end="url(#pfeil)"/>
+  <line x1="710" y1="570" x2="710" y2="596" stroke="#555" stroke-width="1.6" marker-end="url(#pfeil)"/>
+
+  <rect x="24" y="600" width="452" height="56" rx="6" fill="#ececec" stroke="#666"/>
+  <text x="40" y="624" font-size="14" font-weight="bold" fill="#222">Falcon030</text>
+  <text x="40" y="644" font-size="12" fill="#333">68030 · Videl, 256 colours · DSP56001 · TOS through Gemdos/Bios/Xbios</text>
+
+  <rect x="484" y="600" width="452" height="56" rx="6" fill="#ececec" stroke="#666"/>
+  <text x="500" y="624" font-size="14" font-weight="bold" fill="#222">ST / STE</text>
+  <text x="500" y="644" font-size="12" fill="#333">68000 · Shifter, 16 colours · YM2149 · MFP · blitter where present</text>
+
+  <text x="24" y="684" font-size="12" fill="#555">The file AM2_CPU also holds the compiled game. The build reads it; the program never does, and nothing of it is in the repository.</text>
+</svg>

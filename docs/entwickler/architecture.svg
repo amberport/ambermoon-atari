@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 770" width="960" height="770" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="960" height="770" rx="12" fill="#ffffff"/>
+  <text x="24" y="38" font-size="20" font-weight="bold" fill="#222">Ambermoon on the Atari Falcon030 and ST: architecture</text>
+
+  <!-- Thalion's game unit -->
+  <rect x="24" y="60" width="576" height="82" rx="6" fill="#e8eef7" stroke="#5b7bb0"/>
+  <text x="40" y="84" font-size="15" font-weight="bold" fill="#222">Thalion's game · engine/spiel.s</text>
+  <text x="40" y="106" font-size="13" fill="#333">MAIN.S, MAP/, COMBAT/, EVENTS.S, INVENTOR.S, MAGIC.S, MODULES.S …</text>
+  <text x="40" y="126" font-size="13" fill="#555">released source, assembled unchanged from $AMBER_URCODE</text>
+
+  <!-- Thalion's HULL -->
+  <rect x="24" y="152" width="576" height="70" rx="6" fill="#e8eef7" stroke="#5b7bb0"/>
+  <text x="40" y="176" font-size="15" font-weight="bold" fill="#222">Thalion's HULL/ · library unit, engine/engine.s</text>
+  <text x="40" y="198" font-size="13" fill="#333">MODULE_C (module stack), CONTROLS, WORDS, WINDOWS, FADE, HDOBS,</text>
+  <text x="40" y="214" font-size="13" fill="#333">EFFECTS, VARIOUS, NUMERIC, OBJECT: released, unchanged</text>
+
+  <!-- the boundary -->
+  <line x1="24" y1="236" x2="600" y2="236" stroke="#b04a3a" stroke-width="2" stroke-dasharray="8 5"/>
+  <rect x="96" y="226" width="432" height="20" fill="#ffffff"/>
+  <text x="312" y="241" font-size="13" font-weight="bold" fill="#b04a3a" text-anchor="middle">name boundary: what Thalion uses but never released (appendix B)</text>
+
+  <!-- our library -->
+  <rect x="24" y="252" width="576" height="118" rx="6" fill="#e9f5ec" stroke="#4f9a63"/>
+  <text x="40" y="276" font-size="15" font-weight="bold" fill="#222">Our library · engine/src/</text>
+  <text x="40" y="298" font-size="13" fill="#333">LIBRARY (drawing, double buffer, mouse pointer) · RASTER (colour banks, gradients)</text>
+  <text x="40" y="318" font-size="13" fill="#333">MEMORY (handles) · AREAS · FILES_SUP (containers, JH, LOB) · SPIELSTAND · FADE_SUP</text>
+  <text x="40" y="338" font-size="13" fill="#333">*_SUP beside Thalion's HULL files · D3_SUP · COMBAT_SUP · MUSIK_SUP, _YM</text>
+  <text x="40" y="358" font-size="13" fill="#555">vorspann.i replaces Thalion's unreleased include file (constants, macros, offsets)</text>
+
+  <!-- AM2_CPU pieces -->
+  <rect x="24" y="380" width="576" height="56" rx="6" fill="#f7efe0" stroke="#b8893a"/>
+  <text x="40" y="402" font-size="14" font-weight="bold" fill="#222">From AM2_CPU, extracted at build time (appendix C)</text>
+  <text x="40" y="422" font-size="13" fill="#333">Thalion's 3D rasterisers, Fade_colour, music player; palettes, icons, pointers</text>
+
+  <!-- hardware layer -->
+  <rect x="24" y="446" width="282" height="92" rx="6" fill="#f1f1f1" stroke="#888"/>
+  <text x="40" y="470" font-size="15" font-weight="bold" fill="#222">Falcon030 · FALCON.S</text>
+  <text x="40" y="492" font-size="13" fill="#333">8 planes, 8 colour banks of 32</text>
+  <text x="40" y="510" font-size="13" fill="#333">gradients in banks 3–7</text>
+  <text x="40" y="528" font-size="13" fill="#333">Paula mixed on DSP or CPU, or YM</text>
+  <rect x="318" y="446" width="282" height="92" rx="6" fill="#f1f1f1" stroke="#888"/>
+  <text x="334" y="470" font-size="15" font-weight="bold" fill="#222">ST/STE · ST.S, ST_LIB.S</text>
+  <text x="334" y="492" font-size="13" fill="#333">4 planes, 32 colours on 16 registers</text>
+  <text x="334" y="510" font-size="13" fill="#333">per screen area, Timer B at borders</text>
+  <text x="334" y="528" font-size="13" fill="#333">YM music (Big Alec's arrangement)</text>
+
+  <!-- TOS and chips -->
+  <rect x="24" y="548" width="576" height="40" rx="6" fill="#fafafa" stroke="#aaa"/>
+  <text x="40" y="573" font-size="13" fill="#333">TOS, only via Gemdos/Bios/Xbios macros · Videl/Shifter · MFP · IKBD · DSP · YM</text>
+
+  <!-- build time -->
+  <rect x="630" y="60" width="306" height="262" rx="6" fill="#ffffff" stroke="#5b7bb0" stroke-dasharray="4 3"/>
+  <text x="646" y="84" font-size="15" font-weight="bold" fill="#222">Build time · tools/build_all.sh</text>
+  <text x="646" y="108" font-size="13" fill="#333">AM2_CPU → am2cpu_auszug.py,</text>
+  <text x="660" y="124" font-size="13" fill="#333">am2cpu_code.py → build/*.i</text>
+  <text x="646" y="146" font-size="13" fill="#333">Text.amb → textmarken.py</text>
+  <text x="660" y="162" font-size="13" fill="#333">(where library texts lie)</text>
+  <text x="646" y="184" font-size="13" fill="#333">Ambermoon_intro, Extro →</text>
+  <text x="660" y="200" font-size="13" fill="#333">amiga_programm.py (K1, K2)</text>
+  <text x="646" y="222" font-size="13" fill="#333">vasm + vlink → ENGINE.TOS</text>
+  <text x="660" y="238" font-size="13" fill="#333">68030 for Falcon, 68000 for ST</text>
+  <text x="646" y="260" font-size="13" fill="#333">checks: 68000 opcodes, traps,</text>
+  <text x="660" y="276" font-size="13" fill="#333">registers, variables, placeholders</text>
+  <text x="646" y="304" font-size="12" fill="#555">Nothing of Thalion's goes into the repository.</text>
+
+  <!-- run time -->
+  <rect x="630" y="332" width="306" height="256" rx="6" fill="#ffffff" stroke="#4f9a63" stroke-dasharray="4 3"/>
+  <text x="646" y="356" font-size="15" font-weight="bold" fill="#222">Run time</text>
+  <text x="646" y="380" font-size="13" fill="#333">AMBFILES\ holds Thalion's game</text>
+  <text x="660" y="396" font-size="13" fill="#333">files as shipped (8.3 names)</text>
+  <text x="646" y="418" font-size="13" fill="#333">Load_subfile: container →</text>
+  <text x="660" y="434" font-size="13" fill="#333">JH decrypt → LOB unpack</text>
+  <text x="646" y="456" font-size="13" fill="#333">save games as in the original:</text>
+  <text x="660" y="472" font-size="13" fill="#333">SAVES, SAVE.00 … SAVE.10</text>
+  <text x="646" y="494" font-size="13" fill="#333">tiles widened once, then cached</text>
+  <text x="646" y="516" font-size="13" fill="#333">MUSIK.INF: AUS, DSP, CPU, YM</text>
+  <text x="646" y="538" font-size="13" fill="#333">AM2_CPU is never read.</text>
+  <path d="M630,356 L604,356" stroke="#555" stroke-width="1.5" fill="none" marker-end="url(#pfeil)"/>
+
+  <!-- program chain -->
+  <text x="24" y="628" font-size="15" font-weight="bold" fill="#222">Program chain · lader/lader.s → AMBER.TOS (plain 68000), each program also runs alone</text>
+  <g font-size="14" font-weight="bold" fill="#222" text-anchor="middle">
+    <rect x="24" y="644" width="150" height="44" rx="6" fill="#f1f1f1" stroke="#888"/>
+    <text x="99" y="671">AMBER.TOS</text>
+    <rect x="210" y="644" width="150" height="44" rx="6" fill="#e8eef7" stroke="#5b7bb0"/>
+    <text x="285" y="671">FANTASY.TOS</text>
+    <rect x="396" y="644" width="150" height="44" rx="6" fill="#f7efe0" stroke="#b8893a"/>
+    <text x="471" y="671">INTRO.TOS</text>
+    <rect x="582" y="644" width="150" height="44" rx="6" fill="#e9f5ec" stroke="#4f9a63"/>
+    <text x="657" y="671">ENGINE.TOS</text>
+    <rect x="768" y="644" width="150" height="44" rx="6" fill="#f7efe0" stroke="#b8893a"/>
+    <text x="843" y="671">EXTRO.TOS</text>
+  </g>
+  <g stroke="#555" stroke-width="1.5" marker-end="url(#pfeil)">
+    <line x1="174" y1="666" x2="208" y2="666"/>
+    <line x1="360" y1="666" x2="394" y2="666"/>
+    <line x1="546" y1="666" x2="580" y2="666"/>
+    <line x1="732" y1="666" x2="766" y2="666"/>
+  </g>
+  <g font-size="12" fill="#555" text-anchor="middle">
+    <text x="99" y="708">reads SAVES</text>
+    <text x="285" y="708">Thalion's FAIRY.S</text>
+    <text x="285" y="724">+ fantasy/FEE_SUP.S</text>
+    <text x="471" y="708">Thalion's binary on</text>
+    <text x="471" y="724">our Amiga layer (amiga/)</text>
+    <text x="471" y="740">returns menu choice 0/1/3</text>
+    <text x="657" y="708">gets '0' continue, '1' new</text>
+    <text x="657" y="724">returns −5000…−5002</text>
+    <text x="657" y="740">at the end of the game</text>
+    <text x="843" y="708">Thalion's binary on</text>
+    <text x="843" y="724">our Amiga layer</text>
+    <text x="843" y="740">gets '0'–'2' = which ending</text>
+  </g>
+</svg>

@@ -1,0 +1,53 @@
+# st_palettes.txt -- hand corrections for the ST palettes
+#
+# The build (tools/st_palettes.py build, called by tools/build_st.sh)
+# reduces every palette of the game to 16 registers like St_bauen does at
+# run time and writes the result to ATARI/AMBFILES/STPAL.DAT; the ST loads
+# that file once at start (docs/17-deviations.md, D1).  This file holds only
+# what differs from the computed result.  Look first, then correct:
+#
+#   python3 tools/st_palettes.py sheet            build/st_palettes/index.html
+#   build/st_palettes/listing.txt                 every palette in numbers
+#
+# Both contain Thalion's colours and graphics and stay in build/.
+#
+# One correction per line:
+#
+#   <palette> colour <c> <r>     Thalion colour c (1..31) into register r (1..15);
+#                                the register values are recomputed as the
+#                                mean of their colours
+#   <palette> ste <r> <RGB>      register r on the STE (and Falcon): three hex
+#                                digits 0..F, e.g. A84
+#   <palette> st <r> <RGB>       register r on the plain ST: three digits 0..7;
+#                                without this line the ST shows the upper
+#                                three bits of the STE value
+#   <palette> method <m>         how the palette is grouped: "unweighted"
+#                                (St_bauen as at run time; the default
+#                                without this line) or "weighted N" (by how
+#                                many points of each colour the game shows,
+#                                every colour at least N %, 1 without N);
+#                                choose with the buttons of the sheet
+#
+# <palette> is one of
+#   pal N        Palettes.amb N (maps, event pictures)
+#   combat N     Palettes.amb N with colours 26..31 from Tactic_pal (combat picture)
+#   main         Main_pal (top of the screen, inventory)
+#   tactic       Tactic_pal (combat, tactic field)
+#   automap      Automap_pal
+#
+# A hand value holds for the full palette.  While Thalion fades or dims (3D
+# light levels), the ST scales it per channel with the faded colours of its
+# group (st_regs_bauen), so the fade still ends in black.
+#
+# Example (not active):
+#   pal 2 colour 17 9
+#   tactic ste 3 666
+#   tactic st 3 333
+
+# Methods (default unweighted, user 2026-10-29): the worlds stay weighted,
+# their large areas need it (Lyramion: sea blue instead of grey, the greens
+# apart); unweighted elsewhere keeps the rare accents (the fire in
+# Grandfather's house).
+pal 1 method weighted 1      # Lyramion, maps 1-256
+pal 2 method weighted 1      # forest moon, maps 300-335
+pal 3 method weighted 1      # Morag, maps 513-528

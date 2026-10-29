@@ -1,0 +1,33 @@
+; MUSIK_YM.INF -- welches YM-Stueck fuer welches Stueck Thalions spielt.
+; Read when ENGINE.TOS starts and the YM plays (ST, STE; Falcon with
+; MUSIC=YM in AMBER.INF).  Template: tools/musik_ym.inf (docs/13 3.4).  The build
+; delivers it only when there is no MUSIK_YM.INF, so a changed one stays;
+; it also assembles it into MUSIK_YM.S, which applies it when the file is
+; missing.
+;
+; Je Zeile: Thalions Nummer (1-32)  YM-Stueck (1-18).  ";" bis Zeilenende
+; ist Kommentar.  Nicht genannte Nummern bleiben still.  Zum Probehoeren
+; eine Zeile aendern oder das ";" vor einer Zeile weiter unten wegnehmen.
+;
+; Thalion  YM   Thalions Titel             Titel in der Demo
+   2      13   ; Mellow camel funk         MELLOW CAMEL FUNK
+   4       8   ; Voice of the bagpipe      VOICE OF THE BAGPIPE
+   5       4   ; Downtown                  DOWNTOWN
+   6       1   ; SHIP                      HE IS SAILING (nur vermutet)
+   7       6   ; Whole lotta dove          WHOLE LOTTA DOVE
+   8      10   ; Horse is no disgrace      HORSE IS NO DISGRACE
+   9       3   ; Don't look Bach           DON'T LOOK BACH
+  11      14   ; Sapphire fireballs ...    SAPHIRE FIREBALLS OF PURE LOVE
+  13       7   ; CAPITAL                   CAPITAL
+  14      12   ; Plodding along            PLODDING ALONG
+  15       2   ; Compact disc              COMPACT DISK
+  16      11   ; Riverside travelling ...  RIVERSIDE TRAVELLING BLUES
+  17       9   ; Nobody's vault but mine   NOBODY'S VAULT BUT ME
+  18       5   ; La Crypta Strangiato      LA CRYPTA STRANGIATO
+;
+; Zweite Teile und das Stueck ohne Titel, zum Probehoeren (T10).  Gilt
+; dieselbe Nummer zweimal, zaehlt die letzte Zeile.
+;  2      17   ; Mellow camel funk         MELLOW CAMEL FUNK PT2
+; 11      15   ; Sapphire fireballs ...    SAPHIRE FIREBALLS ... PT2
+; 18      16   ; La Crypta Strangiato      LA CRYPTA STRANGIATO PT2
+;  ?      18   ; ?                         (ohne Titel)

@@ -1,0 +1,8 @@
+; AMBER.INF -- the settings of Ambermoon, Falcon and ST (E17).
+; KEY=VALUE, case does not matter, ";" starts a comment.  A line left
+; out keeps the default.  Only the first 512 bytes are read.
+;
+MUSIC=DSP        ; OFF, DSP, CPU, YM (Falcon); on the ST only OFF counts
+PLAIN_ST=NO      ; ST only.  NO: as detected (STE, Mega STE use their
+                 ; extras).  YES: an STE or Mega STE runs like a plain
+                 ; ST, to test the plain ST path.

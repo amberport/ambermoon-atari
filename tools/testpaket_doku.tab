@@ -1,0 +1,13 @@
+# Test package of the doku branch (tools/testpaket.py on main; format in
+# its header).
+#
+#   Test     number from the test list (docs/05d-Doku.md)
+#   Machine  falcon, st or beide
+#   Source   relative to the root of this worktree
+#   Name     8.3, lands in AMBFILES\ beside the game data; - for a folder,
+#            which is laid over the root of ATARI\ (the whole build)
+#
+# Whoever puts a test here leaves its build in place until the date;
+# afterwards the lines go.
+
+# (no tests yet)

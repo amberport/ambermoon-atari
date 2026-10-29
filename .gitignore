@@ -1,0 +1,66 @@
+# Spieldaten gehoeren nicht ins Repository
+Amberfiles/
+*_extracted/
+*.amb
+# dieselben Daten in der 8.3-Fassung, die zur Laufzeit gelesen wird
+*.AMB
+AUTOMAPG.DAT
+BUTTONGF.DAT
+COMBATGF.DAT
+OBJICONS.DAT
+RIDDLEGF.DAT
+PLACEDAT.DAT
+STATIONR.DAT
+INTROMUS.DAT
+EXTROMUS.DAT
+KEYMAP
+INTROMUS.DAT
+EXTROMUS.DAT
+SAVES
+PARTYDAT.SAV
+*.adf
+*.uss
+TOS*.IMG
+
+# Zwischenprodukte
+build/
+hatari-abzuege/
+*.o
+*.vasm.txt
+*.elf
+*.bin
+__pycache__/
+*.pyc
+
+# Erzeugte Programme und Abzuege
+ATARI/
+# old delivery folders, until every worktree has the shared ATARI/
+FALCON/
+ST/
+TEST/
+testpaket_sp/
+PARTY.DAT
+SCREEN*.RAW
+*.TOS
+*.tos
+*.PRG
+RESULT*.TXT
+*.AMF
+
+# Systemkram
+.DS_Store
+hatari-prueflauf/
+
+# erzeugte Spielstandordner
+SAVE.[0-9][0-9]/
+# Diskettenabbilder (YM-Demo u. a.)
+*.msa
+*.MSA
+# Big Alec's YM music (SNDH) and what the build makes of it
+*.snd
+*.SND
+*.sndh
+*.BIN
+
+# personal paths (template: build.cfg.example)
+build.cfg

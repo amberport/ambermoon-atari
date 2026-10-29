@@ -1,0 +1,19 @@
+# Test package of the branch falcon-tempo (tools/testpaket.py on main;
+# format in its header).
+#
+#   Test     number from the test list in docs/05b-Falcon-Tempo.md
+#   Machine  falcon, st or beide
+#   Source   relative to the root of this worktree
+#   Name     8.3, lands in AMBFILES\ beside the game data; - for a folder,
+#            which is laid over the root of ATARI\ (the whole build)
+#
+# Names the game uses itself (ENGINE, INTRO, EXTRO, FANTASY) get a T
+# prefix.  Whoever puts a test here leaves its build in place until the
+# date; afterwards the lines go.  Moved here by main at the switch,
+# 2026-10-21.
+
+T66  falcon  FALCON/AMBFILES/T66INTR.TOS     T66INTR.TOS
+T66  falcon  FALCON/AMBFILES/INTROMUS.DAT    INTROMUS.DAT
+T65  falcon  FALCON/AMBFILES/T65ENGI.TOS     T65ENGI.TOS
+T66  falcon  FALCON/AMBFILES/T66EXTR.TOS     T66EXTR.TOS
+T66  falcon  FALCON/AMBFILES/EXTROMUS.DAT    EXTROMUS.DAT

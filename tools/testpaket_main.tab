@@ -1,0 +1,16 @@
+# Test package of main (tools/testpaket.py; format in its header).
+#
+#   Test     number from the test list in docs/05
+#   Machine  falcon, st or beide
+#   Source   relative to the root of this worktree
+#   Name     8.3, lands in AMBFILES\ beside the game data; - for a folder,
+#            a whole build laid over the root of ATARI\
+#
+# The package always holds main's ATARI/ (game data included).  A test of
+# the normal build names it with a folder line, so that it appears in
+# TESTS.TXT.
+#
+# Names the game uses itself (ENGINE, INTRO, EXTRO, FANTASY) get a T
+# prefix, unless the test asks for the normal build.  Whoever puts a test
+# here leaves its build in place until the date; afterwards the lines go.
+#

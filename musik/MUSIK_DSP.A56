@@ -1,0 +1,434 @@
+; ***************************************************************************
+; MUSIK_DSP.A56 -- the Paula mixer on the DSP (step 4c, samples in the DSP
+; since 2026-10-08; docs/13).
+;
+; Counterpart of md_* in musik/MISCHER.S.  tools/musik_dsp.sh assembles it
+; with a56 and tools/dsp_lod.py into build/musik_dsp.dsp; mischer_daten.i
+; includes that image with incbin, and Mischer_install loads it with
+; Dsp_ExecBoot: P memory only, at most 512 words from P:0.
+;
+; **Ausgabe.**  Die SSI sendet 16-Bit-Worte im Netzwerkbetrieb, zwei je
+; Rahmen (links, rechts); Takt und Rahmen kommen von der Matrix (12 292 Hz,
+; MUSIK_VORTEILER).  Die Sendeunterbrechung ist eine schnelle: ein Wort aus
+; dem Ring in Y, r7 laeuft modulo.  Gerade Stellen im Ring sind links.
+;
+; **Ein Stueck** ist 1/50 s Ton, 246 Rahmen.  Das Hauptprogramm haelt
+; VORAUS Stuecke vor der Wiedergabe.  Braucht es eines, setzt es HF2 und
+; wartet; der Prozessor schickt dann (je Wort ein Host-Wort, 24 Bit; Bytes
+; stets zu dritt, das erste im hoechsten Byte):
+;
+;   Anfang:  Bit 4 = 1: Samples laden, W, dann W Worte nach X:PROBEN.
+;                       Keine Antwort, zurueck nach haupt.
+;            sonst Bits 0..3: so viele Synthpuffer folgen, je 43 Worte
+;                       (128 Bytes) nach X:SYN + r*SYN_K, aufsteigend.
+;   je Kanal 0..3:  Schritt ganz, Schritt Bruch << 8, Stelle Bruch << 8,
+;                   Lautstaerke << 15, Art, und je nach Art:
+;     Art 0:  nichts (Kanal aus, Lautstaerke 0)
+;     Art 1:  Anzahl Bytes, Byteadresse, Rest im Block, naechste
+;             Byteadresse, naechste Laenge -- die Bytes liegen schon hier
+;     Art 2:  W, dann W Worte: genau die Bytes, die der Kanal liest
+;
+; Byteadressen zaehlen im X-Speicher, drei je Wort: Byte b liegt im Wort
+; b/3.  Bei Art 1 folgt der DSP dem Kanal selbst durch den Block und, wenn
+; er durch ist, durch den naechsten (die Schleife aus AUDxLC/LEN, wie die
+; Paula; sammeln).  Art 2 ist der alte Weg fuer alles, was nicht im DSP
+; liegt.  Nach dem Empfang antwortet er mit einem Wort: 1 = gleich noch ein
+; Stueck, 0 = genug.
+;
+; **Mischen** wie im Schritt 4b: Kanal 0 und 3 links, 1 und 2 rechts,
+; Abtastwert * Lautstaerke/64 * 1/4, ohne Glaettung.  Die Stelle laeuft in
+; 24.24 Festkomma (a1 ganz, a0 Bruch), genau wie 16.16 beim Prozessor.
+;
+; Speicher (Falcon: X und Y je 16 K Worte, extern ab $200): Programm im
+; internen P (bis $1FF).  X intern: Kopfwerte.  X ab $200: Stille, die vier
+; Synthpuffer, ab $300 die Samples des Stuecks (bis $3FFF, 47 872 Bytes).
+; Y: rohe Worte ab $200, der Ring ab $1000, die ausgepackten Bytes ab $2000.
+; ***************************************************************************
+
+PBC	equ	$ffe0			; Port B: Host
+PCC	equ	$ffe1			; Port C: Anschluesse
+HCR	equ	$ffe8			; Host Steuerung (Bit 3 = HF2)
+HSR	equ	$ffe9			; Host Zustand (Bit 0 = HRDF, 1 = HTDE)
+HRX	equ	$ffeb			; Host Empfang / Senden
+CRA	equ	$ffec			; SSI Steuerung A
+CRB	equ	$ffed			; SSI Steuerung B
+SSISR	equ	$ffee			; SSI Zustand
+TX	equ	$ffef			; SSI Senden
+BCR	equ	$fffe			; Wartetakte am Bus
+IPR	equ	$ffff			; Unterbrechungsstufen
+
+STUECK	equ	246			; Rahmen je Stueck
+STUECK_W equ	2*STUECK		; Worte je Stueck im Ring
+STUECKE	equ	8
+RING_W	equ	STUECKE*STUECK_W	; 3936
+RING	equ	$1000			; Y, durch 4096 teilbar (modulo)
+VORAUS	equ	3
+
+KOPF	equ	$0			; X intern: je Kanal KOPF_K Kopfwerte
+KOPF_K	equ	10
+K_ART	equ	4			; Felder im Kopf: 0..3 Schritt, Bruch,
+K_ANZAHL equ	5			; Stelle, Lautstaerke; dann Art und
+					; Art 1: Anzahl, Adresse, Rest, naechste
+					; Adresse, Laenge; Art 2: W
+ZAEHL	equ	$30			; X intern: Bytes, die noch fehlen
+NN	equ	$31			; X intern: Bytes aus diesem Block
+ROH	equ	$200			; Y: rohe Worte, Kanal hinter Kanal
+PUF	equ	$2000			; Y: ausgepackt, je Kanal $280 Worte
+PUF_K	equ	$280			; reicht fuer 3 * 211 Bytes
+STILLE	equ	$200			; X: 2 Worte Null (6 Bytes)
+SYN	equ	$202			; X: die vier Synthpuffer
+SYN_K	equ	46			; Worte je Synthpuffer (43 genutzt)
+SYN_W	equ	43			; 129 Bytes je Uebertragung
+PROBEN	equ	$300			; X: die Samples des Stuecks
+
+	org	p:0
+	jmp	start
+
+	org	p:$10			; SSI Senden
+	movep	y:(r7)+,x:<<TX
+	nop
+	org	p:$12			; SSI Senden mit Unterlauf: Zustand lesen,
+	movep	x:<<SSISR,n7		; das Schreiben danach loescht TUE
+	movep	y:(r7)+,x:<<TX		; (n7 braucht sonst niemand)
+
+	org	p:$40
+start
+	movep	#0,x:<<BCR
+	movep	#1,x:<<PBC
+	bclr	#3,x:<<HCR
+	clr	a
+	move	a,x:STILLE
+	move	a,x:STILLE+1
+	move	#RING,r0
+	do	#RING_W,nul
+	move	a,y:(r0)+
+nul
+	move	#RING,r7		; Lesen (Unterbrechung)
+	movec	#RING_W-1,m7
+	move	#RING,r4		; Schreiben, Anfang des naechsten Stuecks
+	movec	#RING_W-1,m4
+	movec	#RING_W-1,m6		; Schreiben beim Mischen
+	move	#2,n6			; ein Rahmen weiter
+	movep	#$4100,x:<<CRA		; 16 Bit, 2 Worte je Rahmen
+	movep	#$5800,x:<<CRB		; Senden an, Unterbrechung an, Netzwerk
+	movep	#$01f8,x:<<PCC		; Anschluesse der SSI frei
+	movep	#$3000,x:<<IPR		; SSI auf Stufe 2
+	andi	#$fc,mr			; Unterbrechungen frei
+
+; ---------------------------------------------------------------------------
+haupt
+	jset	#0,x:<<HSR,h_los	; liegt schon ein Anfang da: annehmen
+	jsr	stand
+	move	#>VORAUS*STUECK_W,x1
+	cmp	x1,b
+	jge	h_satt
+	bset	#3,x:<<HCR		; HF2: ein Stueck bitte
+h_warte	jclr	#0,x:<<HSR,h_warte
+h_los
+	movep	x:<<HRX,a		; Anfang
+	bclr	#3,x:<<HCR
+	jset	#4,a1,laden
+	jsr	synth
+	jsr	empfang
+	jsr	stand			; Antwort: noch eines?
+	move	#>1,x0
+	move	#>(VORAUS-1)*STUECK_W,x1
+	cmp	x1,b
+	jlt	h_mehr
+	move	#>0,x0
+h_mehr
+h_antw	jclr	#1,x:<<HSR,h_antw
+	movep	x0,x:<<HRX
+
+	move	#ROH,r1			; Bytes holen, Kanal hinter Kanal
+	move	#KOPF,r3
+	move	#PUF,r2
+	jsr	holen
+	move	#KOPF+KOPF_K,r3
+	move	#PUF+PUF_K,r2
+	jsr	holen
+	move	#KOPF+2*KOPF_K,r3
+	move	#PUF+2*PUF_K,r2
+	jsr	holen
+	move	#KOPF+3*KOPF_K,r3
+	move	#PUF+3*PUF_K,r2
+	jsr	holen
+
+	move	r4,r6			; Kanal 0: links setzen
+	move	#KOPF,r3
+	move	#PUF,r0
+	jsr	setzen
+	move	r6,r5			; Anfang des naechsten Stuecks
+	jsr	rechts			; Kanal 1: rechts setzen
+	move	#KOPF+KOPF_K,r3
+	move	#PUF+PUF_K,r0
+	jsr	setzen
+	jsr	rechts			; Kanal 2: rechts dazu
+	move	#KOPF+2*KOPF_K,r3
+	move	#PUF+2*PUF_K,r0
+	jsr	dazu
+	move	r4,r6			; Kanal 3: links dazu
+	move	#KOPF+3*KOPF_K,r3
+	move	#PUF+3*PUF_K,r0
+	jsr	dazu
+	move	r5,r4
+	jmp	haupt
+
+h_satt
+	bclr	#3,x:<<HCR
+	jmp	haupt
+
+; laden -- die Samples eines Stuecks: W, dann W Worte nach X:PROBEN.
+laden
+l_w1	jclr	#0,x:<<HSR,l_w1
+	movep	x:<<HRX,a		; W
+	tst	a
+	jeq	haupt
+	move	#PROBEN,r0
+	move	a1,x1
+	do	x1,l_ende
+l_w2	jclr	#0,x:<<HSR,l_w2
+	movep	x:<<HRX,x:(r0)+
+l_ende
+	jmp	haupt
+
+; ---------------------------------------------------------------------------
+; stand -- b1 = Vorsprung des Schreibens vor dem Lesen in Worten.  Hat das
+; Lesen das Schreiben ueberholt (das Stueck kam zu spaet), setzt es das
+; Schreiben einen Rahmen hinter das Lesen, auf eine gerade Stelle, und
+; meldet 0.  Aendert b, x1.
+stand
+	move	r4,b
+	move	r7,x1
+	sub	x1,b
+	jge	s_pos
+	move	#>RING_W,x1
+	add	x1,b
+s_pos
+	move	#>(VORAUS+2)*STUECK_W,x1
+	cmp	x1,b
+	jle	s_gut
+	move	r7,b
+	move	#>2,x1
+	add	x1,b
+	move	#>$fffffe,x1
+	and	x1,b
+	move	#>RING+RING_W,x1
+	cmp	x1,b
+	jlt	s_drin
+	move	#>RING_W,x1
+	sub	x1,b
+s_drin
+	move	b1,r4
+	clr	b
+s_gut
+	rts
+
+; rechts -- r6 = r4 + 1 (rechter Schlitz).  r4 ist gerade, der Ring gerade
+; lang: kein Ueberlauf.  Aendert b, y1.
+rechts
+	move	r4,b
+	move	#>1,y1
+	add	y1,b
+	move	b1,r6
+	rts
+
+; ---------------------------------------------------------------------------
+;---------------------------------------------------------------------------
+; synth -- a1 Bits 0..3: Synthpuffer r folgt (SYN_W Worte nach SYN+r*SYN_K).
+; Aendert a, r0, r1, n0.
+synth
+	move	#SYN,r0
+	move	#SYN_K,n0
+	do	#4,y_ende
+	jclr	#0,a1,y_weiter
+	move	r0,r1
+	do	#SYN_W,y_wort
+y_w	jclr	#0,x:<<HSR,y_w
+	movep	x:<<HRX,x:(r1)+
+y_wort
+y_weiter
+	lsr	a
+	move	(r0)+n0
+y_ende
+	rts
+
+; empfang -- je Kanal 5 Kopfwerte, dann nach der Art 5 weitere (Art 1) oder
+; W und W rohe Worte nach ROH (Art 2).  Aendert a, x1, r0, r2, r3, n0.
+empfang
+	move	#KOPF,r0
+	move	#KOPF_K,n0
+	move	#ROH,r3
+	do	#4,e_kanal
+	move	r0,r2
+	do	#5,e_kopf
+e_w1	jclr	#0,x:<<HSR,e_w1
+	movep	x:<<HRX,x:(r2)+
+e_kopf
+	move	(r2)-
+	nop
+	move	x:(r2)+,a		; Art
+	move	#>1,x1
+	cmp	x1,a
+	jeq	e_block
+	move	#>2,x1
+	cmp	x1,a
+	jne	e_naechst
+e_w2	jclr	#0,x:<<HSR,e_w2
+	movep	x:<<HRX,a		; W
+	move	a1,x:(r2)+
+	tst	a
+	jeq	e_naechst
+	move	a1,x1
+	do	x1,e_daten
+e_w3	jclr	#0,x:<<HSR,e_w3
+	movep	x:<<HRX,y:(r3)+
+e_daten
+	jmp	e_naechst
+e_block
+	do	#5,e_bk
+e_w4	jclr	#0,x:<<HSR,e_w4
+	movep	x:<<HRX,x:(r2)+
+e_bk
+e_naechst
+	move	(r0)+n0
+	nop				; Sprungziel nicht auf das Schleifenende
+e_kanal
+	rts
+
+; holen -- die Bytes eines Kanals nach PUF (r2, Y), je Art.  r3 = Kopf,
+; r1 = rohe Worte (laeuft ueber die Kanaele weiter).
+holen
+	move	r3,r0
+	move	#K_ART,n0
+	nop
+	move	x:(r0+n0),a
+	move	#>1,x1
+	cmp	x1,a
+	jeq	sammeln
+	move	#>2,x1
+	cmp	x1,a
+	jne	ho_raus
+	move	#K_ANZAHL,n0
+	nop
+	lua	(r0)+n0,r0
+	jmp	auspacken
+ho_raus
+	rts
+
+; sammeln -- Art 1: Anzahl Bytes ab Byteadresse aus X nach PUF (r2, Y), je
+; Byte ein Wort mit dem Byte oben.  Ist der Block durch (Rest), weiter mit
+; der naechsten Adresse und Laenge, so oft wie noetig.  r0 = Kopf.
+; Wort und Stelle im Wort: b * 1/3 (mpy), Wort in a1, Stelle in a0
+; (0, 1/3, 2/3 -> Bit 22, 23).  Aendert a, b, x0, x1, y0, y1, r0, r3, n0.
+sammeln
+	move	#K_ANZAHL,n0
+	nop
+	lua	(r0)+n0,r0
+	move	#1,n0
+	move	x:(r0)+,a		; Anzahl
+	move	a1,x:ZAEHL
+	move	x:(r0)+,b		; Byteadresse
+	move	x:(r0)+,a		; Rest im Block
+	move	#>$2aaaab,x1		; 1/3
+	move	#>$ff0000,y1
+	move	#>1,y0
+sa_block
+	move	x:ZAEHL,x0		; n = min(Rest, noch fehlend)
+	cmp	x0,a
+	jle	sa_n
+	move	x0,a
+sa_n
+	tst	a
+	jle	sa_raus
+	move	a1,x:NN
+	move	x:ZAEHL,a
+	move	x:NN,x0
+	sub	x0,a
+	move	a1,x:ZAEHL
+	do	x0,sa_bytes
+	move	b1,x0
+	mpy	x0,x1,a
+	move	a1,r3
+	jset	#23,a0,sa_k2
+	jset	#22,a0,sa_k1
+	move	x:(r3),a
+	jmp	sa_m
+sa_k2	move	x:(r3),a
+	rep	#16
+	lsl	a
+	jmp	sa_m
+sa_k1	move	x:(r3),a
+	rep	#8
+	lsl	a
+sa_m	and	y1,a
+	move	a1,y:(r2)+
+	add	y0,b
+sa_bytes
+	move	x:ZAEHL,a
+	tst	a
+	jeq	sa_raus
+	move	x:(r0),b		; naechster Block (die Schleife)
+	move	x:(r0+n0),a
+	jmp	sa_block
+sa_raus
+	rts
+
+; auspacken -- W (x:(r0)) rohe Worte ab y:r1 zu 3*W Bytes ab y:r2, je Byte
+; ein Wort mit dem Byte oben (= Abtastwert als Bruch).  r1 laeuft weiter.
+; Aendert a, b, x0, x1, r2.
+auspacken
+	move	x:(r0),a
+	tst	a
+	jeq	a_leer
+	move	#>$ff0000,x0
+	move	a1,x1
+	do	x1,a_wort
+	move	y:(r1)+,a
+	do	#3,a_byte
+	move	a1,b
+	and	x0,b
+	rep	#8
+	lsl	a
+	move	b1,y:(r2)+
+a_byte
+	nop
+a_wort
+a_leer
+	rts
+
+; setzen / dazu -- ein Kanal, 246 Rahmen ab r6 (Schritt 2, modulo).
+; r3 = Kopfwerte, r0 = ausgepackte Bytes (Y).  Aendert a, b, x, y, n0, r3, r6.
+setzen
+	jsr	m_kopf
+	do	#STUECK,m_s
+	move	a1,n0
+	add	x,a
+	move	y:(r0+n0),y1
+	mpy	y1,y0,b
+	move	b,y:(r6)+n6
+m_s
+	rts
+
+dazu
+	jsr	m_kopf
+	do	#STUECK,m_d
+	move	a1,n0
+	add	x,a
+	move	y:(r0+n0),y1
+	move	y:(r6),b
+	mac	y1,y0,b
+	move	b,y:(r6)+n6
+m_d
+	rts
+
+; m_kopf -- x = Schritt, a = Stelle (nur Bruch), y0 = Lautstaerke.
+m_kopf
+	move	x:(r3)+,x1
+	move	x:(r3)+,x0
+	clr	a
+	move	x:(r3)+,a0
+	move	x:(r3)+,y0
+	rts
+
+	end

@@ -1,0 +1,39 @@
+# build.cfg.example -- template for build.cfg, which tells the build where
+# the things lie that are not part of the repository.
+#
+# Copy it to build.cfg in the repository root and fill in what differs.
+# build.cfg holds your own paths and never goes into the repository
+# (.gitignore).  You need it only if a file is not at its default place:
+# a folder ambermoon_gamedata/ next to the repository.  An environment
+# variable of the same name wins over this file.
+#
+# One KEY=PATH per line (AMBER_FALCON: KEY=ADDRESS); # starts a comment; ~ is your home directory; a
+# relative path is relative to this file.  Every build shows at the start,
+# under "Sources and switches", what it took from where; the same overview:
+# python3 tools/paths.py
+
+# The directory *above* Amberfiles/ (Ambermoon, German version 1.20).
+# Default: ambermoon_gamedata/ambermoon_german_1.20_extracted
+#AMBER_DATEN=~/ambermoon_gamedata/ambermoon_german_1.20_extracted
+
+# Thalion's released source, the folder that holds GAME_OFF.S
+# (github.com/jhorneman/ambermoon, folder src).
+# Default: ambermoon_gamedata/ambermoon-main-asm/src
+#AMBER_URCODE=~/ambermoon_gamedata/ambermoon-main-asm/src
+
+# Optional: Big Alec's YM music, big_alec/ambermon.snd from the SNDH
+# archive.  Without it the YM stays silent.
+# Default: ambermoon_gamedata/ambermon.snd
+#AMBER_YMSNDH=~/ambermoon_gamedata/ambermon.snd
+
+# Optional: a TOS image, only for the emulator Hatari (tools/hatari/).
+# Default: ambermoon_gamedata/TOS404.IMG
+#AMBER_TOS=~/ambermoon_gamedata/TOS404.IMG
+
+# Optional: an m68k objdump.  Without it the build searches PATH and the
+# VS Code extension atari-st-dev.
+#AMBER_OBJDUMP=/opt/cross-mint/bin/m68k-atari-mintelf-objdump
+
+# Optional: the network address of your test Falcon running uIPtool, for
+# python3 tools/testpaket.py falcon.  An address, not a path.
+#AMBER_FALCON=192.168.0.10

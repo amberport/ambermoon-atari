@@ -1,0 +1,20 @@
+
+TIMERB -- Timer B gemessen.
+
+Stufe erreicht : 4
+VBL-Aufrufe    : 100
+TimerB-Aufrufe : 198
+Feuern je Bild : 2
+Zeile (erstes) : 81
+Zeile kleinste : 81
+Zeile groesste : 131
+Zeile SOLL     : 100
+
+Stufe 1 gestartet, 2 Supervisor, 3 Modus steht,
+4 fertig gemessen.  Kleiner als 4 = dort abgebrochen.
+
+TimerB 0                  feuert nie
+TimerB ~ VBL, Zeile~SOLL  richtig
+TimerB ~ VBL, Zeile~0     zu frueh (Austastluecke)
+Feuern je Bild gross      zaehlt nicht die Zeilen
+Zeile 65535 / max 0       nicht messbar gewesen
