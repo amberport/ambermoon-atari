@@ -5,6 +5,15 @@
 
 *An unofficial fan project. It is not affiliated with Thalion or with the current rights holders.*
 
+<p align="center">
+  <a href="#screenshots"><img src="docs/screenshots/falcon-spannenberg.png" width="24%" alt="Falcon030: the city of Spannenberg in 3D"></a>
+  <a href="#screenshots"><img src="docs/screenshots/st-spannenberg.png" width="24%" alt="ST/STE: the same place"></a>
+  <a href="#screenshots"><img src="docs/screenshots/falcon-lyramion.png" width="24%" alt="Falcon030: the Lyramion islands in 2D"></a>
+  <a href="#screenshots"><img src="docs/screenshots/st-lyramion.png" width="24%" alt="ST/STE: the same place"></a>
+  <br>
+  <sub>Falcon030 and ST/STE at the same places. More under <a href="#screenshots">Screenshots</a>.</sub>
+</p>
+
 To me, *Ambermoon* is more than one of the great role-playing games of the 16-bit era. The game has stayed with me for many years and helped shape my enthusiasm for that era, its technology and the particular way games were made back then.
 
 The idea of bringing *Ambermoon* to the Atari has been with me for a long time. I knew the existing work around the game well, and this idea was one of the reasons I took up 68000 assembly and the hardware of the Atari ST again in 2025.
@@ -29,7 +38,7 @@ That is how this project began.
 **Atari ST/STE**
 - **16 colours**, reduced from the original's 32, with hand-tuned palettes.
 - **Uses what the machine has:** the STE's 4-bit palette and the blitter where present; `PLAIN_ST=YES` makes an STE behave like a plain ST.
-- **Big Alec's YM music** and the fantasy intro.
+- **Big Alec's YM music**, the fantasy intro and the intro with its start menu.
 - **A palette check page:** every ST build writes `build/st_palettes/index.html` from your own game files. For each palette it shows Thalion's colours next to the STE and ST results of each reduction method; choose a method per palette and download the resulting `tools/st_palettes.txt` for the next build.
 
 **On both machines**
@@ -46,6 +55,59 @@ That is how this project began.
 > **TODO:** save games exchanged with the Amiga version and the English game data are not tested yet; they are listed here once they are.
 
 ---
+
+## Screenshots
+
+The same moments on both machines, Falcon030 on the left, ST/STE on the right. The Falcon030 shows Thalion's 32 colours per screen area; the ST/STE shows 16 per screen area, reduced live through the palette. The pictures come from the emulator Hatari, at the native resolution, with the German game files 1.20.
+
+**The fantasy intro: the fairy and the Fantasy logo**
+
+<p>
+  <img src="docs/screenshots/falcon-fantasy.png" width="49%" alt="Falcon030: The fantasy intro: the fairy and the Fantasy logo">
+  <img src="docs/screenshots/st-fantasy.png" width="49%" alt="ST/STE: The fantasy intro: the fairy and the Fantasy logo">
+</p>
+
+**The intro: the meteor falls on Twinlake**
+
+<p>
+  <img src="docs/screenshots/falcon-twinlake.png" width="49%" alt="Falcon030: The intro: the meteor falls on Twinlake">
+  <img src="docs/screenshots/st-twinlake.png" width="49%" alt="ST/STE: The intro: the meteor falls on Twinlake">
+</p>
+
+**Grandfather's house (2D)**
+
+<p>
+  <img src="docs/screenshots/falcon-house.png" width="49%" alt="Falcon030: Grandfather's house (2D)">
+  <img src="docs/screenshots/st-house.png" width="49%" alt="ST/STE: Grandfather's house (2D)">
+</p>
+
+**The Lyramion islands (2D)**
+
+<p>
+  <img src="docs/screenshots/falcon-lyramion.png" width="49%" alt="Falcon030: The Lyramion islands (2D)">
+  <img src="docs/screenshots/st-lyramion.png" width="49%" alt="ST/STE: The Lyramion islands (2D)">
+</p>
+
+**Grandfather's cellar (3D)**
+
+<p>
+  <img src="docs/screenshots/falcon-cellar.png" width="49%" alt="Falcon030: Grandfather's cellar (3D)">
+  <img src="docs/screenshots/st-cellar.png" width="49%" alt="ST/STE: Grandfather's cellar (3D)">
+</p>
+
+**The city of Spannenberg (3D)**
+
+<p>
+  <img src="docs/screenshots/falcon-spannenberg.png" width="49%" alt="Falcon030: The city of Spannenberg (3D)">
+  <img src="docs/screenshots/st-spannenberg.png" width="49%" alt="ST/STE: The city of Spannenberg (3D)">
+</p>
+
+**The house of the trainers (2D)**
+
+<p>
+  <img src="docs/screenshots/falcon-trainers.png" width="49%" alt="Falcon030: The house of the trainers (2D)">
+  <img src="docs/screenshots/st-trainers.png" width="49%" alt="ST/STE: The house of the trainers (2D)">
+</p>
 
 ## Quickstart
 
@@ -120,7 +182,7 @@ State: 2026-10-29. This list is updated before the release.
 
 - **ST, 3D on 8 MHz is slow.** Thalion's 3D code runs unchanged; a real gain would mean replacing parts of it with our own. That would break the first principle of this project (see "Goals of the project") and is deliberately not decided yet.
 - **YM music: 18 pieces instead of 32.** Big Alec's YM version covers 18 of Thalion's pieces; with YM, the other places stay silent, intro and extro too.
-- **ST: no intro and no extro yet**, only the fantasy intro.
+- **ST: no extro yet**, and the intro's start menu does not yet highlight the entry under the pointer.
 - **ST: the "drugged" effect** shows no colours; only the mouse pointer shakes.
 - **Falcon: not at full speed yet.** The 2D maps are meant to need at most 4 screen refreshes (VBLs) per picture drawn; scrolling text is slow; moving the mouse costs frames in 3D.
 - **Not tested yet:** a whole game through to the end; parts of combat (spells, flight, the death of a party member); the English game data; the smallest memory it runs with (4 MB on a real Falcon).
@@ -253,7 +315,7 @@ This reduction is one of the most visible differences from the Amiga and Falcon,
 
 Not finished yet are in particular:
 
-- the intro
+- the extro, and the highlighting in the intro's start menu
 - further performance optimisations
 - fine-tuning of individual hardware-specific routines
 

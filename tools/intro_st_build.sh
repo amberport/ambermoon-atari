@@ -6,8 +6,8 @@
 #                            ST's own K3 -> build/st_intro/intro_hunks.i
 #   2. vasm + vlink          intro_st/intro_st_main.s for the 68000
 #
-# Standalone for now; build_st.sh is to call it and deliver (wish to main,
-# with step 6 of the fairy).
+# build_st.sh calls it and delivers INTROST.TOS to ATARI/AMBFILES/ (main,
+# wish of 2026-10-29, test T39); AMBER.TOS starts it on the ST.
 set -e
 cd "$(dirname "$0")/.."
 OUT=build/st_intro

@@ -53,6 +53,12 @@ echo "== Fantasy intro (ST) =="
 sh tools/fantasy_st_build.sh
 deliver build/st_fantasy/FANTSYST.TOS "$DATA"
 
+echo "== Intro (ST) =="
+# Thalion's Ambermoon_intro rebound for the 68000, scenes in ST format
+# (docs/05c-ST.md, "ST intro"); AMBER.TOS starts it on the ST.
+sh tools/intro_st_build.sh
+deliver build/st_intro/INTROST.TOS "$DATA"
+
 echo "== Loader =="
 build_loader
 
