@@ -146,7 +146,7 @@ sh tools/build_all.sh       # both machines; build_falcon.sh or build_st.sh for 
 
 Instead of the `export` lines, the paths can go into a file `build.cfg` (template `build.cfg.example`), or the three things go into a folder `ambermoon_gamedata/` next to the repository, under the names in the template; `python3 tools/paths.py` shows what the build finds.
 
-The build reads the game files and Thalion's source code from there, assembles everything and puts the result into `ATARI/`, one folder for the Falcon and the ST. If a file is missing, it stops with a message. Step by step, for Linux, macOS and Windows (WSL): [docs/entwickler/building.md](docs/entwickler/building.md).
+The build reads the game files and Thalion's source code from there, assembles everything and puts the result into `ATARI/`, one folder for the Falcon and the ST. It shows one line per step; everything else goes into `build/build.log` (`VERBOSE=1` shows all of it). If something is missing or fails, it names the step and shows the last lines of the log. Step by step, for Linux, macOS and Windows (WSL): [docs/entwickler/building.md](docs/entwickler/building.md).
 
 ### Installation
 
@@ -425,7 +425,7 @@ The port was developed as a private project over several months, in collaboratio
 
 Without this development, the project would not have been manageable for me alongside everything else.
 
-Claude wrote most of the new code: the library layer for the Falcon and ST that takes the place of Thalion's never-published hardware layer in **AM2_CPU**, the build tools and the start program. Many of the analyses also came from Claude, for example how Thalion's code works in particular places and what it expects from the missing layer.
+AI wrote most of the new code: the library layer for the Falcon and ST that takes the place of Thalion's never-published hardware layer in **AM2_CPU**, the build tools and the start program. Many of the analyses also came from AI, for example how Thalion's code works in particular places and what it expects from the missing layer.
 
 The direction and the decisions were mine: the two guiding principles and the rules the work followed, the scaffold, the structure and architectural descisions, the review of every step, and all tests on real hardware, on a Falcon030 an STE and Mega STE.
 

@@ -23,6 +23,123 @@
 OUT=ATARI
 DATA=$OUT/AMBFILES
 
+# **Output: one line per step, the rest into build/build.log** (user,
+# 2026-10-29).  The script that sources this file first (build_all.sh, or
+# build_falcon.sh/build_st.sh on their own) starts the log and sends its
+# stdout and stderr there; fd 3 stays the terminal.  The builds it calls
+# inherit both and append.  step NAME closes the step before (a tick and
+# its time) and opens the next; a step ends badly only by an exit, and the
+# EXIT trap then shows the step, a cross and the last lines of the log.
+# VERBOSE=1 shows everything on the terminal, as before.
+LOG=build/build.log
+if [ -z "$_AMBER_LOG" ]; then
+	mkdir -p build
+	: > "$LOG"
+	_AMBER_LOG=$LOG
+	_AMBER_T0=$(date +%s)
+	export _AMBER_LOG _AMBER_T0
+	if [ -t 1 ]; then
+		_AMBER_COLOUR=1
+		export _AMBER_COLOUR
+	fi
+	if [ -n "$VERBOSE" ]; then
+		exec 3>&1
+	else
+		exec 3>&1 >>"$LOG" 2>&1
+	fi
+	_AMBER_TOP=1
+fi
+if [ -n "$_AMBER_COLOUR" ]; then
+	C_OK=$(printf '\033[32m'); C_BAD=$(printf '\033[31m')
+	C_WARN=$(printf '\033[33m'); C_HEAD=$(printf '\033[1m'); C_OFF=$(printf '\033[0m')
+else
+	C_OK=; C_BAD=; C_WARN=; C_HEAD=; C_OFF=
+fi
+STEP_NAME=
+STEP_NOTE=
+
+say() { printf '%s\n' "$*" >&3; }
+heading() { step_done; printf '%s%s%s\n' "$C_HEAD" "$1" "$C_OFF" >&3; }
+# warn TEXT -- something the reader must see; into the log as well
+warn() {
+	echo "WARNING: $*"
+	if [ -n "$STEP_NAME" ]; then STEP_WARN="$STEP_WARN$*
+"; else printf '  %s! %s%s\n' "$C_WARN" "$*" "$C_OFF" >&3; fi
+}
+note() { STEP_NOTE=$*; }
+step() {
+	step_done
+	STEP_NAME=$1
+	STEP_NOTE=
+	STEP_WARN=
+	STEP_T0=$(date +%s)
+	printf '\n==== %s ====\n' "$1"
+	[ -n "$VERBOSE" ] || printf '  %-28s ' "$1" >&3
+}
+step_done() {
+	[ -n "$STEP_NAME" ] || return 0
+	_s=$(( $(date +%s) - STEP_T0 ))
+	[ -z "$VERBOSE" ] || printf '  %-28s ' "$STEP_NAME" >&3
+	[ "$_s" -gt 0 ] || _s="<1"
+	printf '%s✓%s %3s s   %s\n' "$C_OK" "$C_OFF" "$_s" "$STEP_NOTE" >&3
+	if [ -n "$STEP_WARN" ]; then
+		printf '%s' "$STEP_WARN" | while IFS= read -r _w; do
+			printf '    %s! %s%s\n' "$C_WARN" "$_w" "$C_OFF" >&3
+		done
+	fi
+	STEP_NAME=
+}
+on_exit() {
+	_rc=$1
+	if [ "$_rc" -ne 0 ] && [ -n "$STEP_NAME" ]; then
+		[ -z "$VERBOSE" ] || printf '  %-28s ' "$STEP_NAME" >&3
+		printf '%s✗ FAILED%s\n' "$C_BAD" "$C_OFF" >&3
+		if [ -z "$VERBOSE" ]; then
+			printf '  ---- last lines of %s ----\n' "$LOG" >&3
+			tail -n 25 "$LOG" | sed 's/^/  | /' >&3
+		fi
+		printf '%sBuild stopped.%s Full log: %s\n' "$C_BAD" "$C_OFF" "$LOG" >&3
+	fi
+}
+trap 'on_exit $?' EXIT
+
+# engine_warnings FILE -- the output of build_engine.sh: the expected
+# warnings counted (vasm 22 once in Thalion's NUMERIC.S, vasm 58 four times
+# from -align, vlink 62 once for <start>), any other shown.
+engine_warnings() {
+	_n22=$(grep -c '^warning 22 .*NUMERIC\.S' "$1" || true)
+	_n58=$(grep -c '^warning 58 ' "$1" || true)
+	_n62=$(grep -c '^warning 62:' "$1" || true)
+	if [ "$_n22 $_n58 $_n62" != "1 4 1" ]; then
+		warn "expected warnings changed: vasm 22 x$_n22, vasm 58 x$_n58, vlink 62 x$_n62 (1, 4, 1 expected)"
+	fi
+	_o=$(grep -E '^(error|warning) ' "$1" \
+		| grep -v -E '^warning 58 |^warning 22 .*NUMERIC\.S|^warning 62:' || true)
+	[ -n "$_o" ] || return 0
+	# a here-document, not a pipe: warn must run in this shell
+	while IFS= read -r _w; do warn "$_w"; done <<EOF
+$_o
+EOF
+}
+
+# summary -- the last lines, from the script that started the log only
+summary() {
+	step_done
+	[ -n "$_AMBER_TOP" ] || return 0
+	_s=$(( $(date +%s) - _AMBER_T0 ))
+	_w=$(grep -c '^WARNING: ' "$LOG" || true)
+	if [ -n "$VERBOSE" ]; then
+		_w="warnings: see above"
+	elif [ "$_w" -eq 0 ]; then
+		_w="${C_OK}No warnings${C_OFF}"
+	else
+		_w="${C_WARN}$_w warning(s), see above${C_OFF}"
+	fi
+	say ""
+	say "${C_OK}Done${C_OFF} in $((_s / 60)):$(printf '%02d' $((_s % 60))). $_w. YM music $YM_MUSIC; diagnostic switches: $DIAGNOSE."
+	say "Full log: $LOG"
+}
+
 zeile() { printf '  %-20s %-9s %-15s %s\n' "$1" "$2" "($3)" "$4"; }
 
 # Paths, without output.  Thalion's source (-I in build_engine.sh), the
@@ -45,7 +162,9 @@ fi
 # _AMBER_PREPARED tells the two builds after it to skip it.
 prepare() {
 	[ -z "$_AMBER_PREPARED" ] || return 0
-	echo "== Sources and switches =="
+	case "$1" in falcon) _was=Falcon ;; st) _was=ST ;; *) _was="Falcon and ST" ;; esac
+	heading "Ambermoon build: $_was -> $OUT/"
+	step "Sources and switches"
 	# Everything the build needs from outside, in one place: where it comes
 	# from (environment variable, build.cfg or default) and whether it is
 	# there.
@@ -94,8 +213,14 @@ prepare() {
 		fi
 	fi
 	zeile "Diagnostic switches" "" VASM_EXTRA "$DIAGNOSE"
+	_found="Thalion's source, game files, objdump"
+	[ "$1" = st ] || _found="$_found, a56"
+	[ "$YM_MUSIC" = off ] || _found="$_found, YM SNDH"
+	note "$_found"
+	[ "$YM_MUSIC" = on ] || warn "no YM SNDH: the YM stays silent (AMBER_YMSNDH, docs/13)"
+	[ -z "$VASM_EXTRA" ] || warn "diagnostic switches: $VASM_EXTRA (not a release build)"
 
-	echo "== Library data from AM2_CPU =="
+	step "Library data from AM2_CPU"
 	# At build time, never at run time (user, 2026-09-27): -> build/am2cpu_daten.i
 	python3 tools/am2cpu_auszug.py
 	# Where Thalion's text names lie in Text.amb (Lade_texte reads the texts
@@ -106,16 +231,21 @@ prepare() {
 	python3 tools/am2cpu_code.py
 	# The texts of the start menu from Ambermoon_intro: -> build/intro_daten.i
 	python3 tools/intro_auszug.py
+	note "data, code, text names, start menu -> build/"
 
-	echo "== Constants against Thalion's source =="
+	step "Constants against Thalion's"
 	python3 tools/ambchest.py
+	note "item offsets as in GAME_OFF.S"
 
 	# The YM pieces from the SNDH (docs/13 6); delivered by deliver_data.
 	rm -f build/MUSIK_YM.BIN
 	if [ "$YM_MUSIC" = on ]; then
+		step "YM music from the SNDH"
 		python3 tools/ym_auszug.py --sndh "$YMSNDH" --out build/ym > build/ym_auszug.txt
 		cp build/ym/AMBERYM.BIN build/MUSIK_YM.BIN
+		note "MUSIK_YM.BIN $(( $(wc -c < build/MUSIK_YM.BIN) / 1024 )) KB"
 	fi
+	step_done
 }
 
 # deliver FILE DIR [DIR] -- copy one file and look whether it arrived.
@@ -167,7 +297,7 @@ finish_output() {
 	mv "$MANIFEST_NEW" "$MANIFEST"
 	# Under build_all.sh the other build runs right next to it.
 	if [ -z "$_AMBER_PREPARED" ] && [ -f "$ANDERE_LISTE" ]; then
-		echo "  next to it: the $ANDERE programs from $(date -r "$ANDERE_LISTE" '+%Y-%m-%d %H:%M')" \
+		say "  Next to it: the $ANDERE programs from $(date -r "$ANDERE_LISTE" '+%Y-%m-%d %H:%M')" \
 			"(tools/build_$ANDERE.sh renews them)"
 	fi
 }
@@ -273,7 +403,7 @@ deliver_data() {
 	cp "$AMBERFILES/Saves" build/SAVES
 	deliver build/SAVES "$DATA"
 
-	echo "== YM music =="
+	echo "-- YM music"
 	# Big Alec's YM version (docs/13 6), for the ST and with MUSIC=YM in
 	# AMBER.INF on the Falcon.  Only with the SNDH file (YMSNDH) does
 	# MUSIK_YM.BIN come about; without it the YM stays silent and the build
@@ -292,7 +422,7 @@ deliver_data() {
 		deliver build/MUSIK_YM.INF "$DATA"
 	fi
 
-	echo "== Settings =="
+	echo "-- Settings"
 	settings_file
 }
 
@@ -355,9 +485,10 @@ build_bomben() {
 # source_checks -- the checks that read only our source, not a build.
 # Under build_all.sh they run once, after the Falcon build.
 source_checks() {
-	echo "== Checks =="
+	step "Source checks"
 	python3 tools/trap_pruefen.py
 	python3 tools/register_pruefen.py
 	python3 tools/vars_pruefen.py
 	python3 tools/platzhalter_pruefen.py
+	note "TOS calls, registers, variables, placeholders"
 }

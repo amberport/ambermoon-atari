@@ -14,5 +14,7 @@ cd "$(dirname "$0")/.."
 prepare all
 _AMBER_PREPARED=1
 export _AMBER_PREPARED
+step_done
 sh tools/build_falcon.sh
 sh tools/build_st.sh
+summary
