@@ -36,7 +36,7 @@ That is how this project began.
 - **RGB and VGA monitors.**
 
 **Atari ST/STE**
-- **16 colours**, reduced from the original's 32, with hand-tuned palettes.
+- **16 colours**, reduced from the original's 32.
 - **Uses what the machine has:** the STE's 4-bit palette and the blitter where present; `PLAIN_ST=YES` makes an STE behave like a plain ST.
 - **Big Alec's YM music**, the fantasy intro and the intro with its start menu.
 - **A palette check page:** every ST build writes `build/st_palettes/index.html` from your own game files. For each palette it shows Thalion's colours next to the STE and ST results of each reduction method; choose a method per palette and download the resulting `tools/st_palettes.txt` for the next build.
@@ -51,8 +51,6 @@ That is how this project began.
 - **The build checks every place it takes from the original files:** another version of the game stops it with a message instead of giving a broken program.
 - **Paths in `build.cfg`** or a folder next to the repository; no environment variables needed.
 - **Developer documentation in English**, with a guide to the Atari layer.
-
-> **TODO:** save games exchanged with the Amiga version and the English game data are not tested yet; they are listed here once they are.
 
 ---
 
@@ -111,8 +109,6 @@ The same moments on both machines, Falcon030 on the left, ST/STE on the right. T
 
 ## Quickstart
 
-> **TODO:** Parts of this section will only be settled shortly before release.
-
 ### Requirements
 
 **To play:**
@@ -123,13 +119,13 @@ The same moments on both machines, Falcon030 on the left, ST/STE on the right. T
 
 **What you need to obtain yourself** (none of it is in this repository):
 
-- the original *Ambermoon* game files, i.e. the `Amberfiles` folder of an existing Amiga version (tested: German version 1.20; [ ] English version TODO)
+- the original *Ambermoon* game files, i.e. the `Amberfiles` folder of an existing Amiga version (tested: German version 1.20; the English version is not tested yet)
 - Thalion's historical source code from [Jurie Horneman's repository](https://github.com/jhorneman/ambermoon); it is only read during the build
 - optionally Big Alec's YM music, the file `big_alec/ambermon.snd` from the [SNDH archive](https://sndh.atari.org/?ID=5364) (see below)
 
 **To build:**
 
-- Linux (tested so far; [ ] macOS and Windows/WSL TODO)
+- Linux (tested so far; macOS and Windows/WSL not yet)
 - `vasmm68k_mot` and `vlink` (68000 assembler and linker)
 - `a56` (DSP56001 assembler, for the Falcon's music mixer)
 - Python 3
@@ -184,8 +180,10 @@ State: 2026-10-29. This list is updated before the release.
 - **YM music: 18 pieces instead of 32.** Big Alec's YM version covers 18 of Thalion's pieces; with YM, the other places stay silent, intro and extro too.
 - **ST: no extro yet**, and the intro's start menu does not yet highlight the entry under the pointer.
 - **ST: the "drugged" effect** shows no colours; only the mouse pointer shakes.
+- **ST: the palettes are not fine-tuned yet**; the build writes a check page for it.
 - **Falcon: not at full speed yet.** The 2D maps are meant to need at most 4 screen refreshes (VBLs) per picture drawn; scrolling text is slow; moving the mouse costs frames in 3D.
-- **Not tested yet:** a whole game through to the end; parts of combat (spells, flight, the death of a party member); the English game data; the smallest memory it runs with (4 MB on a real Falcon).
+- **Not tested yet:** a whole game through to the end; save games exchanged with the Amiga version; parts of combat (spells, flight, the death of a party member); the English game data; the smallest memory it runs with (4 MB on a real Falcon).
+- **Some names are still German.** Many file, routine and variable names in our code and tools, and some notes, are German; they are becoming English step by step.
 
 ### Possible improvements
 
