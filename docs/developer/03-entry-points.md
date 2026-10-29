@@ -91,8 +91,8 @@ skipped quietly, any other load error is reported.
 the cookie `_MCH`: high word 3 is a Falcon, which starts `FANTASY.TOS`,
 `INTRO.TOS`, `ENGINE.TOS`, `EXTRO.TOS`. Anything else, or no cookie jar
 at all (an old ST TOS), is an ST, which starts `FANTSYST.TOS`,
-`INTROST.TOS`, `ENGINEST.TOS`, `EXTROST.TOS`. The ST has no intros on
-`main` yet, so there the chain goes straight to the engine's start menu.
+`INTROST.TOS`, `ENGINEST.TOS`, `EXTROST.TOS`. The ST has no extro yet,
+so there the chain skips it.
 
 The programs talk through
 the command line (length byte 1, one ASCII digit, terminating zero) and

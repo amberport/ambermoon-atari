@@ -18,7 +18,7 @@ parts:
 - **In the code.** For developers: the routines, their files, and the
   findings in `docs/04-Erkenntnisse.md` (German) that led there. The
   full reference is the developer documentation in
-  [`docs/entwickler/`](../entwickler/README.md).
+  [`docs/developer/`](../developer/README.md).
 
 The guide describes the current state. Where it names a routine, the
 name is the one in the source; many of our names are German (a short

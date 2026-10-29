@@ -16,8 +16,9 @@ environment variable of that name, then the file `build.cfg` (the first
 one found from the repository root upwards, so the worktrees use the main
 checkout's; it holds personal paths and is never committed, template
 `build.cfg.example`), then the default folder. `python3 tools/paths.py`
-shows what it finds and where from; every build shows the same under
-"Sources and switches". `AMBER_OBJDUMP` works the same way and has no
+shows what it finds and where from; the first step of every build,
+"Sources and switches", checks the same, with the details in
+`build/build.log`. `AMBER_OBJDUMP` works the same way and has no
 default (below).
 
 The rights to Thalion's games are unclear; the source is published for
@@ -47,9 +48,10 @@ sh tools/build_st.sh           the ST only (no a56)
 Step by step for Linux, macOS and Windows, with where each tool comes
 from: [building it yourself](building.md).
 
-`build_all.sh` is the one build. Each build starts with an overview of its
-sources ("Sources and switches") and stops if a required one is missing.
-Both write into one folder:
+`build_all.sh` is the one build. It shows one line per step and writes
+everything else into `build/build.log` (`VERBOSE=1` shows all); its first
+step, "Sources and switches", stops it if a required source is missing.
+Both machines' builds write into one folder:
 
 ```
 ATARI/AMBER.TOS           the loader for both: start this on Falcon or ST/STE

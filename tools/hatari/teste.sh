@@ -75,7 +75,7 @@ echo "quit 0" >> "$ARBEIT/$VORIGE.ini"
 # the speed on the host, not the emulated timing (cycles per VBL); there
 # is no vsync switch that changes the emulated machine.  Even with all of
 # them Hatari is 1.7x (2D) to 4x (3D floor) too fast on the Falcon,
-# because it hardly models the bus wait states (docs/entwickler/09).
+# because it hardly models the bus wait states (docs/developer/09).
 echo "== $PROGRAMM in Hatari, Abzuege bei VBL $MARKEN =="
 SDL_VIDEODRIVER=offscreen timeout 600 hatari \
 	--machine falcon --tos "$TOS" \

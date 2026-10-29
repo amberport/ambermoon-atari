@@ -137,7 +137,7 @@ echo "$VOLL"
 note "$(echo "$VOLL" | sed -n 's/.*braucht \([0-9]*\) Namen -- echt \([0-9]*\).*/\2 of \1 library names real/p')"
 
 # Generated appendices of the developer documentation, into build/doku/.
-# docs/entwickler/ gets them only by hand on main (doku_listen.py --docs).
+# docs/developer/ gets them only by hand on main (doku_listen.py --docs).
 step "Appendices of the docs"
 python3 tools/doku_listen.py
 note "build/doku/"

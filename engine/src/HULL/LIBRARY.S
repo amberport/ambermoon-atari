@@ -4,13 +4,13 @@
 ; Put_unmasked_block, Put_masked_block and Update_screen belong to the
 ; library Thalion never released.  They carry Thalion's names, so the calls
 ; in the rest of the code look as in the original; their contracts are in
-; docs/entwickler/ (chapter 4, appendix B).
+; docs/developer/ (chapter 4, appendix B).
 ;
 ; What is *not* here: the machines.  Screen mode, colour registers and the
 ; own screen memory are in HULL/FALCON.S (ST: ST.S).  What knows colour
 ; banks and eight planes is in HULL/FALCON_LIB.S (owner Falcon Tempo), the
 ; ST counterpart in ST_LIB.S (library split, user 2026-10-21; docs/
-; entwickler/05, "LIBRARY.S by machine").  This file keeps Thalion's
+; developer/05, "LIBRARY.S by machine").  This file keeps Thalion's
 ; names, the contracts and the shared part, which works on both machines
 ; through PLANES, TROW and SCRROW, and calls the machine part under a
 ; neutral name that both parts define (phase 2, 2026-10-23: no IFD ZIEL_ST

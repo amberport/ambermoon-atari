@@ -143,4 +143,4 @@ raster list's pointers, it keeps no copies), 264 (bank by place), 266
 (the pointer takes the bank of its line). Developer reference, with the
 table of every raster list of the game and where each palette comes
 from: [chapter 6 of the developer
-documentation](../entwickler/06-graphics-and-colour.md).
+documentation](../developer/06-graphics-and-colour.md).

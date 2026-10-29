@@ -224,4 +224,4 @@ missing entries), 270 (TOS destroys registers), 274 (Thalion's loops, the
 odd byte). The formats were first described by Pyrdacor
 (`docs/01-Datenfluss-und-Formate.md`, German). Developer reference:
 [chapter 8 of the developer
-documentation](../entwickler/08-files-music-amiga.md).
+documentation](../developer/08-files-music-amiga.md).

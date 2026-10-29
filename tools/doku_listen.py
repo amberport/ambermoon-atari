@@ -11,7 +11,7 @@ Writes three Markdown files that nobody maintains by hand:
 
 Default output is build/doku/ (not versioned; build_falcon.sh calls this at the
 end of every build, so a break shows up at once).  With --docs the files go
-to docs/entwickler/.  Run that only on main, before committing the
+to docs/developer/.  Run that only on main, before committing the
 documentation or releasing: if every branch wrote docs/, each merge would
 conflict on generated files.
 
@@ -259,7 +259,7 @@ def kopfblock(zeilen, i):
     return block
 
 
-# The register contract in a header (docs/entwickler/04-interface.md,
+# The register contract in a header (docs/developer/04-interface.md,
 # "Writing a routine of the library"):
 #   ; Name -- one sentence.
 #   ;   IN : d0.w = line, a0 = source
@@ -551,12 +551,12 @@ def anhang_c():
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--docs", action="store_true",
-                    help="write to docs/entwickler/ instead of build/doku/")
+                    help="write to docs/developer/ instead of build/doku/")
     a = ap.parse_args()
     if not os.path.isdir(URCODE):
         sys.exit(f"doku_listen: Thalion's source not found ({URCODE}, "
                  "AMBER_URCODE)")
-    ziel = os.path.join(WURZEL, "docs/entwickler" if a.docs else "build/doku")
+    ziel = os.path.join(WURZEL, "docs/developer" if a.docs else "build/doku")
     os.makedirs(ziel, exist_ok=True)
     for name, inhalt in (("appendix-a-source-files.md", anhang_a()),
                          ("appendix-b-symbols.md", anhang_b()),

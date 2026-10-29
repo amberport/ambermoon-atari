@@ -145,7 +145,7 @@ interface. There are **425**:
 | macros | 12 | `Get`, `Free` (memory), `Push`, `Pop` (stacks), `R_palette`, `R_range`, `R_end` (raster lists) |
 
 Every one of them is listed in [appendix B of the developer
-documentation](../entwickler/appendix-b-symbols.md), with the number of
+documentation](../developer/appendix-b-symbols.md), with the number of
 Thalion's uses and where we define it.
 
 A name is more than a name: it is a **contract**. Which registers go in,
@@ -154,7 +154,7 @@ structure is. The linker checks only that a name exists; whether the
 contract holds shows when the game runs. That is why every routine of
 our library is written from Thalion's call sites, and where those leave
 it open, from the machine code in `AM2_CPU`
-([developer chapter 4](../entwickler/04-interface.md)).
+([developer chapter 4](../developer/04-interface.md)).
 
 ## Four ways to fill the gap
 
@@ -181,7 +181,7 @@ program never reads `AM2_CPU` while it runs.
 
 The tool refuses any piece that touches hardware, jumps out of itself or
 carries an address it cannot name ([appendix
-C](../entwickler/appendix-c-am2cpu.md)).
+C](../developer/appendix-c-am2cpu.md)).
 
 **2. Written by us, to the contract.** Everything that touches screen,
 blitter, interrupts or the operating system, we write for the Falcon and
@@ -204,7 +204,7 @@ the ST:
 Where a routine has to behave differently on the two machines,
 `LIBRARY.S` keeps Thalion's name and the shared part, and calls a
 machine part under a neutral name that `FALCON_LIB.S` and `ST_LIB.S`
-both define ([developer chapter 5](../entwickler/05-our-layer.md)).
+both define ([developer chapter 5](../developer/05-our-layer.md)).
 
 **3. Read from the game files at run time.** Some of what the library
 held is also in the game files, and goal 2 of the project says to read
@@ -234,7 +234,7 @@ itself:
 
 The program entry itself is ours too: `start` in `engine/src/MAIN.S`
 sets up screen, mouse, music and memory, then enters `Restart_game`.
-[Developer chapter 3](../entwickler/03-entry-points.md) follows the whole
+[Developer chapter 3](../developer/03-entry-points.md) follows the whole
 path.
 
 ## The rest of this guide

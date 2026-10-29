@@ -21,8 +21,8 @@ on the other. The program names are unique per machine:
 | fantasy intro | `FANTASY.TOS` | `FANTSYST.TOS` |
 | intro, extro | `INTRO.TOS`, `EXTRO.TOS` | `INTROST.TOS`, `EXTROST.TOS` |
 
-There are no ST versions of the intros yet; `AMBER.TOS` skips a missing
-program silently, and the engine shows its own start menu. `BOMBEN.TOS`
+The ST has its fantasy intro and intro, no extro yet; `AMBER.TOS` skips a
+missing program silently. `BOMBEN.TOS`
 (68000) is the same for both. Only the ST build delivers `STPAL.DAT`, the
 precomputed ST palettes (`tools/st_palettes.py build`; deviation D1 in
 `docs/17-deviations.md`).
@@ -34,21 +34,36 @@ belong to the user) and the files the other build delivered last time
 alone thus leaves the ST programs of the last ST build in place and says
 so at the end.
 
+**Output: one line per step** (user, 2026-10-29). `build_common.sh` gives
+the scripts `step NAME` (closes the step before with a tick and its
+seconds, opens the next), `note TEXT` (the short note on the step's line)
+and `warn TEXT` (shown with `!` under the step and counted in the closing
+line). The script that starts first sends its own output and that of every
+build it calls into `build/build.log`; only the step lines reach the
+terminal, and `VERBOSE=1` shows everything. A step ends badly only by an
+exit: the trap on `EXIT` then marks it `✗ FAILED` and shows the last 25
+lines of the log, where a path check's "MISSING" line also appears. The
+closing line gives the time, the number of warnings, the YM state and the
+diagnostic switches.
+
 The shared part is `tools/build_common.sh` (sourced, not run):
 
-1. **Sources and switches** (`prepare`): shows where Thalion's source, the
-   game files and the YM SNDH file come from; stops if a required one is
-   missing; `a56` only for the Falcon.
+1. **Sources and switches** (`prepare`): checks where Thalion's source, the
+   game files, the `objdump` and the YM SNDH file come from; stops if a
+   required one is missing; `a56` only for the Falcon. Without the YM SNDH,
+   or with `VASM_EXTRA` set, it warns.
 2. **Library data from `AM2_CPU`:** `am2cpu_auszug.py` →
    `build/am2cpu_daten.i`; `textmarken.py` → `build/textmarken.i`;
    `am2cpu_code.py` → `build/am2cpu_code.i` (needs an m68k `objdump`);
-   `intro_auszug.py` → `build/intro_daten.i`; `ym_auszug.py` →
-   `build/MUSIK_YM.BIN` with the YM SNDH file (`--sndh`).
+   `intro_auszug.py` → `build/intro_daten.i`.
 3. **Constants against Thalion's source** (`ambchest.py`).
-4. **Delivery** (`deliver_data`): game files renamed to 8.3, save game
-   folders from `Save.nn/`, the YM music; `*.INF` left alone.
+4. **YM music from the SNDH**, only with the YM SNDH file: `ym_auszug.py
+   --sndh` → `build/MUSIK_YM.BIN`.
+5. **Delivery** (`deliver_data`, in each machine's step "Game files and
+   delivery"): game files renamed to 8.3, save game folders from
+   `Save.nn/`, the YM music; `*.INF` left alone.
 
-Under `build_all.sh` steps 1–3 and the source checks run once.
+Under `build_all.sh` steps 1–4 and the source checks run once.
 
 **A new piece from `AM2_CPU`** (step 2). Data goes into the table
 `STUECKE` of `am2cpu_auszug.py` (name, hunk, offset, length, evidence),
@@ -78,13 +93,17 @@ and `-DZIEL_ST=1`.
 **The Falcon build** then adds a 68000 cross-check of both units, the
 fantasy intro, intro and extro with their diagnostic versions, the loader,
 `FREQ.TOS`, `BOMBEN.TOS`, the checks (below) and the appendices of this
-documentation into `build/doku/`. **The ST build** adds its loader,
-`BOMBEN.TOS` and the source checks.
+documentation into `build/doku/`. **The ST build** adds the ST palettes
+(`STPAL.DAT`), the ST fantasy intro (`FANTSYST.TOS`), the ST intro
+(`INTROST.TOS`), its loader, `BOMBEN.TOS` and, when it runs alone, the
+source checks.
 
-**Expected warnings, in every build:** vasm 22 in Thalion's
+**Expected warnings, in every engine build:** vasm 22 in Thalion's
 `HULL/NUMERIC.S` line 339 (`dc.l 10000000000`), vasm 58 four times in
 Thalion's files (auto-aligned, because of `-align`), vlink 62 (`start` not
-referenced). Any other is a finding. **vasm warning 2028** ("signed
+referenced). `engine_warnings` in `build_common.sh` counts them (1, 4, 1)
+and does not show them; a changed count is a warning, and so is any other
+message, shown under the step "Engine". Any of them is a finding. **vasm warning 2028** ("signed
 operand as unsigned") stops the build: once it turned `moveq
 #Pal_size-1` into `moveq #-1`, and a `dbra` copied 128 KB (finding 185).
 

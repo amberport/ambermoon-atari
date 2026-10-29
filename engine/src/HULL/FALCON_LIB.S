@@ -6,7 +6,7 @@
 ; LIBRARY.S keeps Thalion's names, the contracts and what both machines
 ; share (clipping, addresses, the screen format, the pointer); this file
 ; holds what knows colour banks and eight planes.  The ST counterpart is
-; ST_LIB.S.  Library split phase 1 (user, 2026-10-21; docs/entwickler/05,
+; ST_LIB.S.  Library split phase 1 (user, 2026-10-21; docs/developer/05,
 ; "LIBRARY.S by machine"): the code moved here unchanged; only the seams
 ; are new (rts instead of a branch back, an own prologue in
 ; Get_block_orig, the entry label Masked_icon).

@@ -147,12 +147,16 @@ their own package names.
    sh tools/build_all.sh
    ```
 
-   The build starts with a block "Sources and switches" that shows what
-   it found where. If something required is missing, it stops right
-   there and says which key to set.
+   The build shows one line per step: its name, a tick, the seconds and
+   a short note. Everything else goes into `build/build.log`;
+   `VERBOSE=1 sh tools/build_all.sh` shows all of it on the terminal.
+   The first step, "Sources and switches", checks what the build takes
+   from where. If something required is missing, the build stops right
+   there (see "When the build stops" below).
 
-   *Check:* at the end, `ATARI/AMBER.TOS` exists, and
-   `ATARI/AMBFILES/` holds `ENGINE.TOS` and `ENGINEST.TOS`.
+   *Check:* the closing line says `Done in m:ss. No warnings.`,
+   `ATARI/AMBER.TOS` exists, and `ATARI/AMBFILES/` holds `ENGINE.TOS`
+   and `ENGINEST.TOS`.
 
 ## macOS
 
@@ -244,16 +248,22 @@ copy your save games away before you build again.
 
 ## When the build stops
 
+The step that failed is marked `✗ FAILED`, and below it come the last
+25 lines of `build/build.log`; the whole log is still there afterwards.
+
 - **"MISSING" under "Sources and switches"**: a path is wrong. The line
-  shows what the build looked for and where the path came from (the
-  variable, `build.cfg` or the default); fix it there.
+  among the last lines of the log shows what the build looked for and
+  where the path came from (the variable, `build.cfg` or the default);
+  fix it there.
 - **`build.cfg line n: expected one of …`**: a line in `build.cfg` has a
   key the build does not know, or no `=`.
 - **The extract from `AM2_CPU` stops**: the game files are not the German
   1.20, or `AM2_CPU` is not the one from that version.
-- **Warnings**: every build shows a few expected ones, vasm 22 once, vasm
-  58 four times, vlink 62 once, all in Thalion's files (chapter 9). Any
-  other warning is worth a report. vasm warning 2028 stops the build on
+- **Warnings**: each engine build has a few expected ones, vasm 22 once,
+  vasm 58 four times, vlink 62 once, all in Thalion's files (chapter 9).
+  The build counts them and does not show them. Any other warning, or a
+  changed count, appears with a `!` under its step and in the closing
+  line, and is worth a report. vasm warning 2028 stops the build on
   purpose.
 
 ## Open points of this draft

@@ -179,7 +179,7 @@ user ruled that this is not a copy (CLAUDE.md, goal 1).
 
 **What.** The three non-interactive programs are Amiga programs; two have
 no source. They run on an emulation of the Amiga hardware they touch
-(docs/entwickler/10-amiga-layer.md), and Thalion's code in them is taken
+(docs/developer/10-amiga-layer.md), and Thalion's code in them is taken
 over at build time and bent:
 
 - *Build time* (goal 2, decision of 2026-09-29, docs/11 7.1):
@@ -200,7 +200,7 @@ over at build time and bent:
   intro's zoom (`intro/INTRO_ZOOM.S`), the picture switch, clearing before
   the zoom and the end of Thalion's VBL (`intro/INTRO_SUP.S`); the copy
   into both screens and the picture switch twice (`extro/EXTRO_SUP.S`).
-  Table in docs/entwickler/10.
+  Table in docs/developer/10.
 - *Rewritten*: Thalion's main sequence of the fantasy intro (hunk 1
   $110-$2B0, tied to copper, CIA and DMA) is `Fee_ablauf` in
   `fantasy/FEE_SUP.S`, in Thalion's order and with Thalion's values.
@@ -222,7 +222,7 @@ again (slower; the white frame before the zoom returns). For the zoom
 alone the switch `ZOOM_THALION` exists. K1/K2 and the build-time
 extraction have no way back without giving up the programs.
 
-**Where.** docs/11 (sections 3-7), docs/entwickler/10-amiga-layer.md; the
+**Where.** docs/11 (sections 3-7), docs/developer/10-amiga-layer.md; the
 files named above.
 
 ### D3 on the ST: what is changed, and what looks different

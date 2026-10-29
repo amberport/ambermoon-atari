@@ -39,7 +39,7 @@ folder you name, never into the repository.
 | `paths.py` | where Thalion's source, the game files, the YM file, the TOS image and `objdump` lie: environment variable, then `build.cfg`, then `ambermoon_gamedata/` next to the repository. Every other tool imports it | `python3 tools/paths.py` shows each key, `found`/`missing` and where from; `--sh` gives shell assignments |
 | `build_all.sh` | the one build, both machines into `ATARI/` | `sh tools/build_all.sh` |
 | `build_falcon.sh`, `build_st.sh` | one machine each | `sh tools/build_falcon.sh` (needs `a56`), `sh tools/build_st.sh` |
-| `build_common.sh` | the shared part: sources, extracts, delivery, source checks. Sourced by the two, not run | — |
+| `build_common.sh` | the shared part: sources, extracts, delivery, source checks, and the output (one line per step, the rest into `build/build.log`, `VERBOSE=1` shows all). Sourced by the two, not run | — |
 | `build_engine.sh` | the engine from its two units: export lists, vasm, vlink | `sh tools/build_engine.sh ZIEL.TOS [OBJEKTORDNER]`; called by the builds |
 | `musik_dsp.sh`, `dsp_lod.py` | the DSP mixer `musik/MUSIK_DSP.A56` with `a56`, and its output turned into the image `Dsp_ExecBoot` loads (at most 512 words, P memory only) | called by `build_engine.sh` and `amiga_bauen.sh` |
 | `fantasy_bauen.sh` | the fantasy intro alone, into `build/` | `sh tools/fantasy_bauen.sh` |
@@ -145,6 +145,6 @@ here only what they are for.
 | `st_palettes.txt` | the hand corrections, read by `st_palettes.py build` |
 | `farbreduktion.py` | the first study of 32 to 16 colours (`messen`, `bild`); `st_palettes.py` still imports it |
 | `fantasy_st_build.sh`, `fantasy_st_data.py` | the ST fantasy intro `FANTSYST.TOS`: Thalion's unchanged `FAIRY.S`, graphics in ST format; called by `build_st.sh` |
-| `intro_st_build.sh`, `intro_st_program.py` | the ST intro `INTROST.TOS` with its own K3 hooks; on its own for now, not delivered |
+| `intro_st_build.sh`, `intro_st_program.py` | the ST intro `INTROST.TOS` with its own K3 hooks; called by `build_st.sh` |
 | `st_shot.py` | `SHOTnn.RAW` of the ST intro's test build (key S) as a PNG |
 | `st_rand/` | probe programs for the lower border on the ST, at three delays |

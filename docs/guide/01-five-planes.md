@@ -154,7 +154,7 @@ format"; then nothing is widened (`SCHIRM_FORMAT` in `FALCON_OFF.S`).
 Findings: 191 (`Screen_depth` means Thalion's data), 176 (`Icon_size` is
 the distance in Thalion's data, not on our screen), 271 (tile cache and
 the bank span). Developer reference: [chapter 6 of the developer
-documentation](../entwickler/06-graphics-and-colour.md).
+documentation](../developer/06-graphics-and-colour.md).
 
 **On the ST** the screen has four planes, not eight, and the problem
 turns round: 32 colours must fit into 16. That is a chapter of its own
