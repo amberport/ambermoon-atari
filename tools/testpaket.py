@@ -79,7 +79,7 @@ FALCON_ORDNER = os.environ.get('AMBER_FALCON_ORDNER', '/g').rstrip('/')
 
 # The programs of the game, for both machines.  Every other *.TOS in a
 # folder line stays out of the package.
-SPIEL_TOS = {'AMBER.TOS', 'BOMBEN.TOS', 'ENGINE.TOS', 'ENGINEST.TOS',
+SPIEL_TOS = {'AMBER.TOS', 'ENGINE.TOS', 'ENGINEST.TOS',
              'FANTASY.TOS', 'INTRO.TOS', 'EXTRO.TOS',
              'FANTSYST.TOS', 'INTROST.TOS', 'EXTROST.TOS'}
 

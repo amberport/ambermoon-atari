@@ -949,15 +949,13 @@ Bl_ziel_allg:
 	move.l	Bl_ziel_d_ende,AR_BLTCPT(a4)
 .zc:	move.l	Bl_ziel_d_ende,AR_BLTDPT(a4)
 
-; Bl_ziel_ende -- after a way into the target: the buffer lines of D are no
-; longer valid.
+; Bl_ziel_ende -- after a way into the target.  D's buffer lines were
+; marked stale before it (Bl_umlenken_weg, AMIGA_ZIEL.S).
 Bl_ziel_ende:
 	IFD	AMIGA_MESSEN
 	addq.l	#1,Bl_ziel
 	ENDC
-	move.l	Bl_kanal+12,a5
-	movem.w	Bl_d_zeilen,d0-d1
-	bra	Zeilen_ungueltig
+	rts
 	ENDC
 
 ; ***************************************************************************

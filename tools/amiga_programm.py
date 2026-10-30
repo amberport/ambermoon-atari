@@ -112,7 +112,11 @@ PROGRAMME = {
         # $14E6 a scratch screen for the stages, $2646 the stars in
         # Thalion's VBL, $310 PRESENTS, $3C0 hold), the clouds ($D00 hold
         # and table, $D74/$DA2 the screens filled, $1270 the column copy)
-        # and the menu ($F4E hold, $FB2 table, $1030 the entries).
+        # and the menu ($F4E hold, $FB2 the hold ends: the menu is
+        # converted again, user 2026-10-29, T70).
+        # Our clouds ($E3A, the four cloud blits up to $EB2; intro/
+        # INTRO_CLOUDS.S): shifted once in the target format, put with the
+        # CPU (user, 2026-10-29).
         # The 4-plane scenes in the target format (docs/11 7.8, T63;
         # intro/INTRO_SUP.S): the table at $4F4 and $AD4; our
         # target writers instead of Thalion's CPU at $294E, $1A42, $776,
@@ -145,9 +149,9 @@ PROGRAMME = {
             0x0D74: ("207900012206", "Clouds_background"),
             0x0DA2: ("22790000001c", "Clouds_fill"),
             0x1270: ("207900012206", "Clouds_column"),
+            0x0E3A: ("41f90001bf88", "Clouds_draw"),
             0x0F4E: ("203c0000c8c0", "Menu_hold"),
-            0x0FB2: ("207900000020", "Menu_begin"),
-            0x1030: ("49f900000180", "Menu_texts")}),
+            0x0FB2: ("207900000020", "Menu_begin")}),
     # Imploder: das Programm beginnt mit Hunk 1 (docs/11, 2 und 5.1)
     "extro": dict(
         datei="Ambermoon_extro", gepackt=True, marke="Extro_h",

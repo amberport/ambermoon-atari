@@ -103,17 +103,17 @@ Open_screen:
 	lea	10(sp),sp
 
 ; ---- jetzt erst umschalten ----
-; **Die Monitorbits werden geerbt, nicht gesetzt.**  oldmode ist der Modus, in
-; dem der Rechner gerade laeuft, also der, der zum *angeschlossenen* Monitor
-; passt.  MODEMASK behaelt daraus MD_VGA (Zeitbasis 31 oder 15 kHz),
-; MD_VERTFLAG (an VGA die Zeilenverdopplung, die 200 Zeilen auf einen
-; 400-zeiligen Schirm bringt), MD_PAL und MD_OVERSCAN.  Wir setzen nur, was
-; uns gehoert: acht Ebenen, 40 Spalten.
+; **The monitor bits are inherited, not set -- with one exception.**  oldmode
+; is the mode the machine runs in now, the one that fits the *connected*
+; monitor.  MODEMASK keeps MD_VGA (time base 31 or 15 kHz), MD_VERTFLAG (at
+; VGA the line doubling that puts 200 lines on a 400-line screen), MD_PAL and
+; MD_OVERSCAN.  We set what is ours: eight planes, 40 columns; and at RGB
+; MD_PAL, because Thalion counts VBLs for 50 Hz (T65, 2026-10-27).
 ;
-; So laeuft dasselbe Programm an RGB *und* an VGA -- der Falcon zeigt
-; ST-vertraegliche Aufloesungen an beiden.  Wer hier eine Zeitbasis
-; festnagelt, sperrt die halbe Anwenderschaft aus; das war vom 2026-09-12
-; bis 2026-09-13 der Fall (siehe Erkenntnis 152).
+; So the same program runs at RGB *and* at VGA -- the Falcon shows
+; ST-compatible resolutions on both.  Fixing a time base here locks out half
+; the users; that was the case from 2026-09-12 to 2026-09-13 (finding 152).
+; PAL at RGB is not a time base: RGB stays 15 kHz.
 	move.w	oldmode(a5),d0
 	and.w	#MODEMASK,d0		; Monitorbits vom Desktop uebernehmen
 	or.w	#BPS8+COL40,d0

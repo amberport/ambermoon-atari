@@ -35,6 +35,7 @@ Amiga_cia_a:		ds.b	1
 Zg_dma:			ds.b	1	; Sprites an (DMACON)
 Zg_verbunden:		ds.b	1	; Sprite 1 an Sprite 0 gehaengt
 Zg_zwei:		ds.b	1	; zweite Punktgruppe im Schirm
+Basis_wartet:		ds.b	1	; Basis_vorher shown until the next VBL
 	even
 Zg_adresse:		ds.l	1	; Falcon: erste Zeile, erste Gruppe
 Zg_zeilen:		ds.w	1	; gezeichnete Zeilen, 0: keiner

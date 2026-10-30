@@ -12,8 +12,9 @@
 ;
 ; Wer schreibt:
 ;   - Blits (Amiga_blit -> Bl_umlenken):
-;       * direkt ins Ziel, wo es einen Weg dafuer gibt (Bl_ziel_d8): Die
-;         Zeilen im Zwischenspeicher gelten danach nicht mehr.
+;       * straight into the target where there is a way for it
+;         (Bl_ziel_d8): the buffer lines are marked stale first, then
+;         written, so a VBL in between never takes them as valid.
 ;       * sonst ueber den Zwischenspeicher: die beruehrten Zeilen zuerst
 ;         holen (nur die ungueltigen), Thalions Blit dort ausfuehren, die
 ;         Zeilen von D ins Ziel bringen.
@@ -115,7 +116,8 @@ Schirme_wechseln:
 ; ***************************************************************************
 ; Ziel_loeschen -- the target lines d0 .. d0+d1-1 of the screen a5 to 0 in
 ; the planes the screen has (SCH_EBENEN); the other planes stay.  The
-; buffer lines are no longer valid then (Zeilen_ungueltig).  One blit: each
+; buffer lines are marked stale first (Zeilen_ungueltig), so a VBL in
+; between never takes them as valid (ST's finding).  One blit: each
 ; 16-pixel group counts as a line of SCH_EBENEN words.
 ; Target_fill -- the same in planes 0 .. d2-1 only, with d3 = HOPOP_NULL
 ; (all 0) or HOPOP_EINS (all 1).
@@ -131,6 +133,7 @@ Target_fill:
 Ziel_setzen:
 	bsr	Zeilen_schneiden
 	ble.b	.aus
+	bsr	Zeilen_ungueltig	; first: the buffer lines are stale
 	move.w	sr,-(sp)
 	or.w	#$0400,sr		; the VBL uses the blitter too
 	move.w	d2,d7			; planes
@@ -157,8 +160,6 @@ Ziel_setzen:
 	move.w	d2,BL_YCOUNT
 	bsr	Blit_starten
 	move.w	(sp)+,sr
-	movem.l	(sp),d0-d1
-	bsr	Zeilen_ungueltig
 .aus:	movem.l	(sp)+,d0-d3/d7/a1
 	rts
 
@@ -347,6 +348,33 @@ Zeilen_ungueltig:
 .aus:	movem.l	(sp)+,d0-d1/a0
 	rts
 
+; Ziel_frei -- before writing the target of screen a5 directly: if the
+; Videl shows it until the next VBL (a new base was set since the last VBL,
+; Basis_setzen, and the one before lies in this target), wait for that VBL.
+; On the Amiga a new copper list also takes over at the next frame, and
+; Thalion's frames never last longer than Thalion's wait; ours can, and then
+; Thalion drew into the picture still shown (T66, the clouds).  From the
+; main flow only: with the VBL held off (level 4 or more) it returns at
+; once.
+;   All registers are preserved.
+Ziel_frei:
+	tst.b	Basis_wartet
+	beq.b	.aus
+	move.l	d0,-(sp)
+	move.w	sr,d0
+	and.w	#$0700,d0
+	cmp.w	#$0300,d0
+	bhi.b	.ende			; in the VBL or held off: no wait
+	move.l	Basis_vorher,d0
+	sub.l	SCH_ZIEL(a5),d0
+	add.l	#ZIEL_RAND,d0
+	cmp.l	#2*ZIEL_RAND+ZIEL_SCHIRM,d0
+	bhs.b	.ende			; another picture
+.w:	tst.b	Basis_wartet
+	bne.b	.w
+.ende:	move.l	(sp)+,d0
+.aus:	rts
+
 ; Merker_pruefen -- SCH_UNGUELTIG(a5) loeschen, wenn alle Zeilen gelten.
 ;   Veraendert d0/a0.
 Merker_pruefen:
@@ -432,7 +460,11 @@ Bl_umlenken:
 	dbf	d6,.k
 	tst.w	d7
 	beq	Amiga_blit_amiga
-	tst.b	Zg_dma
+	move.l	Bl_kanal+12,d0		; D's screen: still shown?
+	beq.b	.frei
+	move.l	d0,a5
+	bsr	Ziel_frei
+.frei:	tst.b	Zg_dma
 	beq.b	Bl_umlenken_weg
 	tst.b	Anzeige_ist_direkt
 	beq.b	Bl_umlenken_weg
@@ -479,6 +511,8 @@ Bl_umlenken_weg:
 	IFD	BLIT_PRUEF
 	bra	Bl_ziel_pruefen
 	ELSE
+	movem.w	Bl_d_zeilen,d0-d1	; first: D's buffer lines are stale
+	bsr	Zeilen_ungueltig	; (a5 = D's screen), then the way
 	jmp	(a0)
 	ENDC
 
@@ -809,7 +843,10 @@ Bl_ziel_pruefen:
 	lea	Pz_reg,a0
 	lea	Amiga_register+BL_REG,a1
 	bsr	Pr_reg_kopieren
-	lea	Amiga_register,a4	; direkt
+	move.l	Bl_kanal+12,a5		; direkt: first the lines stale
+	movem.w	Pz_zeilen,d0-d1
+	bsr	Zeilen_ungueltig
+	lea	Amiga_register,a4
 	move.l	Pz_weg,a0
 	jsr	(a0)
 	addq.l	#1,Bl_ziel_geprueft

@@ -68,8 +68,8 @@ start:
 	move.w	#Cconws,-(sp)
 	Gemdos
 	addq.l	#6,sp
-	; Die Ladeadresse dazu (2026-10-02): Steht nach einem Absturz der PC
-	; fest (BOMBEN.TOS), fuehrt sie mit der Symbolkarte zur Routine.
+	; The load address as well (2026-10-02): with the PC of a crash
+	; (debugger, savestate) and the symbol map it leads to the routine.
 	; start ist der erste Befehl des Programms.
 	lea	start(pc),a0
 	move.l	a0,d0

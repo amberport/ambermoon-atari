@@ -76,12 +76,9 @@ step "Fantasy intro"
 # (docs/11-Intro-Extro.md).
 sh tools/fantasy_bauen.sh
 deliver build/FANTASY.TOS "$DATA"
-deliver build/FEEMESSB.TOS "$DATA"
-deliver build/FEEMESSC.TOS "$DATA"
-deliver build/FEEPRUEF.TOS "$DATA"
-deliver build/FEEDIAG.TOS "$DATA"
-deliver build/FEEDIAGC.TOS "$DATA"
-note "FANTASY.TOS + 5 test builds"
+deliver build/FEEMESS.TOS "$DATA"
+deliver build/FEECHECK.TOS "$DATA"
+note "FANTASY.TOS + 2 test builds"
 
 step "Intro"
 # Thalion's Ambermoon_intro, taken over at build time (docs/11-Intro-Extro.md, 4).
@@ -124,9 +121,7 @@ vasmm68k_mot -m68000 -Fvobj -quiet -o build/freq.o lader/freq.s
 vlink -b ataritos -s -N Freq_code .text -N Freq_daten .data \
 	-N Freq_bss .bss -o build/FREQ.TOS build/freq.o
 deliver build/FREQ.TOS "$DATA"
-
-build_bomben
-note "AMBER.TOS, FREQ.TOS, BOMBEN.TOS"
+note "AMBER.TOS, FREQ.TOS"
 
 source_checks
 # These two read the XDEF lists of the Falcon build in build/.

@@ -55,9 +55,9 @@ Both machines' builds write into one folder:
 
 ```
 ATARI/AMBER.TOS           the loader for both: start this on Falcon or ST/STE
-ATARI/BOMBEN.TOS          crash report tool (not part of the game)
 ATARI/AMBFILES/           ENGINE.TOS, FANTASY.TOS, INTRO.TOS, EXTRO.TOS
-                          (Falcon), ENGINEST.TOS (ST), Thalion's game files
+                          (Falcon), ENGINEST.TOS, FANTSYST.TOS, INTROST.TOS,
+                          EXTROST.TOS (ST), Thalion's game files
                           under 8.3 names, save games, MUSIK_YM.BIN (with
                           AMBER_YMSNDH)
 build/                    everything intermediate, never versioned
@@ -92,6 +92,7 @@ lader/        the loader AMBER.TOS
 fantasy/      the fantasy intro: our layer under Thalion's FAIRY.S
 intro/ extro/ start code and hand-over for Thalion's intro and extro binaries
 amiga/        the Amiga layer for intro and extro: OS calls, copper, software blitter
+fantasy_st/ intro_st/ extro_st/   the same three programs for the ST
 tools/        build, extraction from AM2_CPU, checks (Python, sh)
 tools/originalcode/vorspann.i   replaces Thalion's unreleased include file
 docs/         working documents (German) and this folder

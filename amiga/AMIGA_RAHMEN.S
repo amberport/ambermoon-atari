@@ -552,6 +552,7 @@ Amiga_vbl:
 	movem.l	d0-d7/a0-a6,-(sp)
 	addq.l	#1,FRCLOCK.w
 	addq.l	#1,Vbl_zaehler
+	sf	Basis_wartet		; the Videl shows Basis_jetzt now
 	IFD	ABSTURZTEST
 	addq.l	#1,Absturz_zaehler
 	ENDC
@@ -695,9 +696,10 @@ Liste_lesen:
 ; screen in the target format whole, the Videl shows it directly
 ; (Anzeige_direkt), without converting.  Otherwise converting reads the
 ; buffer, and that must be valid.  Converting is the fallback where no
-; table covers the picture (E30: the intro and the extro need none; counted
-; under AMIGA_MESSEN).  While the display is held (Display_hold) nothing is
-; converted: the held picture stays until a list can be shown directly.
+; table covers the picture (E30: the intro and the extro need none except
+; the intro's menu, T70; counted under AMIGA_MESSEN).  While the display is held (Display_hold) nothing is
+; converted: the held picture stays until a list can be shown directly, or
+; until Display_release.
 ; ***************************************************************************
 Anzeige_nachfuehren:
 	lea	Zustand,a0
@@ -921,8 +923,10 @@ Strahl_zeile:
 	move.l	(sp)+,d1
 	rts
 
-; Basis_setzen -- d0 = Bildbasis, gilt ab dem naechsten Bild (Tk_vbl misst,
-; ob das stimmt).  Basis_vorher ist die bis dahin gesetzte.  Veraendert d1.
+; Basis_setzen -- d0 = picture base, valid from the next frame on (Tk_vbl
+; measures whether it is).  Basis_vorher is the one set before; the Videl
+; shows it until the next VBL, and Basis_wartet says so (Ziel_frei).
+; Changes d1.
 Basis_setzen:
 	cmp.l	Basis_jetzt,d0
 	beq.b	.aus
@@ -935,6 +939,7 @@ Basis_setzen:
 	lsr.w	#8,d1
 	move.b	d1,V_BASIS_M
 	move.b	d0,V_BASIS_L
+	st	Basis_wartet
 	IFD	STRAHL
 	st	Tk_umgeschaltet
 	ENDC
@@ -1014,7 +1019,8 @@ Anzeige_umschalten:
 ; format of the screens with the CPU next, and the table of the next scene
 ; comes later.  The picture shown now is copied into the hidden Falcon
 ; screen and shown from there, until a copper list can be shown directly
-; again (Anzeige_direkt ends the hold); meanwhile nothing is converted
+; again (Anzeige_direkt ends the hold, or Display_release where no table
+; follows); meanwhile nothing is converted
 ; (Anzeige_nachfuehren).  Then the table goes (Schirme_wechseln with none),
 ; so Thalion's buffers hold everything again.  Returns after the next VBL,
 ; when the Videl shows the copy, so the targets may be written then.
@@ -1047,6 +1053,17 @@ Display_hold:
 .vbl:	cmp.l	Vbl_zaehler,d0
 	beq.b	.vbl
 	movem.l	(sp)+,d0-d7/a0-a6
+	rts
+
+; Display_release -- ends the hold for a scene without a table (the intro's
+; menu): from the next VBL the picture is converted again, at first whole.
+;   All registers are preserved.
+Display_release:
+	move.w	sr,-(sp)
+	or.w	#$0400,sr
+	clr.b	Anzeige_gehalten
+	move.l	#-1,Zustand_alt		; judged again at the next VBL
+	move.w	(sp)+,sr
 	rts
 
 ; ***************************************************************************
@@ -1327,15 +1344,25 @@ Zeilen_loeschen:
 	bra	Blit_starten
 .aus:	rts
 
-; Blit_starten -- ausfuehren und warten, im HOG-Modus: Die CPU steht, bis
-; der Blit fertig ist.  Mit geteiltem Bus hungerte auf dem Falcon das
-; Hauptprogramm aus, die 030-Warteschleife laeuft aus dem Cache und laesst
-; den Blitter kaum an den Bus (Fantasy-Intro, Hardware 2026-10-02, docs/11
-; 7.6).  Liest die CPU danach, was der Blitter schrieb, gilt der 030-
-; Datencache (Zeiger_zeichnen).
+; Blit_starten -- run the blit the registers describe and wait, in HOG
+; mode: the CPU stands until it is done.  With a shared bus the main flow
+; starved on the Falcon, the 030's wait loop runs from the cache and hardly
+; lets the blitter on the bus (fantasy intro, hardware 2026-10-02, docs/11
+; 7.6).  If the CPU then reads what the blitter wrote, the 030's data cache
+; counts (Zeiger_zeichnen).
+; In pieces of about BLIT_STUECK words, whole lines each (T68): while the
+; blitter holds the bus, no interrupt is taken, the ACIA's neither.  The
+; IKBD sends a byte every 1.3 ms; a blit over a whole plane lost bytes, and
+; then TOS read the mouse packets shifted: the pointer jumped, and a dx of
+; $F8-$FB counted as a header with buttons (T67: a menu entry chosen
+; without a click).  The blitter carries its addresses on from piece to
+; piece; between two pieces the CPU takes what is pending.
 ; With BLIT_TEILEN (test T60TEIL): without HOG, the blitter gives up the bus
 ; after 64 accesses; bset starts it again at once, the ST way.  Do the
 ; garbage lines in animations come from HOG blits during the picture?
+;   All registers are preserved.
+BLIT_STUECK	equ	512
+
 Blit_starten:
 	IFD	BLIT_TEILEN
 	move.b	#BL_BUSY,BL_STEUER
@@ -1343,9 +1370,24 @@ Blit_starten:
 	nop
 	bne.b	.w
 	ELSE
+	movem.l	d0-d2,-(sp)
+	move.w	BL_YCOUNT,d0		; lines in all
+	move.l	#BLIT_STUECK,d1
+	divu.w	BL_XCOUNT,d1		; lines per piece
+	bne.b	.stueck
+	moveq	#1,d1			; a line longer than a piece
+.stueck:
+	move.w	d1,d2
+	cmp.w	d0,d2
+	bls.b	.n
+	move.w	d0,d2			; the last piece
+.n:	move.w	d2,BL_YCOUNT
 	move.b	#BL_BUSY+BL_HOG,BL_STEUER
 .w:	btst.b	#7,BL_STEUER
 	bne.b	.w
+	sub.w	d2,d0
+	bne.b	.stueck
+	movem.l	(sp)+,d0-d2
 	ENDC
 	rts
 

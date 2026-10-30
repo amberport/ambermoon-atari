@@ -227,7 +227,6 @@ is not planned.
 
 ```
 ATARI/AMBER.TOS           the loader: start this, on the Falcon or the ST
-ATARI/BOMBEN.TOS          crash report tool, not part of the game
 ATARI/AMBFILES/           the programs of both machines, the game files
                           under 8.3 names, the save games, AMBER.INF
 build/                    everything intermediate; never part of the repository

@@ -1,11 +1,15 @@
 #!/bin/sh
-# Das Fantasy-Intro bauen: build/FANTASY.TOS, dazu die Messfassungen
-# FEEMESSB.TOS und FEEMESSC.TOS (docs/11-Intro-Extro.md).
+# Build the fantasy intro for the Falcon: build/FANTASY.TOS, with the test
+# builds FEEMESS.TOS and FEECHECK.TOS (docs/11-Intro-Extro.md).
 #
-#   1. fantasy_auszug.py   Fantasy_intro entpacken, Namen und Konstanten gegen
-#                          Thalions FAIRY.S pruefen, build/fantasy_*.i schreiben
-#   2. vasm + vlink        fantasy/fantasy.s mit der unveraenderten FAIRY.S
-#   3. fairy_umbiegen.py   K1: die zehn $DFFxxx-Operanden auf Amiga_register
+#   1. fantasy_auszug.py         Fantasy_intro unpacked, names and constants
+#                                checked against Thalion's FAIRY.S,
+#                                build/fantasy_*.i
+#   2. fantasy_st_data.py --falcon  the graphics in Falcon format (E30),
+#                                -> build/falcon_fantasy/
+#   3. vasm + vlink              fantasy/fantasy.s with the unchanged FAIRY.S
+#   4. fairy_umbiegen.py         K1: the ten $DFFxxx operands to
+#                                Amiga_register
 #
 # Called from build_falcon.sh or alone; delivered there.
 set -e
@@ -17,16 +21,17 @@ if [ ! -f "$URCODE/FAIRY.S" ]; then
 fi
 
 python3 tools/fantasy_auszug.py
+python3 tools/fantasy_st_data.py --falcon
 
 # bauen NAME SCHALTER: build/NAME.TOS aus fantasy/fantasy.s.  68030 fuer den
 # Falcon; die Gegenprobe fuer den 68000 wie bei der Engine.
 bauen() {
-	# Messdatei nach dem Programm: FEEDIAG.TOS schreibt FEEDIAG.MES
-	printf '\tdc.b\t"%s.MES",0\n' $1 > build/mess_name.i
+	# the report file after the program: FEEMESS.TOS writes FEEMESS.TXT
+	printf 'Bericht_name:\tdc.b\t"%s.TXT",0\n' $1 > build/fee_name.i
 	vasmm68k_mot -m68030 -Fvobj -quiet -I"$URCODE" -Ifantasy -Iamiga -Ibuild \
-		$VASM_EXTRA $2 -o build/$1.o fantasy/fantasy.s
+		-Ibuild/falcon_fantasy $VASM_EXTRA $2 -o build/$1.o fantasy/fantasy.s
 	if vasmm68k_mot -m68000 -Fvobj -quiet -I"$URCODE" -Ifantasy -Iamiga -Ibuild \
-		$VASM_EXTRA $2 -o /dev/null fantasy/fantasy.s 2>/dev/null; then
+		-Ibuild/falcon_fantasy $VASM_EXTRA $2 -o /dev/null fantasy/fantasy.s 2>/dev/null; then
 		echo "  68000-tauglich ($1)"
 	else
 		echo "  ACHTUNG: $1 geht nicht mehr durch einen 68000" >&2
@@ -37,17 +42,8 @@ bauen() {
 }
 
 bauen FANTASY ""
-# Messfassungen (FEE_MESSEN): zaehlen die Bilder, die knapp oder zu spaet
-# fertig werden; B setzt die Zeilen mit dem Blitter um, C mit der CPU.
-bauen FEEMESSB "-DFEE_MESSEN"
-bauen FEEMESSC "-DFEE_MESSEN -DFEE_CPU"
-# PruefFassung (BLIT_PRUEF): jeder schnelle Blit laeuft auch genau und wird
-# verglichen; langsam, nur fuer den Beleg.
-bauen FEEPRUEF "-DFEE_MESSEN -DBLIT_PRUEF"
-# Diagnose fuer die Hardware (FEEDIAG): wie FEEMESSB mit Profil
-# (AMIGA_MESSEN, schreibt FEEDIAG.MES und .TXT); endet nach 60 Sekunden von selbst,
-# auch wenn Thalions Ablauf festhaengt; STRAHL zaehlt, wie oft wir in Zeilen
-# schreiben, die der Videl gerade zeigt.  FEEDIAGC setzt die Zeilen mit der
-# CPU um, die Fee bleibt beim Blitter.
-bauen FEEDIAG "-DFEE_MESSEN -DAMIGA_MESSEN -DMESS_ENDE=60 -DSTRAHL"
-bauen FEEDIAGC "-DFEE_MESSEN -DAMIGA_MESSEN -DMESS_ENDE=60 -DFEE_CPU"
+# Test builds: FEEMESS counts the frames done just in time or late
+# (FEE_MESSEN); FEECHECK runs Thalion's make_funkel2 and make_magic against
+# ours every frame (CHECK_STARS, CHECK_DEFER).  Both write NAME.TXT.
+bauen FEEMESS "-DFEE_MESSEN"
+bauen FEECHECK "-DCHECK_STARS=1 -DCHECK_DEFER=1"

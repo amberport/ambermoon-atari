@@ -1,46 +1,71 @@
 ; ***************************************************************************
-; FEE_SUP.S -- die Amiga-Schicht unter Thalions FAIRY.S (Fantasy-Intro).
+; FEE_SUP.S -- the Falcon layer under Thalion's FAIRY.S (fantasy intro).
 ;
-; **Wer was macht** (docs/11-Intro-Extro.md, 3 und 7):
+; **Who does what** (docs/11-Intro-Extro.md, 3 and 7):
 ;
-;   Thalions FAIRY.S        Fee, Flugstaub, Sterne, Zauber, level3.  Unveraendert.
-;   Thalions Hunk-1-Code    Blenden, Schirmtausch, Tabellen: beim Bau aus
-;                           Fantasy_intro herausgezogen (fantasy_auszug.py).
-;   diese Datei             alles, was auf dem Amiga an Copper, CIA, Sprites,
-;                           Blitter und Betriebssystem hing -- nach Thalions
-;                           Vertrag, in Thalions Reihenfolge (Hunk 1 $110-$2B0).
+;   Thalion's FAIRY.S        fairy, dust, stars, logo, level3.  Unchanged.
+;   Thalion's Hunk-1 code    fades, screen swap, tables: pulled out of
+;                            Fantasy_intro at build time (fantasy_auszug.py).
+;   tools/fantasy_st_data.py the graphics in Falcon format (--falcon), shared
+;                            with the ST build
+;   this file                what hung on copper, CIA, sprites, blitter and
+;                            the OS on the Amiga, in Thalion's order (Hunk 1
+;                            $110-$2B0); STARS_FALCON.S: ours for two of
+;                            Thalion's routines
+;
+; E30 (user 2026-10-25), on the model of fantasy_st/: no Amiga screen is
+; shown and none is converted.  Thalion draws into workbase, a buffer
+; nobody shows; what shows is two Falcon screens (fee_vorspann.i), drawn by
+; the hooks:
+;
+;   sparks  make_funkel (Thalion's) through plot_jmptab, which points to
+;           Plot_falcon0..31; Plot_table turns Thalion's workbase address
+;           into the Falcon one
+;   dust    Dust_falcon, ours for Thalion's make_funkel2 (STARS_FALCON.S)
+;   stars   Magic_falcon, ours for Thalion's make_magic: the compiled
+;           routine for image and shift (falcon_fantasy_stars.i)
+;   logo    Magic_falcon: the 4-pixel column into Falcon_background
+;   fairy   Fairy_put, in every VBL into the shown screen, with a
+;           save-under: 50 Hz as the Amiga's sprites (E30)
+;
+; Unten_herstellen copies the lower band back from Falcon_background every
+; frame (Thalion's $BC0 blit), and that erases dust and stars.  No blitter
+; and no line conversion any more: everything is drawn by the CPU.
+;
+; DEVIATION (goals 1 and 2), docs/17-deviations.md D3: Thalion's main flow,
+; the sprites, plots, blits and copper split are ours here, the graphics in
+; Falcon format from the build.
 ;
 ; **K1:** FAIRY.S schreibt nach $DFFxxx.  tools/fairy_umbiegen.py biegt nach
 ; dem Binden genau diese zehn Operanden auf Amiga_register um.  Was dort
 ; ankommt (Palette, Spritezeiger, Blitterregister), setzt diese Datei um.
 ;
-; **Das Bild:** FAIRY.S zeichnet in Amiga-Puffer (5 Ebenen zeilenverschachtelt,
-; bpscanl je Zeile).  Jeder Amiga-Puffer hat einen Falcon-Zwilling (8 Ebenen
-; wortverschachtelt).  Ebene 5 traegt die Bank: 0 bis Zeile WECHSELZEILE-1,
-; 1 ab da (dort laedt die Copperliste sechs Farben neu).  Ebenen 5 bis 7
-; stehen fest und werden nie umgesetzt.
-;
-; **Der Blitter** (Falcon-Blitter, wie im STE): setzt Amiga-Zeilen auf den
-; Falcon-Zwilling um (Ebenen_umsetzen) und stanzt die Fee ein (Fee_sprites),
-; immer im HOG-Modus (Blit_starten).  Der VBL blittet auch; er wartet, bis
-; der Blitter frei ist, und stellt dessen Register danach wieder her, damit
-; ein halb eingerichteter Blit des Hauptablaufs nichts merkt.
-;
-; Schalter (VASM_EXTRA):  FEE_CPU     Zeilen mit der CPU umsetzen statt
-;                                     mit dem Blitter (Vergleich)
-;                         FEE_MESSEN  am Ende zaehlen, wie viele Bilder
-;                                     knapp oder zu spaet fertig wurden
-;
-; Stand F3: Thalions Blits (Sterne, Schriftzug) laufen durch Amiga_blit,
-; den Amiga-Blitter in der CPU.
+; Switches (VASM_EXTRA):  FEE_MESSEN    count the frames that were done
+;                                       late or just in time (FEEMESS.TOS)
+;                         CHECK_STARS   Thalion's make_funkel2 and make_magic
+;                                       against ours, every frame
+;                                       (FEECHECK.TOS, STARS_FALCON.S)
 ; ***************************************************************************
 
 	SECTION	Fee_code,code
 
 ; ***************************************************************************
-; start -- Programmeinsprung.
+; start -- program entry.  Our own stack, then give back to GEMDOS what the
+; program does not need: the fairy's preshift comes from Mxalloc.
 ; ***************************************************************************
 start:
+	move.l	4(sp),a0		; basepage
+	lea	Stapel_ende,sp
+	move.l	$C(a0),d0		; text
+	add.l	$14(a0),d0		; data
+	add.l	$1C(a0),d0		; bss
+	add.l	#$100,d0
+	move.l	d0,-(sp)
+	move.l	a0,-(sp)
+	clr.w	-(sp)
+	move.w	#Mshrink,-(sp)
+	trap	#1
+	lea	12(sp),sp
 	clr.l	-(sp)
 	move.w	#Super,-(sp)
 	trap	#1
@@ -52,20 +77,20 @@ start:
 	bne.b	.kein_falcon
 	bsr	Fee_einrichten
 	bne.b	.kein_falcon
-	ifd	AMIGA_MESSEN
-	bsr	Mess_starten
-	endc
 	bsr	Fee_ablauf
-	ifd	AMIGA_MESSEN
-	bsr	Mess_stoppen
-	endc
 	bsr	Fee_abraeumen
-	ifd	AMIGA_MESSEN
-	bsr	Mess_ausgeben		; vor Messung_zeigen: beide warten auf
-	endc				; eine Taste, die Datei soll zuerst
 	ifd	FEE_MESSEN
 	bsr	Messung_zeigen
 	endc
+	ifd	CHECK_STARS
+	bsr	Check_report
+	endc
+	move.l	Fee_puffer,d0
+	beq.b	.ende
+	move.l	d0,-(sp)
+	move.w	#Mfree,-(sp)
+	trap	#1
+	addq.l	#6,sp
 	bra	.ende
 .kein_falcon:
 	pea	Text_kein_falcon
@@ -102,13 +127,15 @@ Falcon_pruefen:
 	rts
 
 ; ***************************************************************************
-; Fee_einrichten -- Modus, Zeilenzahl, Schirme, Maus.  Das Gegenstueck zu
-; Thalions Start ($000-$10E: Betriebssystem abschalten).
-;   Z gesetzt: bereit.  Sonst ein Monitor, den wir nicht bedienen.
+; Fee_einrichten -- mode, lines, screens, the fairy's memory, mouse.  The
+; counterpart of Thalion's start ($000-$10E: switch the OS off).
+;   Z set: ready.  Otherwise a monitor we do not serve.
 ;
-; **Zeilen (Nutzer, 2026-09-29):** RGB mit PAL (fest, 2026-10-03), und dort
-; die vollen 256 Zeilen, wenn der Videl sich darauf ziehen laesst (Videl_256).  Sonst 200 Zeilen und ein
-; Ausschnitt ab Anzeige_erste.  An VGA 240 Zeilen, ohne 8 oben und unten.
+; **Lines (user, 2026-09-29):** RGB with PAL (fixed, 2026-10-03), and there
+; all 256 lines if the Videl can be pulled to them (Videl_256).  Otherwise
+; 200 lines from Anzeige_erste.  At VGA 240 lines, without 8 at the top and
+; the bottom.  The screens always hold all 256 rows; the picture base
+; starts the window.
 ; ***************************************************************************
 Fee_einrichten:
 	move.w	#-1,-(sp)
@@ -155,6 +182,16 @@ Fee_einrichten:
 	trap	#1
 	addq.l	#6,sp
 
+	; the fairy's 16 preshifts, TT-RAM if there is any; without the
+	; memory no fairy (Fairy_shift_begin)
+	bsr	Fairy_buffer_size
+	move.w	#3,-(sp)		; either, TT-RAM preferred
+	move.l	d0,-(sp)
+	move.w	#Mxalloc,-(sp)
+	trap	#1
+	addq.l	#8,sp
+	move.l	d0,Fee_puffer
+
 	st	Ab_modus		; ab hier stellt der Abbau zurueck
 	move.w	Neuer_modus,-(sp)
 	move.w	#VsetMode,-(sp)
@@ -169,7 +206,7 @@ Fee_einrichten:
 	move.l	#Falcon_speicher+255,d0
 	and.l	#-256,d0
 	move.l	d0,Falcon_a
-	add.l	#FALCON_SCHIRM,d0
+	add.l	#FALCON_ABSTAND,d0
 	move.l	d0,Falcon_b
 
 	move.w	#-1,-(sp)
@@ -192,11 +229,6 @@ Fee_einrichten:
 	move.w	#AMIGA_ZEILEN,Anzeige_zeilen
 	clr.w	Anzeige_erste
 .zeilen_fest:
-
-	move.l	Falcon_a,a0
-	bsr	Bankebene_setzen
-	move.l	Falcon_b,a0
-	bsr	Bankebene_setzen
 
 	; Maus: nur die Tasten, wie Thalions btst #6,$bfe001
 	move.w	#Kbdvbase,-(sp)
@@ -246,28 +278,6 @@ Videl_256:
 	rts
 .nein:	moveq	#1,d0
 	rts
-
-; ***************************************************************************
-; Bankebene_setzen -- Ebene 5 eines Falcon-Schirms: $FFFF ab der Zeile, die
-; der Amiga-Zeile WECHSELZEILE entspricht.  Ebenen 6 und 7 bleiben 0.
-;   IN : a0 = Falcon-Schirm
-; ***************************************************************************
-Bankebene_setzen:
-	move.w	#WECHSELZEILE,d0
-	sub.w	Anzeige_erste,d0
-	bpl.b	.ab
-	moveq	#0,d0
-.ab:	move.w	Anzeige_zeilen,d1
-	sub.w	d0,d1			; so viele Zeilen in Bank 1
-	ble.b	.aus
-	mulu.w	#FALCON_ZEILE,d0
-	lea	10(a0,d0.l),a0		; Ebene 5 der ersten Gruppe
-	mulu.w	#FALCON_ZEILE/16,d1
-	subq.w	#1,d1
-.gr:	move.w	#-1,(a0)
-	lea	16(a0),a0
-	dbf	d1,.gr
-.aus:	rts
 
 ; ***************************************************************************
 ; Fee_abraeumen -- alles zurueck, wie es vor dem Start war.
@@ -334,43 +344,31 @@ Fee_abraeumen:
 	movem.l	d0-d7,ST_PAL
 	rts
 
-; Fee_notabbau -- der Abbau fuer den Notausgang: im geordneten Ende haelt
-; start die Messung vor Fee_abraeumen an.
-Fee_notabbau:
-	ifd	AMIGA_MESSEN
-	bsr	Mess_stoppen
-	endc
-	bra	Fee_abraeumen
-
-NOTAUS_ABRAEUMEN	equ	Fee_notabbau
+NOTAUS_ABRAEUMEN	equ	Fee_abraeumen
 	include	"AMIGA_NOTAUS.S"
 
 ; ***************************************************************************
-; Fee_ablauf -- Thalions Hauptablauf (Hunk 1 $110-$2B0), nachgeschrieben,
-; weil er an Copper, CIA und DMA haengt.  Reihenfolge und Werte wie dort; die
-; Adressen in Klammern sind die Stellen in Hunk 1.
+; Fee_ablauf -- Thalion's main flow (Hunk 1 $110-$2B0), written out because
+; it hangs on copper, CIA and DMA.  Order and values as there and as in
+; fantasy_st/FANTASY_ST.S; the addresses in brackets are the places in
+; Hunk 1.
 ; ***************************************************************************
 Fee_ablauf:
 	bsr	Hardware_einrichten	; ($D22)
 	bsr	Schirme_einrichten	; ($C2C)
-	; Hintergrund auf beide Schirme ($118)
-	lea	background,a0
-	move.l	Schirm_zeigen,a1
-	move.l	Schirm_arbeit,a2
-	move.w	#AMIGA_SCHIRM/4-1,d7
+	; background on both screens ($118), from the Falcon copy
+	lea	Falcon_background,a0
+	move.l	Falcon_a,a1
+	move.l	Falcon_b,a2
+	move.w	#FALCON_SCHIRM/4-1,d7
 .hg:	move.l	(a0)+,d0
 	move.l	d0,(a1)+
 	move.l	d0,(a2)+
 	dbf	d7,.hg
-	move.l	Schirm_zeigen,a0	; unser: beide ganz auf den Falcon
-	moveq	#0,d0
-	move.w	#AMIGA_ZEILEN,d1
-	bsr	Zeilen_umsetzen
-	move.l	Schirm_arbeit,a0
-	moveq	#0,d0
-	move.w	#AMIGA_ZEILEN,d1
-	bsr	Zeilen_umsetzen
-	jsr	vsync
+	bsr	Plot_setup
+	bsr	Stars_setup
+	bsr	Fairy_shift_begin
+	bsr	Wait_vbl
 	; ($144) Startwerte
 	move.w	#160,posx
 	move.w	#100,posy
@@ -399,8 +397,8 @@ Fee_ablauf:
 	move.l	#Flugbahn,elfe_kptr
 	; ($1D0) einblenden: 15 Schritte, je zwei Bilder
 	moveq	#14,d6
-.ein:	jsr	vsync
-	jsr	vsync
+.ein:	bsr	Wait_vbl
+	bsr	Wait_vbl
 	lea	Palette_oben_quelle,a0
 	lea	palette0,a1
 	moveq	#32,d7
@@ -412,37 +410,29 @@ Fee_ablauf:
 	dbf	d6,.ein
 	; ($20A) bis zu 50 Bilder warten, Maustaste bricht ab
 	moveq	#50,d7
-.warte:	jsr	vsync
+.warte:	bsr	Wait_vbl
 	bsr	Maustaste
 	dbne	d7,.warte
+	bsr	Fairy_shift_finish
 	move.w	#-1,vbl_flag		; ($21E) jetzt fliegt die Fee
 ; ($226) die Schleife: drei VBL je Bild (vindex >= 2, dann vsync)
 .bild:
 	ifd	ABSTURZTEST
 	bsr	Absturz_pruefen
 	endc
-	bsr	Schirme_tauschen
+	bsr	Schirme_tauschen	; Thalion's: both Amiga screens are workbase
+	bsr	Falcon_swap		; ours: the two Falcon screens
 	bsr	Anzeige_setzen		; ($C98, Copperliste)
 	jsr	vsync
 	clr.l	vindex
 	bsr	Unten_herstellen	; ($BC0)
 	jsr	make_funkel
-	jsr	make_funkel2
-	jsr	make_magic
-	bsr	Blitter_warten		; unser: den letzten Blit ausfuehren
-	move.l	workbase,a0		; unser: was sich geaendert hat
-	ifd	STRAHL
-	bsr	Zwilling
-	move.l	a1,St_uz_schirm
-	move.w	#WECHSELZEILE,d0
-	sub.w	Anzeige_erste,d0
-	move.w	d0,St_uz
+	ifd	CHECK_STARS
+	bsr	Check_stars		; Thalion's and ours, compared
+	else
+	bsr	Dust_falcon		; ours for make_funkel2 (STARS_FALCON.S)
+	bsr	Magic_falcon		; ours for make_magic
 	endc
-	STRAHL_VOR St_umsetzen
-	move.w	#WECHSELZEILE,d0
-	move.w	#AMIGA_ZEILEN-WECHSELZEILE,d1
-	bsr	Zeilen_umsetzen
-	STRAHL_NACH St_umsetzen,St_uz_schirm,St_uz,#AMIGA_ZEILEN-WECHSELZEILE
 	ifd	FEE_MESSEN
 	bsr	Bild_messen
 	endc
@@ -493,41 +483,59 @@ Hardware_einrichten:
 	rts
 
 ; ***************************************************************************
-; Schirme_einrichten -- ($C2C) zwei Amiga-Schirme; gezeichnet wird in
-; Schirm_arbeit (= workbase), gezeigt Schirm_zeigen.
+; Schirme_einrichten -- ($C2C) Thalion's two screens are one buffer nobody
+; shows (workbase stays put); ours are Falcon_show and Falcon_work.
 ; ***************************************************************************
 Schirme_einrichten:
-	move.l	#Amiga_schirme,d0
+	move.l	#Amiga_schirm,d0
 	move.l	d0,Schirm_arbeit
-	move.l	d0,workbase
-	add.l	#AMIGA_SCHIRM,d0
 	move.l	d0,Schirm_zeigen
+	move.l	d0,workbase
+	move.l	Falcon_a,Falcon_show
+	move.l	Falcon_b,Falcon_work
+	bsr.b	Plot_target_set
 	bsr	Anzeige_setzen
 	jmp	vsync
 
+; Falcon_swap -- the Falcon screens, next to Thalion's Schirme_tauschen.
+Falcon_swap:
+	move.l	Falcon_work,d0
+	move.l	Falcon_show,Falcon_work
+	move.l	d0,Falcon_show
+Plot_target_set:
+	move.l	Falcon_work,d0
+	add.l	#WECHSELZEILE*FALCON_ZEILE,d0
+	move.l	d0,Plot_target
+	rts
+
 ; ***************************************************************************
-; Anzeige_setzen -- (copper list $C98) show Schirm_zeigen, i.e. its Falcon
-; twin, from the next frame on.  The picture base is written right here:
-; the Videl latches it before our VBL, written from Fee_vbl it would only
-; take effect one frame later (T11, docs/11 7.8).  Fee_vbl writes it once
-; more, with the same value.
-; The fairy is drawn into the new screen first.  Otherwise the first frame
-; shows it without the fairy until Fee_vbl draws it; Hatari, which renders
-; the whole frame at the VBL, showed exactly that as flicker (docs/11 7.8).
+; Anzeige_setzen -- (copper list $C98) show Falcon_show from the next frame
+; on.  The picture base is written right here: the Videl latches it before
+; our VBL, written from Fee_vbl it would only take effect one frame later
+; (T11, docs/11 7.8).  Fee_vbl writes it once more, with the same value.
+;
+; The fairy moves to the new screen: its save-under on the old one is
+; dropped (Unten_herstellen erases the old screen's lower band, and the
+; fairy lies in it), and it is drawn into the new screen first.  Otherwise
+; the first frame shows it without the fairy until Fee_vbl draws it;
+; Hatari, which renders the whole frame at the VBL, showed exactly that as
+; flicker (docs/11 7.8).
+;   All registers are preserved.
 ; ***************************************************************************
 Anzeige_setzen:
-	move.l	Schirm_zeigen,a0
-	bsr	Zwilling
-	movem.l	d0-d7/a0-a6,-(sp)
+	movem.l	d0-d7/a0-a4,-(sp)
+	move.l	Falcon_show,a2
+	move.w	Anzeige_erste,d0
+	mulu.w	#FALCON_ZEILE,d0
+	add.l	a2,d0
 	move.w	sr,-(sp)
-	or.w	#$0700,sr		; Fee_vbl uses the same sprite state
-	move.l	a1,Anzeige_naechste
-	move.l	a1,a0
-	bsr	Fee_sprites
+	or.w	#$0700,sr		; Fee_vbl uses the same fairy state
+	move.l	d0,Anzeige_naechste
+	move.l	a2,Fee_schirm
+	clr.w	Fee_zeilen
+	bsr	Fairy_put
 	move.w	(sp)+,sr
-	movem.l	(sp)+,d0-d7/a0-a6
-	movem.l	d0-d1,-(sp)
-	move.l	a1,d0
+	move.l	Anzeige_naechste,d0
 	move.l	d0,d1
 	swap	d1
 	move.b	d1,V_BASIS_H
@@ -535,110 +543,578 @@ Anzeige_setzen:
 	lsr.w	#8,d1
 	move.b	d1,V_BASIS_M
 	move.b	d0,V_BASIS_L
-	movem.l	(sp)+,d0-d1
+	movem.l	(sp)+,d0-d7/a0-a4
 	rts
 
 ; ***************************************************************************
-; Zwilling -- a0 = Amiga-Schirm -> a1 = sein Falcon-Schirm.
-; ***************************************************************************
-Zwilling:
-	move.l	Falcon_a,a1
-	cmp.l	#Amiga_schirme,a0
-	beq.b	.a
-	move.l	Falcon_b,a1
-.a:	rts
-
-; ***************************************************************************
-; Unten_herstellen -- ($BC0) Thalions Blit: die Zeilen ab WECHSELZEILE aus
-; dem Hintergrund in den Arbeitsschirm.  Dort fallen Staub und Sterne, und
-; dort schreibt make_magic den Schriftzug in den Hintergrund.
+; Unten_herstellen -- ($BC0) Thalion's blit: the rows from WECHSELZEILE on
+; from the background into the work screen; there dust and stars fall, and
+; there make_magic writes the logo into the background.  Here from the
+; Falcon background, ten registers at a time.
 ; ***************************************************************************
 Unten_herstellen:
-	lea	background+WECHSELZEILE*bpscanl,a0
-	move.l	workbase,a1
-	add.l	#WECHSELZEILE*bpscanl,a1
-	move.w	#(AMIGA_ZEILEN-WECHSELZEILE)*bpscanl/16-1,d7
-.k:	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
-	move.l	(a0)+,(a1)+
+	lea	Falcon_background+WECHSELZEILE*FALCON_ZEILE,a0
+	move.l	Plot_target,a1
+	move.w	#UNTEN_BYTES/40-1,d7
+.k:	movem.l	(a0)+,d0-d6/a2-a4
+	movem.l	d0-d6/a2-a4,(a1)
+	lea	40(a1),a1
 	dbf	d7,.k
 	rts
 
 ; ***************************************************************************
-; Zeilen_umsetzen -- Amiga-Zeilen auf den Falcon-Zwilling.
-;   IN : a0 = Amiga-Schirm, d0.w = erste Zeile, d1.w = Anzahl
-;   Nur, was im Ausschnitt Anzeige_erste/Anzeige_zeilen liegt.  Ebenen 0-4
-;   aus den fuenf Amiga-Zeilen, 5-7 bleiben (Bankebene_setzen).
-;   Veraendert d0-d5/d7/a0-a3.
+; Wait_vbl -- Thalion's vsync (wait for the next VBL), but the wait goes
+; into the fairy's preshift, one row of one frame at a time.  For the fade
+; in and the wait before the flight (80 VBL); what is left
+; Fairy_shift_finish does before the fairy flies.
 ; ***************************************************************************
-Zeilen_umsetzen:
-	bsr.b	Zwilling
-	move.w	Anzeige_erste,d2
-	cmp.w	d2,d0			; oben abschneiden
-	bge.b	.o
-	sub.w	d0,d2
-	sub.w	d2,d1
-	move.w	Anzeige_erste,d0
-.o:	move.w	d0,d2
-	add.w	d1,d2
-	sub.w	Anzeige_erste,d2
-	sub.w	Anzeige_zeilen,d2	; unten abschneiden
-	ble.b	.u
-	sub.w	d2,d1
-.u:	subq.w	#1,d1
-	bmi.b	.aus
-	move.w	d0,d2
-	mulu.w	#bpscanl,d2
-	add.l	d2,a0
-	sub.w	Anzeige_erste,d0
-	mulu.w	#FALCON_ZEILE,d0
-	add.l	d0,a1
-	ifnd	FEE_CPU
-	addq.w	#1,d1
-	moveq	#GRUPPEN,d3
-	bra	Ebenen_umsetzen
-	endc
-.zeile:	move.l	a0,a2
-	move.l	a1,a3
-	moveq	#FALCON_ZEILE/16-1,d7
-.gr:	move.w	(a2),(a3)+
-	move.w	40(a2),(a3)+
-	move.w	80(a2),(a3)+
-	move.w	120(a2),(a3)+
-	move.w	160(a2),(a3)+
-	addq.l	#6,a3
-	addq.l	#2,a2
-	dbf	d7,.gr
-	lea	bpscanl(a0),a0
-	lea	FALCON_ZEILE(a1),a1
-	dbf	d1,.zeile
-.aus:	rts
+Wait_vbl:
+	move.l	d0,-(sp)
+	move.l	vindex,d0
+.w:	cmp.l	vindex,d0
+	bne.b	.found
+	cmp.w	#FALCON_FAIRY_FRAMES*FALCON_FAIRY_ROWS,Shift_row
+	bcc.b	.w
+	bsr	Fairy_shift_step
+	bra.b	.w
+.found:	move.l	(sp)+,d0
+	rts
+
+Fairy_shift_finish:
+.w:	cmp.w	#FALCON_FAIRY_FRAMES*FALCON_FAIRY_ROWS,Shift_row
+	bcc.b	.out
+	bsr	Fairy_shift_step
+	bra.b	.w
+.out:	rts
 
 ; ***************************************************************************
-; Blitter_warten -- waitblit (fee_vorspann.i).  Fuehrt den Blit aus, den
-; FAIRY.S zuletzt in Amiga_register eingetragen hat (BLTSIZE ungleich 0).
-;   Alle Register bleiben.
+; Fairy_buffer_size -- d0.l = bytes for the 16 preshifts of all frames:
+; per frame Falcon_fairy_groups groups a row once shifted (4 or 5), 10
+; bytes a group.  Changes d1/d7/a0.
+; ***************************************************************************
+Fairy_buffer_size:
+	moveq	#0,d0
+	lea	Falcon_fairy_groups,a0
+	moveq	#FALCON_FAIRY_FRAMES-1,d7
+.f:	moveq	#0,d1
+	move.b	(a0)+,d1
+	add.l	d1,d0
+	dbf	d7,.f
+	mulu.w	#FALCON_FAIRY_ROWS*10*16,d0
+	rts
+
+; ***************************************************************************
+; Fairy_shift_begin -- Fairy_shifts: per frame and shift where its rows
+; start in Fee_puffer.  A group is ~mask, planes 0-3 (the sprite value);
+; Fairy_put sets plane 4 under the mask (colour 16 + value).
+; ***************************************************************************
+Fairy_shift_begin:
+	clr.w	Shift_row
+	move.l	Fee_puffer,d0
+	bgt.b	.found
+	clr.l	Fee_puffer		; an error code is no buffer
+	move.w	#FALCON_FAIRY_FRAMES*FALCON_FAIRY_ROWS,Shift_row ; no fairy
+	rts
+.found:	lea	Fairy_shifts,a0
+	lea	Falcon_fairy_groups,a1
+	moveq	#FALCON_FAIRY_FRAMES-1,d7
+.b:	moveq	#0,d1
+	move.b	(a1)+,d1
+	mulu	#FALCON_FAIRY_ROWS*10,d1
+	moveq	#16-1,d6
+.s:	move.l	d0,(a0)+
+	add.l	d1,d0
+	dbf	d6,.s
+	dbf	d7,.b
+	rts
+
+; ***************************************************************************
+; Fairy_shift_step -- row Shift_row of Falcon_fairy (frame-major) in all 16
+; shifts.  Per plane the four source words go into d0-d3 (d4 takes what
+; leaves on the right) and move right one pixel per shift.  The mask is
+; stored inverted, for and.l: it shifts in ones.  All registers stay.
+; As Fairy_shift_step in fantasy_st/FANTASY_ST.S, the data have the same
+; layout.
+; ***************************************************************************
+SHIFT_WORD	macro			; \1 = groups (4/5), \2 = word in the group
+	move.l	a1,a6
+	move.w	\2(a0),d0
+	move.w	\2+10(a0),d1
+	move.w	\2+20(a0),d2
+	move.w	\2+30(a0),d3
+	moveq	#0,d4
+	ifeq	\2
+	not.w	d0
+	not.w	d1
+	not.w	d2
+	not.w	d3
+	not.w	d4
+	endc
+	moveq	#16-1,d7
+.s\@:	move.w	d0,\2(a6)
+	move.w	d1,\2+10(a6)
+	move.w	d2,\2+20(a6)
+	move.w	d3,\2+30(a6)
+	ifeq	\1-5
+	move.w	d4,\2+40(a6)
+	endc
+	add.l	a5,a6
+	ifeq	\2
+	move.w	#$10,ccr		; X: a one comes in
+	roxr.w	#1,d0
+	else
+	lsr.w	#1,d0
+	endc
+	roxr.w	#1,d1
+	roxr.w	#1,d2
+	roxr.w	#1,d3
+	ifeq	\1-5
+	roxr.w	#1,d4
+	endc
+	dbf	d7,.s\@
+	endm
+
+Fairy_shift_step:
+	movem.l	d0-d7/a0-a1/a5-a6,-(sp)
+	moveq	#0,d0
+	move.w	Shift_row,d0
+	addq.w	#1,Shift_row
+	lea	Falcon_fairy,a0
+	move.w	d0,d1
+	mulu	#FALCON_FAIRY_GROUPS*10,d1
+	add.l	d1,a0
+	divu	#FALCON_FAIRY_ROWS,d0	; row : frame
+	lea	Falcon_fairy_groups,a1
+	moveq	#0,d5
+	move.b	0(a1,d0.w),d5
+	move.w	d5,d1
+	mulu	#FALCON_FAIRY_ROWS*10,d1
+	move.l	d1,a5			; from one shift to the next
+	move.w	d0,d1
+	lsl.w	#6,d1			; frame * 16 shifts * 4
+	lea	Fairy_shifts,a1
+	move.l	0(a1,d1.w),a1
+	swap	d0
+	mulu	d5,d0
+	mulu	#10,d0
+	add.l	d0,a1			; the row
+	cmp.w	#5,d5
+	beq.w	.five
+	SHIFT_WORD 4,0
+	SHIFT_WORD 4,2
+	SHIFT_WORD 4,4
+	SHIFT_WORD 4,6
+	SHIFT_WORD 4,8
+	bra.w	.done
+.five:	SHIFT_WORD 5,0
+	SHIFT_WORD 5,2
+	SHIFT_WORD 5,4
+	SHIFT_WORD 5,6
+	SHIFT_WORD 5,8
+.done:
+	movem.l	(sp)+,d0-d7/a0-a1/a5-a6
+	rts
+
+; ***************************************************************************
+; Fairy_put -- the fairy on the shown screen, from Fee_vbl in every VBL and
+; once from Anzeige_setzen: put back what the last call covered
+; (Fee_rettung), then save the new place and draw the fairy there.  50 Hz,
+; as the Amiga's sprites follow level3 every VBL (E30); the rest of the
+; scene moves once a frame.
+;   IN : a2 = shown Falcon screen, row 0
+;   Changes d0-d7/a0-a3.
+;
+; What the sprite DMA shows, from what level3 wrote: the pointer of
+; sprite 0 names the frame (Thalion's eight sprites of a frame lie one after
+; the other in elfe), its two control words the place: word 1 VSTART 0-7 |
+; HSTART 1-8, word 2 VSTOP 0-7 | attach | V8 E8 H0; zero point $80 across,
+; $28 down.  Any other pointer (sprite_00 while the fairy is off): nothing.
+;
+; Planes 0-3 take the sprite value, plane 4 is set under the mask (Amiga
+; colours 16-31); plane 5 stays the row's bank, as the copper changes the
+; sprite colours too.  Clipped to the screen's 256 rows and its width by
+; groups.
+; ***************************************************************************
+Fairy_put:
+	tst.w	Fee_zeilen
+	beq.b	.find
+	bsr	Fairy_restore
+.find:	cmp.w	#FALCON_FAIRY_FRAMES*FALCON_FAIRY_ROWS,Shift_row
+	bcs	.out			; not preshifted yet (or no memory)
+	move.l	Amiga_register+AR_SPR0PT,d0
+	move.l	d0,a0
+	sub.l	#elfe,d0
+	bcs	.out
+	cmp.l	#FALCON_FAIRY_FRAMES*FALCON_FAIRY_FRAME,d0
+	bcc	.out
+	divu	#FALCON_FAIRY_FRAME,d0
+	move.l	d0,d1
+	swap	d1
+	tst.w	d1
+	bne	.out			; not the start of a frame
+	move.w	(a0),d1
+	move.w	2(a0),d2
+	moveq	#0,d3
+	move.b	d1,d3			; HSTART 1-8
+	add.w	d3,d3
+	btst	#0,d2
+	beq.b	.h0
+	addq.w	#1,d3
+.h0:	sub.w	#$80,d3			; x
+	lsr.w	#8,d1			; VSTART
+	btst	#2,d2
+	beq.b	.v8
+	bset	#8,d1
+.v8:	sub.w	#$28,d1			; Amiga row of the fairy's row 0
+	move.w	d1,d4			; first row drawn
+	bpl.b	.top
+	moveq	#0,d4
+.top:	move.w	d1,d5
+	add.w	#FALCON_FAIRY_ROWS,d5
+	cmp.w	#AMIGA_ZEILEN,d5
+	ble.b	.bottom
+	move.w	#AMIGA_ZEILEN,d5
+.bottom:
+	sub.w	d4,d5			; rows drawn
+	ble	.out
+	; the data: frame d0, shift x & 15, from the first row drawn
+	lea	Falcon_fairy_groups,a1
+	moveq	#0,d6
+	move.b	0(a1,d0.w),d6		; groups a row
+	moveq	#15,d7
+	and.w	d3,d7
+	lsl.w	#4,d0
+	add.w	d7,d0
+	lsl.w	#2,d0
+	lea	Fairy_shifts,a1
+	move.l	0(a1,d0.w),a1
+	move.w	d6,d7
+	mulu	#10,d7			; bytes a row
+	move.w	d4,d0
+	sub.w	d1,d0
+	mulu	d7,d0
+	add.l	d0,a1
+	; the groups inside the picture
+	asr.w	#4,d3			; group of the fairy's left edge
+	moveq	#0,d0			; first group drawn
+	tst.w	d3
+	bpl.b	.left
+	move.w	d3,d0
+	neg.w	d0
+.left:	moveq	#GRUPPEN,d2
+	sub.w	d3,d2			; groups up to the right edge
+	cmp.w	d6,d2
+	ble.b	.right
+	move.w	d6,d2
+.right:	sub.w	d0,d2			; groups drawn
+	ble	.out
+	move.w	d0,d1
+	mulu	#10,d1
+	add.w	d1,a1
+	mulu	#FALCON_ZEILE,d4
+	add.l	d4,a2
+	add.w	d3,d0
+	lsl.w	#4,d0
+	add.w	d0,a2
+	move.w	d2,d1
+	mulu	#10,d1
+	sub.w	d1,d7			; data to skip after a row
+	; save what lies there: planes 0-4, 10 bytes a group
+	move.l	a2,Fee_platz
+	move.w	d5,Fee_zeilen
+	move.w	d2,Fee_gruppen
+	lea	Fee_rettung,a3
+	move.l	a2,a0
+	move.w	d5,d0
+	subq.w	#1,d0
+.srow:	move.w	d2,d1
+	subq.w	#1,d1
+.sgroup:
+	move.l	(a0)+,(a3)+
+	move.l	(a0)+,(a3)+
+	move.w	(a0),(a3)+
+	addq.l	#8,a0
+	dbf	d1,.sgroup
+	move.w	d2,d1
+	lsl.w	#4,d1
+	sub.w	d1,a0
+	lea	FALCON_ZEILE(a0),a0
+	dbf	d0,.srow
+	; draw
+	move.w	#FALCON_ZEILE,d6
+	move.w	d2,d1
+	lsl.w	#4,d1
+	sub.w	d1,d6			; screen to skip after a row
+	subq.w	#1,d2
+	subq.w	#1,d5
+.line:	move.w	d2,d4
+.group:	move.w	(a1)+,d0		; ~mask, into both halves
+	move.w	d0,d1
+	swap	d0
+	move.w	d1,d0
+	and.l	d0,(a2)
+	and.l	d0,4(a2)
+	not.w	d1
+	or.w	d1,8(a2)		; plane 4: colour 16 + value
+	move.l	(a1)+,d0
+	or.l	d0,(a2)+
+	move.l	(a1)+,d0
+	or.l	d0,(a2)+
+	addq.l	#8,a2
+	dbf	d4,.group
+	add.w	d7,a1
+	add.w	d6,a2
+	dbf	d5,.line
+.out:	rts
+
+; Fairy_restore -- put back what Fairy_put saved (Fee_platz, Fee_zeilen
+; rows of Fee_gruppen groups, planes 0-4).  Changes d0/d1/a0/a3.
+Fairy_restore:
+	move.l	Fee_platz,a0
+	lea	Fee_rettung,a3
+	move.w	Fee_zeilen,d0
+	clr.w	Fee_zeilen
+	subq.w	#1,d0
+.row:	move.w	Fee_gruppen,d1
+	subq.w	#1,d1
+.group:	move.l	(a3)+,(a0)+
+	move.l	(a3)+,(a0)+
+	move.w	(a3)+,(a0)
+	addq.l	#8,a0
+	dbf	d1,.group
+	move.w	Fee_gruppen,d1
+	lsl.w	#4,d1
+	sub.w	d1,a0
+	lea	FALCON_ZEILE(a0),a0
+	dbf	d0,.row
+	rts
+
+; ***************************************************************************
+; Plot_setup -- the sparks' hook.  Plot_table: for each byte of workbase
+; from row WECHSELZEILE on, the offset of the same 8 pixels in a Falcon
+; screen from that row on (Thalion's plots address plane 0; the four other
+; Amiga planes of a row get the same, harmless).  plot_jmptab: per Amiga
+; colour the Falcon routine; the colour is the same, plane 5 already
+; carries the lower bank.
+; ***************************************************************************
+Plot_setup:
+	lea	Plot_table,a0
+	moveq	#0,d0			; Falcon offset of the row
+	move.w	#AMIGA_ZEILEN-WECHSELZEILE-1,d7
+.z:	moveq	#planes-1,d6
+.e:	moveq	#0,d1			; byte in the plane's row
+.b:	move.w	d1,d2
+	lsr.w	#1,d2
+	lsl.w	#4,d2
+	move.w	d1,d3
+	and.w	#1,d3
+	or.w	d3,d2
+	add.w	d0,d2
+	move.w	d2,(a0)+
+	addq.w	#1,d1
+	cmp.w	#bpscanl/planes,d1
+	bne.b	.b
+	dbf	d6,.e
+	add.w	#FALCON_ZEILE,d0
+	dbf	d7,.z
+	lea	plot_jmptab,a0
+	lea	Plot_routines,a1
+	moveq	#32-1,d7
+.j:	move.l	(a1)+,(a0)+
+	dbf	d7,.j
+	rts
+
+; Plot_falcon0..31 -- for Thalion's plot_5p2 instead of .plot00-.plot31:
+; a0 = byte in workbase, d0 = its pixels, d1 = not d0.  Set Amiga colour
+; \1 there (Pixel_falcon\1).  All registers stay (plot_5p2 calls a1 again
+; with a0 + 1).  The table offsets go up to 38,720: unsigned, add.l.
+PLOT_FALCON	macro
+Plot_falcon\1:
+	movem.l	d2/a0,-(sp)
+	move.l	a0,d2
+	sub.l	#Amiga_schirm+WECHSELZEILE*bpscanl,d2
+	cmp.l	#PLOT_BYTES,d2
+	bcc.b	.weg\@
+	add.l	d2,d2
+	lea	Plot_table,a0
+	move.w	0(a0,d2.l),d2		; the high word stays 0
+	move.l	Plot_target,a0
+	add.l	d2,a0
+	bsr	Pixel_falcon\1
+.weg\@:	movem.l	(sp)+,d2/a0
+	rts
+	endm
+
+	PLOT_FALCON	0
+	PLOT_FALCON	1
+	PLOT_FALCON	2
+	PLOT_FALCON	3
+	PLOT_FALCON	4
+	PLOT_FALCON	5
+	PLOT_FALCON	6
+	PLOT_FALCON	7
+	PLOT_FALCON	8
+	PLOT_FALCON	9
+	PLOT_FALCON	10
+	PLOT_FALCON	11
+	PLOT_FALCON	12
+	PLOT_FALCON	13
+	PLOT_FALCON	14
+	PLOT_FALCON	15
+	PLOT_FALCON	16
+	PLOT_FALCON	17
+	PLOT_FALCON	18
+	PLOT_FALCON	19
+	PLOT_FALCON	20
+	PLOT_FALCON	21
+	PLOT_FALCON	22
+	PLOT_FALCON	23
+	PLOT_FALCON	24
+	PLOT_FALCON	25
+	PLOT_FALCON	26
+	PLOT_FALCON	27
+	PLOT_FALCON	28
+	PLOT_FALCON	29
+	PLOT_FALCON	30
+	PLOT_FALCON	31
+
+Plot_routines:
+	dc.l	Plot_falcon0,Plot_falcon1,Plot_falcon2,Plot_falcon3
+	dc.l	Plot_falcon4,Plot_falcon5,Plot_falcon6,Plot_falcon7
+	dc.l	Plot_falcon8,Plot_falcon9,Plot_falcon10,Plot_falcon11
+	dc.l	Plot_falcon12,Plot_falcon13,Plot_falcon14,Plot_falcon15
+	dc.l	Plot_falcon16,Plot_falcon17,Plot_falcon18,Plot_falcon19
+	dc.l	Plot_falcon20,Plot_falcon21,Plot_falcon22,Plot_falcon23
+	dc.l	Plot_falcon24,Plot_falcon25,Plot_falcon26,Plot_falcon27
+	dc.l	Plot_falcon28,Plot_falcon29,Plot_falcon30,Plot_falcon31
+
+; ***************************************************************************
+; Blitter_warten -- waitblit (fee_vorspann.i): does the blit FAIRY.S set up
+; last in Amiga_register, if any (BLTSIZE not 0), in Falcon format.  Since
+; Dust_falcon and Magic_falcon only the CHECK_STARS build has any.  FAIRY.S
+; has two kinds (minterm in BLTCON0):
+;
+;   $CA  a star (blit_star, blit_star2): B the image, A its mask, D the
+;        place in workbase, the shift in BLTCON0 bits 12-15.  The image
+;        number from B, the routine from falcon_fantasy_stars.i.
+;   $E2  a column of the logo (make_magic): A in flogo, D in background,
+;        BLTBDAT the four pixels.  Into Falcon_background.
 ;
 ; Auf dem Amiga startet das Schreiben von BLTSIZE den Blit, und waitblit
 ; wartet auf sein Ende.  Hier ist BLTSIZE nur eine Speicherstelle; der Blit
-; laeuft beim naechsten waitblit, also bevor FAIRY.S die Register fuer den
-; naechsten beschreibt.  Den letzten eines Bildes stoesst Fee_ablauf an.
-; Was die CPU dazwischen zeichnet (Flugstaub), kommt damit vor den Blit
-; statt danach; das betrifft nur Punkte, die sich ueberdecken.
+; laeuft beim naechsten waitblit.  The Amiga blitter ignores bit 0 of an
+; address; blit_star2 passes odd ones.  All registers stay.
 ; ***************************************************************************
+FALCON_BIG_RECIP	equ	(65536+FALCON_BIG_IMAGE-1)/FALCON_BIG_IMAGE
+FALCON_SMALL_RECIP	equ	(65536+FALCON_SMALL_IMAGE-1)/FALCON_SMALL_IMAGE
+
 Blitter_warten:
 	tst.w	Amiga_register+AR_BLTSIZE
 	bne.b	.blit
 	rts
-.blit:	movem.l	d0-d7/a0-a6,-(sp)
-	bsr	Amiga_blit
+.blit:	movem.l	d0-d3/a0-a1,-(sp)
+	move.w	Amiga_register+AR_BLTCON0,d0
+	cmp.b	#$CA,d0
+	beq.b	.star
+	cmp.b	#$E2,d0
+	beq	.logo
+.done:
 	clr.w	Amiga_register+AR_BLTSIZE
-	movem.l	(sp)+,d0-d7/a0-a6
+	movem.l	(sp)+,d0-d3/a0-a1
 	rts
 
-	include	"AMIGA_BLIT.S"
-Mess_blit_ende:				; AMIGA_MESSEN: Blitter_warten bis hier = Blits
+.star:	move.l	Amiga_register+AR_BLTDPT,d1
+	sub.l	#Amiga_schirm+WECHSELZEILE*bpscanl,d1
+	cmp.l	#PLOT_BYTES,d1
+	bcc	.done
+	and.w	#-2,d1
+	add.l	d1,d1
+	lea	Plot_table,a0
+	move.w	0(a0,d1.l),d1
+	move.l	Plot_target,a0
+	add.l	d1,a0			; the group of the top row
+	move.l	Amiga_register+AR_BLTBPT,d1
+	sub.l	#overfunkel,d1
+	cmp.l	#FALCON_STARS_BIG*FALCON_BIG_IMAGE,d1
+	bcc.b	.small
+	mulu	#FALCON_BIG_RECIP,d1
+	swap	d1			; image
+	bra.b	.frame
+.small:	move.l	Amiga_register+AR_BLTBPT,d1
+	sub.l	#stars,d1
+	cmp.l	#FALCON_STARS_SMALL*FALCON_SMALL_IMAGE,d1
+	bcc	.done
+	mulu	#FALCON_SMALL_RECIP,d1
+	swap	d1
+	add.w	#FALCON_STARS_BIG,d1
+.frame:	lsl.w	#4,d1
+	rol.w	#4,d0
+	and.w	#15,d0			; shift
+	add.w	d0,d1
+	lsl.w	#2,d1
+	lea	Falcon_star_routines,a1
+	move.l	0(a1,d1.w),a1
+	jsr	(a1)
+	bra	.done
+
+.logo:	move.l	Amiga_register+AR_BLTDPT,d1
+	sub.l	#background+WECHSELZEILE*bpscanl,d1
+	cmp.l	#PLOT_BYTES,d1
+	bcc	.done
+	and.w	#-2,d1
+	add.l	d1,d1
+	lea	Plot_table,a0
+	move.w	0(a0,d1.l),d1
+	lea	Falcon_background+WECHSELZEILE*FALCON_ZEILE,a0
+	add.l	d1,a0
+	move.l	Amiga_register+AR_BLTAPT,d1
+	sub.l	#flogo,d1
+	cmp.l	#FALCON_LOGO_GROUPS*2,d1
+	bcc	.done
+	lsr.w	#1,d1
+	mulu	#10,d1
+	lea	Falcon_logo,a1
+	add.w	d1,a1
+	move.w	Amiga_register+AR_BLTBDAT,d2
+	move.w	d2,d1
+	swap	d2
+	move.w	d1,d2			; the four pixels, both halves
+	moveq	#0,d0
+	move.w	Amiga_register+AR_BLTSIZE,d0
+	lsr.w	#6,d0
+	divu	#planes,d0		; rows
+	cmp.w	#FALCON_LOGO_ROWS,d0
+	bls.b	.lines
+	moveq	#FALCON_LOGO_ROWS,d0
+.lines:
+	subq.w	#1,d0
+	bmi	.done
+.lrow:	bsr	Logo_row
+	lea	FALCON_ZEILE(a0),a0
+	lea	FALCON_LOGO_GROUPS*10(a1),a1
+	dbf	d0,.lrow
+	bra	.done
+
+; Logo_row -- one row of a logo group: background ^= (background ^ logo)
+; & mask, planes 0-4.  a0 = background group, a1 = logo group (5 words),
+; d2 = mask in both halves.  Changes d1/d3.
+Logo_row:
+	move.l	(a0),d1
+	move.l	(a1),d3
+	eor.l	d1,d3
+	and.l	d2,d3
+	eor.l	d3,(a0)
+	move.l	4(a0),d1
+	move.l	4(a1),d3
+	eor.l	d1,d3
+	and.l	d2,d3
+	eor.l	d3,4(a0)
+	move.w	8(a0),d1
+	move.w	8(a1),d3
+	eor.w	d1,d3
+	and.w	d2,d3
+	eor.w	d3,8(a0)
+	rts
 
 ; ***************************************************************************
 ; Maustaste -- Z aus, wenn die linke Taste gedrueckt ist.  Thalion fragt
@@ -655,29 +1131,21 @@ Fee_maus:
 	rts
 
 ; ***************************************************************************
-; Fee_vbl -- der VBL.  Setzt Bildbasis, Farben und Sprites aus dem, was der
-; vorige VBL und der Hauptablauf hinterlassen haben, und springt dann in
-; Thalions level3 (FAIRY.S).  level3 endet mit rte.
+; Fee_vbl -- the VBL.  Sets picture base and colours from what the main
+; flow and the previous VBL left, puts the fairy on the shown screen
+; (Fairy_put), then jumps into Thalion's level3 (FAIRY.S), which ends with
+; rte.
 ;
-; Die Sprites stehen damit ein Bild hinter level3: Auf dem Amiga zeigt die
-; Sprite-DMA, was level3 eben eintrug; hier zeichnen wir, was level3 im
-; vorigen VBL eintrug.  Ein Bild (20 ms) Versatz, dafuer ohne Eingriff in
-; Thalions Rueckkehr mit rte.
+; The fairy is thus one frame behind level3: on the Amiga the sprite DMA
+; shows what level3 just set; here we draw what level3 set in the previous
+; VBL.  One frame (20 ms) late, without touching Thalion's return with rte.
 ; ***************************************************************************
 Fee_vbl:
 	movem.l	d0-d7/a0-a6,-(sp)
 	addq.l	#1,FRCLOCK.w		; TOS wartet darauf, nach Bomben schon vor dem Notausgang (T16)
-	ifd	AMIGA_MESSEN
-	addq.l	#1,Mess_vbls
-	endc
 	ifd	ABSTURZTEST
 	addq.l	#1,Absturz_zaehler
 	endc
-	ifd	STRAHL
-	bsr	St_basis		; der bisher gesetzte Schirm
-	move.l	d0,St_vbl_schirm
-	endc
-	STRAHL_VOR St_vbl
 	move.l	Anzeige_naechste,d0
 	beq.b	.farben			; noch kein Schirm bestimmt
 	move.l	d0,d1
@@ -712,12 +1180,18 @@ Fee_vbl:
 	move.l	d1,0(a1,d2.w)
 	bra.b	.fw
 .fertig:
-	move.l	Anzeige_naechste,d0
+	move.l	Fee_schirm,d0
 	beq.b	.ohne
-	move.l	d0,a0
-	bsr	Fee_sprites
-.ohne:	STRAHL_NACH St_vbl,St_vbl_schirm,#0,Anzeige_zeilen
-	movem.l	(sp)+,d0-d7/a0-a6
+	move.l	d0,a2
+	bsr	Fairy_put
+.ohne:	movem.l	(sp)+,d0-d7/a0-a6
+	ifd	CHECK_STARS
+	tst.b	Check_busy
+	beq.b	.level3
+	addq.l	#1,Check_held		; level3 calls random: not now
+	rte
+.level3:
+	endc
 	jmp	level3
 
 ; Amiga_nach_videl -- d0.w = $0RGB -> d1.l = $RRGG00BB; a2 = Vier_nach_acht.
@@ -741,471 +1215,6 @@ Amiga_nach_videl:
 	move.w	(sp)+,d2
 	rts
 
-; ***************************************************************************
-; Blit_starten -- den eingerichteten Blit ausfuehren.  HOG: der Blitter
-; behaelt den Bus, die CPU steht bis zum Ende, Interrupts warten so lange.
-;
-; Mit geteiltem Bus kam der Blitter auf dem echten Falcon kaum zum Zug
-; (FEEDIAG, 2026-10-02: 85 % der Zeit in der Warteschleife, der VBL laenger
-; als ein Bild, Thalions Ablauf stand).  Die 030-Schleife laeuft aus dem
-; Cache und braucht ihre 64 Buszyklen erst nach langer Zeit.  Mit HOG lief
-; das Fantasy-Intro fehlerfrei.  Ataris Neustart (bset in der Schleife)
-; zerstoerte auf dem Falcon das Bild und hing.  Die Schleife bleibt fuer
-; den Fall, dass ein anderer Busmeister den Blitter aufhaelt.
-; ***************************************************************************
-Blit_starten:
-	move.b	#BL_BUSY+BL_HOG,BL_STEUER
-.w:	btst.b	#7,BL_STEUER
-	bne.b	.w
-	rts
-
-; ***************************************************************************
-; Blitter_sichern / Blitter_zurueck -- fuer den VBL: warten, bis ein Blit
-; des Hauptablaufs fertig ist, dessen Register sichern und danach
-; zuruecksetzen (ohne BUSY).
-;   Veraendern d0-d6.
-; ***************************************************************************
-Blitter_sichern:
-.w:	btst.b	#7,BL_STEUER
-	bne.b	.w
-	movem.l	BL_SRC_XINC,d0-d6	; $8A20-$8A3B
-	movem.l	d0-d6,Blitter_zustand
-	move.w	BL_STEUER,Blitter_zustand+28
-	rts
-
-Blitter_zurueck:
-	movem.l	Blitter_zustand,d0-d6
-	movem.l	d0-d6,BL_SRC_XINC
-	move.w	Blitter_zustand+28,d0
-	and.w	#$7FFF,d0		; BUSY aus
-	move.w	d0,BL_STEUER
-	rts
-
-; ***************************************************************************
-; Ebenen_umsetzen -- ein Rechteck Amiga -> Falcon, fuenf Blits (je Ebene
-; einer).  Ebenen 5-7 bleiben.
-;   IN : a0 = Amiga-Schirm, Zeile und Wort der linken oberen Ecke, Ebene 0
-;        a1 = Falcon-Schirm, dieselbe Stelle, Ebene 0
-;        d1.w = Zeilen (> 0), d3.w = Worte je Ebene und Zeile (> 0)
-;   Veraendert d4/d5/d7/a0/a1.
-; ***************************************************************************
-Ebenen_umsetzen:
-	moveq	#-1,d4
-	move.w	d4,BL_MASKE1
-	move.w	d4,BL_MASKE2
-	move.w	d4,BL_MASKE3
-	move.w	#2,BL_SRC_XINC
-	move.w	#16,BL_DST_XINC
-	move.w	d3,d4
-	subq.w	#1,d4
-	add.w	d4,d4			; (Worte-1)*2
-	move.w	#bpscanl,d5
-	sub.w	d4,d5
-	move.w	d5,BL_SRC_YINC
-	lsl.w	#3,d4			; (Worte-1)*16
-	move.w	#FALCON_ZEILE,d5
-	sub.w	d4,d5
-	move.w	d5,BL_DST_YINC
-	move.w	d3,BL_XCOUNT
-	move.w	#HOP_QUELLE<<8+OP_KOPIE,BL_HOPOP
-	clr.b	BL_SKEW
-	moveq	#planes-1,d7
-.eb:	move.l	a0,BL_SRC
-	move.l	a1,BL_DST
-	move.w	d1,BL_YCOUNT
-	bsr	Blit_starten
-	lea	bpscanl/planes(a0),a0	; naechste Amiga-Ebene
-	addq.l	#2,a1			; naechste Falcon-Ebene
-	dbf	d7,.eb
-	rts
-
-; ***************************************************************************
-; Fee_sprites -- die Amiga-Sprites auf den gezeigten Falcon-Schirm (F2).
-;   IN : a0 = gezeigter Falcon-Schirm (Anzeige_naechste)
-;   Veraendert d0-d7/a0-a6 (Fee_vbl sichert).
-;
-; Was die Sprite-DMA auf dem Amiga tut, nach den Spritezeigern, die level3
-; nach $DFF120 schrieb (K1: Amiga_register+AR_SPR0PT), und den zwei
-; Steuerwoertern am Anfang jedes Sprites:
-;   Wort 1: VSTART 0-7 | HSTART 1-8        Wort 2: VSTOP 0-7 | Anh. | V8 E8 H0
-;   danach je Zeile DATA, DATB; ein ungerades Sprite mit gesetztem
-;   Anhaengebit liefert die Bits 2 und 3 zum geraden davor: Farbe 16-31.
-; Nur solche Paare (Thalion haengt alle vier an).  Nullpunkt wie bei Thalion
-; ($80 waagerecht, $28 senkrecht: "screen_start").
-;
-; Auf dem Falcon: Ebenen 0-3 ausstanzen und die Daten einodern, Ebene 4
-; (Farbe 16+) mit der Maske odern.  Ebene 5 traegt schon die Bank der Zeile,
-; die Copperliste wechselt auch Spritefarben (20-22, 29-31); 6 und 7 sind 0.
-; Unter der Fee wird nichts gesichert: Das naechste Mal holt Alte_fee_loeschen
-; das Rechteck aus dem Amiga-Zwilling zurueck.
-;
-; Nebeneinander liegende Paare gleicher Hoehe werden ein Lauf und zusammen
-; geblittet: je Lauf neun Blits, die Fee ist einer.
-; ***************************************************************************
-Fee_sprites:
-	move.l	a0,Spr_falcon
-	lea	Amiga_schirme,a1
-	lea	Alte_fee_a,a2
-	cmp.l	Falcon_a,a0
-	beq.b	.a
-	lea	AMIGA_SCHIRM(a1),a1
-	lea	Alte_fee_b,a2
-.a:	move.l	a1,Spr_amiga
-	move.l	a2,Spr_alte
-	bsr	Blitter_sichern
-	bsr	Alte_fee_loeschen
-	STRAHL_VOR St_feeneu
-	bsr	Sprites_zerlegen
-	STRAHL_NACH St_feeneu,Spr_falcon,Neue_fee,Neue_fee+2
-	bra	Blitter_zurueck
-
-; Alte_fee_loeschen -- das Rechteck, in das zuletzt auf diesem Schirm
-; gezeichnet wurde, aus dem Amiga-Zwilling neu umsetzen.
-Alte_fee_loeschen:
-	move.l	Spr_alte,a2
-	move.w	2(a2),d1		; Zeilen
-	beq.b	.aus
-	clr.w	2(a2)
-	move.w	(a2),d0			; Falcon-Zeile
-	move.w	4(a2),d2		; erste Gruppe
-	move.w	6(a2),d3		; Gruppen
-	move.l	Spr_amiga,a0
-	move.w	d0,d4
-	add.w	Anzeige_erste,d4
-	mulu.w	#bpscanl,d4
-	add.l	d4,a0
-	add.w	d2,a0
-	add.w	d2,a0
-	move.l	Spr_falcon,a1
-	move.w	d0,d4
-	mulu.w	#FALCON_ZEILE,d4
-	add.l	d4,a1
-	lsl.w	#4,d2
-	add.w	d2,a1
-	ifd	STRAHL
-	move.w	d0,St_fz
-	move.w	d1,St_fn
-	STRAHL_VOR St_feealt
-	bsr	Ebenen_umsetzen
-	STRAHL_NACH St_feealt,Spr_falcon,St_fz,St_fn
-	rts
-	else
-	bra	Ebenen_umsetzen
-	endc
-.aus:	rts
-
-; Sprites_zerlegen -- die vier Paare lesen, zuschneiden, zu Laeufen
-; zusammenfassen und zeichnen.  Das Rechteck um alles Gezeichnete kommt
-; nach Spr_alte.
-Sprites_zerlegen:
-	clr.w	Neue_fee+2		; noch nichts gezeichnet
-	clr.w	Lauf_paare
-	lea	Amiga_register+AR_SPR0PT,a4
-	moveq	#4-1,d7
-.paar:	move.l	(a4)+,a0		; gerades Sprite: Bits 0 und 1
-	move.l	(a4)+,a1		; ungerades: Bits 2 und 3
-	move.l	a0,d0
-	beq	.weg
-	move.l	a1,d0
-	beq	.weg
-	btst	#7,3(a1)		; Anhaengebit
-	beq	.weg
-	move.w	(a0),d0			; Steuerwort 1
-	move.w	2(a0),d1		; Steuerwort 2
-	move.w	d0,d2			; VSTART
-	lsr.w	#8,d2
-	btst	#2,d1
-	beq.b	.v8
-	bset	#8,d2
-.v8:	move.w	d1,d3			; VSTOP
-	lsr.w	#8,d3
-	btst	#1,d1
-	beq.b	.e8
-	bset	#8,d3
-.e8:	sub.w	d2,d3			; Hoehe
-	ble	.weg
-	and.w	#$FF,d0			; HSTART
-	add.w	d0,d0
-	btst	#0,d1
-	beq.b	.h0
-	addq.w	#1,d0
-.h0:	sub.w	#$80,d0			; x
-	sub.w	#$28,d2			; y (Amiga-Zeile)
-	cmp.w	#-16,d0			; ganz links oder rechts draussen?
-	ble	.weg
-	cmp.w	#GRUPPEN*16,d0
-	bge	.weg
-	move.w	d2,d4			; oben: max(y, Anzeige_erste)
-	cmp.w	Anzeige_erste,d4
-	bge.b	.o
-	move.w	Anzeige_erste,d4
-.o:	move.w	d2,d5			; unten: min(y+Hoehe, Ende der Anzeige)
-	add.w	d3,d5
-	move.w	Anzeige_erste,d6
-	add.w	Anzeige_zeilen,d6
-	cmp.w	d6,d5
-	ble.b	.u
-	move.w	d6,d5
-.u:	sub.w	d4,d5			; sichtbare Zeilen
-	ble.b	.weg
-	move.w	d4,d6			; Daten ab der ersten sichtbaren Zeile
-	sub.w	d2,d6
-	lsl.w	#2,d6
-	lea	4(a0,d6.w),a0
-	lea	4(a1,d6.w),a1
-	move.w	Lauf_paare,d6		; setzt es den Lauf fort?
-	beq.b	.neu
-	cmp.w	Lauf_zeile,d4
-	bne.b	.schluss
-	cmp.w	Lauf_zeilen,d5
-	bne.b	.schluss
-	lsl.w	#4,d6
-	add.w	Lauf_x,d6
-	cmp.w	d6,d0
-	beq.b	.dazu
-.schluss:
-	movem.l	d0/d4/d5/d7/a0/a1/a4,-(sp)
-	bsr	Lauf_zeichnen
-	movem.l	(sp)+,d0/d4/d5/d7/a0/a1/a4
-.neu:	clr.w	Lauf_paare
-	move.w	d0,Lauf_x
-	move.w	d4,Lauf_zeile
-	move.w	d5,Lauf_zeilen
-.dazu:	move.w	Lauf_paare,d6
-	lsl.w	#3,d6
-	lea	Lauf_quellen,a2
-	movem.l	a0/a1,0(a2,d6.w)
-	addq.w	#1,Lauf_paare
-.weg:	dbf	d7,.paar
-	tst.w	Lauf_paare
-	beq.b	.fertig
-	bsr	Lauf_zeichnen
-.fertig:
-	move.l	Spr_alte,a2
-	move.l	Neue_fee,(a2)
-	move.l	Neue_fee+4,4(a2)
-	rts
-
-; ***************************************************************************
-; Lauf_zeichnen -- Lauf_paare Paare ab Lauf_x, Amiga-Zeile Lauf_zeile,
-; Lauf_zeilen Zeilen (schon zugeschnitten), Daten ab Lauf_quellen.
-;
-; 1. Die CPU legt fuenf Ebenen in Fee_quelle: Maske, Bit 0, 1, 2, 3.  Je
-;    Zeile ein Wort je Paar und ein Nullwort dahinter, fuer das Verschieben.
-; 2. Der Blitter stanzt sie ein, verschoben um x & 15.  Ein Wort d des
-;    Ziels ist (q[d-g-1] << (16-s)) | (q[d-g] >> s), mit g = x >> 4.
-;    Links abgeschnitten liest FXSR das Wort q[d-g-1] vorab; das erste Wort
-;    ohne Vorgaenger und das letzte schneiden die Endmasken zu.
-; ***************************************************************************
-Lauf_zeichnen:
-	move.w	Lauf_paare,d5		; Zeilenlaenge in Fee_quelle
-	addq.w	#1,d5
-	add.w	d5,d5
-	move.w	d5,Lauf_r
-	move.w	Lauf_zeilen,d0		; Ebenenlaenge
-	mulu.w	d5,d0
-	move.w	d0,Lauf_p
-	moveq	#0,d7
-.paar:	lea	Lauf_quellen,a0
-	move.w	d7,d0
-	lsl.w	#3,d0
-	movem.l	0(a0,d0.w),a0/a1
-	lea	Fee_quelle,a2
-	add.w	d7,a2
-	add.w	d7,a2
-	move.w	Lauf_p,d0
-	lea	0(a2,d0.w),a3
-	lea	0(a3,d0.w),a4
-	lea	0(a4,d0.w),a5
-	lea	0(a5,d0.w),a6
-	move.w	Lauf_zeilen,d6
-	subq.w	#1,d6
-.z:	move.w	(a0)+,d0
-	move.w	(a0)+,d1
-	move.w	(a1)+,d2
-	move.w	(a1)+,d3
-	move.w	d0,d4
-	or.w	d1,d4
-	or.w	d2,d4
-	or.w	d3,d4
-	move.w	d4,(a2)
-	move.w	d0,(a3)
-	move.w	d1,(a4)
-	move.w	d2,(a5)
-	move.w	d3,(a6)
-	add.w	d5,a2
-	add.w	d5,a3
-	add.w	d5,a4
-	add.w	d5,a5
-	add.w	d5,a6
-	dbf	d6,.z
-	addq.w	#1,d7
-	cmp.w	Lauf_paare,d7
-	blt.b	.paar
-	lea	Fee_quelle,a2		; die Nullspalte, alle fuenf Ebenen
-	add.w	d7,a2
-	add.w	d7,a2
-	move.w	Lauf_zeilen,d6
-	mulu.w	#5,d6
-	subq.w	#1,d6
-.null:	clr.w	(a2)
-	add.w	d5,a2
-	dbf	d6,.null
-
-	; Lage.  d0 = g, d1 = s, d2 = erstes Zielwort, d3 = letztes,
-	; d4 = natuerliches letztes, d6 = FXSR (0/1)
-	move.w	Lauf_x,d0
-	moveq	#15,d1
-	and.w	d0,d1
-	asr.w	#4,d0
-	move.w	d0,d4
-	add.w	Lauf_paare,d4
-	tst.w	d1
-	bne.b	.l1
-	subq.w	#1,d4
-.l1:	move.w	d0,d2
-	bpl.b	.l2
-	moveq	#0,d2
-.l2:	move.w	d4,d3
-	cmp.w	#GRUPPEN-1,d3
-	ble.b	.l3
-	moveq	#GRUPPEN-1,d3
-.l3:	moveq	#0,d6
-	tst.w	d1
-	beq.b	.l4
-	cmp.w	d0,d2
-	beq.b	.l4
-	moveq	#1,d6
-.l4:
-	; Endmasken: d5 = $FFFF >> s
-	move.w	#$FFFF,d5
-	lsr.w	d1,d5
-	moveq	#-1,d7			; Maske 1
-	tst.w	d1
-	beq.b	.m1
-	cmp.w	d0,d2
-	bne.b	.m1
-	move.w	d5,d7
-.m1:	swap	d7
-	move.w	#$FFFF,d7		; Maske 3
-	tst.w	d1
-	beq.b	.m3
-	cmp.w	d4,d3
-	bne.b	.m3
-	move.w	d5,d7
-	not.w	d7
-.m3:	cmp.w	d2,d3			; nur ein Wort: Maske 1 allein zaehlt
-	bne.b	.m4
-	move.w	d7,d5
-	swap	d7
-	and.w	d5,d7
-	swap	d7
-.m4:	move.w	d7,BL_MASKE3
-	move.w	#$FFFF,BL_MASKE2
-	swap	d7
-	move.w	d7,BL_MASKE1
-
-	; Zaehler und Schrittweiten
-	move.w	d3,d5
-	sub.w	d2,d5			; Worte-1
-	addq.w	#1,d5
-	move.w	d5,BL_XCOUNT
-	subq.w	#1,d5
-	move.w	d5,d7
-	lsl.w	#4,d7
-	neg.w	d7
-	add.w	#FALCON_ZEILE,d7
-	move.w	d7,BL_DST_YINC
-	move.w	#16,BL_DST_XINC
-	add.w	d6,d5			; Lesezugriffe-1
-	add.w	d5,d5
-	move.w	Lauf_r,d7
-	sub.w	d5,d7
-	move.w	d7,BL_SRC_YINC
-	move.w	#2,BL_SRC_XINC
-	move.w	d1,d7
-	tst.w	d6
-	beq.b	.sk
-	or.w	#BL_FXSR,d7
-.sk:	move.b	d7,BL_SKEW
-
-	; Rechteck fuer das naechste Mal
-	move.w	Lauf_zeile,d7
-	sub.w	Anzeige_erste,d7	; Falcon-Zeile
-	bsr	Rechteck_merken
-
-	; Quelle: erstes gelesenes Wort, Ziel: erstes Wort, Ebene 0
-	move.w	d2,d5
-	sub.w	d0,d5
-	sub.w	d6,d5
-	add.w	d5,d5
-	lea	Fee_quelle,a0
-	add.w	d5,a0
-	move.l	Spr_falcon,a1
-	mulu.w	#FALCON_ZEILE,d7
-	add.l	d7,a1
-	move.w	d2,d5
-	lsl.w	#4,d5
-	add.w	d5,a1
-	move.w	Lauf_p,d5		; Ebenenlaenge in Fee_quelle
-	move.l	a0,a2			; Ebenen 0-3: stanzen, einodern
-	moveq	#4-1,d6
-.eb:	add.w	d5,a2
-	move.l	a0,BL_SRC
-	move.l	a1,BL_DST
-	move.w	Lauf_zeilen,BL_YCOUNT
-	move.w	#HOP_QUELLE<<8+OP_STANZEN,BL_HOPOP
-	bsr	Blit_starten
-	move.l	a2,BL_SRC
-	move.l	a1,BL_DST
-	move.w	Lauf_zeilen,BL_YCOUNT
-	move.w	#HOP_QUELLE<<8+OP_ODER,BL_HOPOP
-	bsr	Blit_starten
-	addq.l	#2,a1
-	dbf	d6,.eb
-	move.l	a0,BL_SRC		; Ebene 4: die Maske
-	move.l	a1,BL_DST
-	move.w	Lauf_zeilen,BL_YCOUNT
-	move.w	#HOP_QUELLE<<8+OP_ODER,BL_HOPOP
-	bra	Blit_starten
-
-; Rechteck_merken -- Neue_fee um Falcon-Zeile d7, Lauf_zeilen Zeilen,
-; Gruppen d2 bis d3 erweitern.  Veraendert nur a3.
-Rechteck_merken:
-	movem.l	d0-d4,-(sp)
-	lea	Neue_fee,a3
-	move.w	d7,d0			; oben
-	move.w	d7,d1
-	add.w	Lauf_zeilen,d1		; unten (ausschliesslich)
-	addq.w	#1,d3			; rechts (ausschliesslich)
-	tst.w	2(a3)
-	beq.b	.setzen
-	move.w	(a3),d4			; bisher oben
-	cmp.w	d4,d0
-	ble.b	.o
-	move.w	d4,d0
-.o:	add.w	2(a3),d4		; bisher unten
-	cmp.w	d4,d1
-	bge.b	.u
-	move.w	d4,d1
-.u:	move.w	4(a3),d4		; bisher links
-	cmp.w	d4,d2
-	ble.b	.l
-	move.w	d4,d2
-.l:	add.w	6(a3),d4		; bisher rechts
-	cmp.w	d4,d3
-	bge.b	.setzen
-	move.w	d4,d3
-.setzen:
-	move.w	d0,(a3)
-	sub.w	d0,d1
-	move.w	d1,2(a3)
-	move.w	d2,4(a3)
-	sub.w	d2,d3
-	move.w	d3,6(a3)
-	movem.l	(sp)+,d0-d4
-	rts
-
 	ifd	FEE_MESSEN
 ; ***************************************************************************
 ; Bild_messen -- (FEE_MESSEN) vor dem Warten auf den Takt.  Thalions
@@ -1215,26 +1224,6 @@ Rechteck_merken:
 ; ***************************************************************************
 Bild_messen:
 	move.l	vindex,d0
-	ifd	AMIGA_MESSEN
-	; je Messsekunde: Bilder, knapp, zu spaet, Summe vindex (Fb_verlauf)
-	movem.l	d1/a0,-(sp)
-	move.w	Mess_zeilen,d1
-	cmp.w	#MESS_SEKUNDEN,d1
-	bhs.b	.ohne
-	lsl.w	#3,d1
-	lea	Fb_verlauf,a0
-	add.w	d1,a0
-	addq.w	#1,(a0)
-	add.w	d0,6(a0)
-	cmp.l	#2,d0
-	blt.b	.ohne
-	bne.b	.v_spaet
-	addq.w	#1,2(a0)
-	bra.b	.ohne
-.v_spaet:
-	addq.w	#1,4(a0)
-.ohne:	movem.l	(sp)+,d1/a0
-	endc
 	addq.w	#1,Mess_bilder
 	cmp.l	#2,d0
 	blt.b	.gut
@@ -1247,8 +1236,8 @@ Bild_messen:
 	move.w	d0,Mess_laengstes
 .aus:	rts
 
-; Messung_zeigen -- (FEE_MESSEN) nach dem Abraeumen auf den Desktop
-; schreiben und auf eine Taste warten.
+; Messung_zeigen -- (FEE_MESSEN) after the teardown: write the result into
+; FEEMESS.TXT, show it on the desktop and wait for a key.
 Messung_zeigen:
 	lea	Text_puffer,a1
 	lea	Text_bilder,a0
@@ -1267,36 +1256,65 @@ Messung_zeigen:
 	bsr	Text_anhaengen
 	move.w	Mess_laengstes,d0
 	bsr	Zahl_schreiben
-	lea	Text_blits,a0
-	bsr	Text_anhaengen
-	move.w	Bl_anzahl,d0
-	bsr	Zahl_schreiben
-	lea	Text_fremd,a0
-	bsr	Text_anhaengen
-	move.w	Bl_fremd,d0
-	bsr	Zahl_schreiben
-	lea	Text_schnell,a0
-	bsr	Text_anhaengen
-	move.w	Bl_schnell,d0
-	bsr	Zahl_schreiben
-	ifd	BLIT_PRUEF
-	lea	Text_abweichung,a0
-	bsr	Text_anhaengen
-	move.w	Bl_abweichung,d0
-	bsr	Zahl_schreiben
-	lea	Text_ungeprueft,a0
-	bsr	Text_anhaengen
-	move.w	Bl_ungeprueft,d0
-	bsr	Zahl_schreiben
+	bra	Bericht_ausgeben
 	endc
+
+	ifd	CHECK_STARS
+; Check_report -- (CHECK_STARS) after the teardown: the counts of
+; Check_stars into FEECHECK.TXT and onto the desktop, wait for a key.
+Check_report:
+	lea	Text_puffer,a1
+	lea	Text_check_frames,a0
+	bsr	Text_anhaengen
+	move.w	Check_frames+2,d0
+	bsr	Zahl_schreiben
+	lea	Text_check_state,a0
+	bsr	Text_anhaengen
+	move.w	Check_state_errors+2,d0
+	bsr	Zahl_schreiben
+	lea	Text_check_pixel,a0
+	bsr	Text_anhaengen
+	move.w	Check_pixel_errors+2,d0
+	bsr	Zahl_schreiben
+	lea	Text_check_first,a0
+	bsr	Text_anhaengen
+	move.w	Check_first_error+2,d0
+	bsr	Zahl_schreiben
+	lea	Text_check_held,a0
+	bsr	Text_anhaengen
+	move.w	Check_held+2,d0
+	bsr	Zahl_schreiben
+	bra	Bericht_ausgeben
+	endc
+
+	ifd	FEE_BERICHT
+; Bericht_ausgeben -- the text built at Text_puffer up to a1: end it, write
+; it into the file Bericht_name (the build names it after the program),
+; show it on the desktop and wait for a key.
+Bericht_ausgeben:
 	lea	Text_messende,a0
 	bsr	Text_anhaengen
 	clr.b	(a1)
-	ifd	AMIGA_MESSEN
-	lea	Text_puffer,a0		; hinter die Seite von Mess_ausgeben
-	moveq	#1,d0
-	bsr	Mess_text_sichern
-	endc
+	move.l	a1,d6
+	sub.l	#Text_puffer,d6		; length without the zero
+	clr.w	-(sp)
+	pea	Bericht_name
+	move.w	#Fcreate,-(sp)
+	trap	#1
+	addq.l	#8,sp
+	move.w	d0,d7
+	bmi.b	.zeigen
+	pea	Text_puffer
+	move.l	d6,-(sp)
+	move.w	d7,-(sp)
+	move.w	#Fwrite,-(sp)
+	trap	#1
+	lea	12(sp),sp
+	move.w	d7,-(sp)
+	move.w	#Fclose,-(sp)
+	trap	#1
+	addq.l	#4,sp
+.zeigen:
 	pea	Text_puffer
 	move.w	#Cconws,-(sp)
 	trap	#1
@@ -1334,69 +1352,10 @@ Zahl_schreiben:
 	rts
 	endc
 
-; Messung (AMIGA_MESSEN, amiga/AMIGA_MESSEN.S): Blits und Thalions FAIRY.S
-	ifd	AMIGA_MESSEN
-MESS_BLIT_VON	equ	Blitter_warten
-MESS_BLIT_BIS	equ	Mess_blit_ende
-MESS_ZWEI_VON	equ	Fairy_anfang
-MESS_ZWEI_BIS	equ	Fairy_ende
-	ifd	FEE_MESSEN
-MESS_ZUSATZ_KOPF	equ	Fb_kopf		; Bilder je Sekunde (Bild_messen)
-MESS_ZUSATZ		equ	Fb_verlauf
-MESS_ZUSATZ_LAENGE	equ	8*MESS_SEKUNDEN
-	endc
-	ifd	MESS_ENDE
-MESS_ABRAEUMEN	equ	Fee_abbruch
-	else
-MESS_ABRAEUMEN	equ	Fee_abraeumen
-	endc
-	include	"AMIGA_MESSEN.S"
-
-	ifd	MESS_ENDE
-; Fee_abbruch -- (Diagnose MESS_ENDE=n, FEEDIAG) nach n Sekunden das Ende
-; von start, auch wenn Thalions Ablauf festhaengt: messen, abraeumen,
-; Messung ausgeben und zurueck zum Desktop.  Kehrt nicht zurueck.
-Fee_abbruch:
-	bsr	Mess_stoppen
-	bsr	Fee_abraeumen
-	bsr	Mess_ausgeben
-	ifd	FEE_MESSEN
-	bsr	Messung_zeigen
-	endc
-	move.l	Alter_ssp,-(sp)
-	move.w	#Super,-(sp)
-	trap	#1
-	addq.l	#6,sp
-	move.w	#Pterm0,-(sp)
-	trap	#1
-	endc
-	endc
-
 ; ***************************************************************************
 ; Daten
 ; ***************************************************************************
 	SECTION	Fee_daten,data
-	ifd	AMIGA_MESSEN
-Text_mess_zwei:	dc.b	"  Thalions FAIRY.S: ",0
-	even
-	ifd	FEE_MESSEN
-Fb_kopf:	dc.b	"BILD"		; dann Sekunden.w, 0.w; Fb_verlauf
-	dc.w	MESS_SEKUNDEN,0
-	endc
-	endc
-	include	"amiga_messen_daten.i"
-	ifd	STRAHL
-	even
-St_liste:	dc.l	St_vbl,Text_st_vbl
-		dc.l	St_feealt,Text_st_feealt
-		dc.l	St_feeneu,Text_st_feeneu
-		dc.l	St_umsetzen,Text_st_umsetzen
-		dc.l	0
-Text_st_vbl:	dc.b	"VBL (ganzes Bild)",0
-Text_st_feealt:	dc.b	"Fee: altes Rechteck zurueck (VBL, gezeigter Schirm)",0
-Text_st_feeneu:	dc.b	"Fee: neu zeichnen (VBL, gezeigter Schirm)",0
-Text_st_umsetzen: dc.b	"Hauptablauf: Zeilen ab WECHSELZEILE umsetzen",0
-	endc
 Vier_nach_acht:
 	dc.b	$00,$11,$22,$33,$44,$55,$66,$77,$88,$99,$AA,$BB,$CC,$DD,$EE,$FF
 Text_kein_falcon:
@@ -1406,24 +1365,22 @@ Text_cursor_aus:
 	dc.b	27,'f',0
 Text_cursor_an:
 	dc.b	27,'e',0
-	ifd	FEE_MESSEN
-	ifd	FEE_CPU
-Text_bilder:	dc.b	"Fantasy-Intro, Zeilen mit der CPU umgesetzt",13,10
-	else
-Text_bilder:	dc.b	"Fantasy-Intro, Zeilen mit dem Blitter umgesetzt",13,10
+	ifd	FEE_BERICHT
+	include	"fee_name.i"		; Bericht_name, from tools/fantasy_bauen.sh
+Text_messende:	dc.b	13,10,"Taste druecken.",13,10,0
 	endc
-		dc.b	"Bilder: ",0
+	ifd	FEE_MESSEN
+Text_bilder:	dc.b	"Fantasy-Intro (E30), Bilder: ",0
 Text_knapp:	dc.b	13,10,"knapp (erst nach dem 2. VBL fertig): ",0
 Text_spaet:	dc.b	13,10,"zu spaet (erst nach dem 3. VBL): ",0
 Text_laengstes:	dc.b	13,10,"hoechstes vindex beim Fertigwerden: ",0
-Text_blits:	dc.b	13,10,"Amiga-Blits: ",0
-Text_fremd:	dc.b	", davon nicht unterstuetzt: ",0
-Text_schnell:	dc.b	", schnell: ",0
-	ifd	BLIT_PRUEF
-Text_abweichung:	dc.b	13,10,"Pruefung schnell gegen genau, abweichend: ",0
-Text_ungeprueft:	dc.b	", ungeprueft: ",0
 	endc
-Text_messende:	dc.b	13,10,"Taste druecken.",13,10,0
+	ifd	CHECK_STARS
+Text_check_frames:	dc.b	"CHECK_STARS, frames compared: ",0
+Text_check_state:	dc.b	13,10,"state differs: ",0
+Text_check_pixel:	dc.b	13,10,"lower band differs: ",0
+Text_check_first:	dc.b	13,10,"first frame that differs: ",0
+Text_check_held:	dc.b	13,10,"level3 held back: ",0
 	endc
 	even
 
@@ -1433,9 +1390,19 @@ Alter_vbl:		ds.l	1
 Alter_schirm:		ds.l	1
 Alter_mausvektor:	ds.l	1
 Kbd_vektoren:		ds.l	1
-Anzeige_naechste:	ds.l	1
+Anzeige_naechste:	ds.l	1	; picture base: Falcon_show + Anzeige_erste rows
 Falcon_a:		ds.l	1
-Falcon_b:		ds.l	1
+Falcon_b:		ds.l	1	; = Falcon_a + FALCON_ABSTAND
+Falcon_show:		ds.l	1
+Falcon_work:		ds.l	1
+Plot_target:		ds.l	1	; Falcon_work, row WECHSELZEILE
+Fee_schirm:		ds.l	1	; the screen the fairy is put on (Falcon_show)
+Fee_puffer:		ds.l	1	; Mxalloc, Fairy_buffer_size bytes, or 0
+Fee_platz:		ds.l	1	; Fairy_put: the save-under's first group
+Fairy_shifts:		ds.l	FALCON_FAIRY_FRAMES*16	; per frame and shift
+Fee_zeilen:		ds.w	1	; rows saved, 0: nothing
+Fee_gruppen:		ds.w	1	; groups a row saved
+Shift_row:		ds.w	1	; next row to preshift (frame * 71 + row)
 Alter_modus:		ds.w	1
 Neuer_modus:		ds.w	1
 Anzeige_zeilen:		ds.w	1
@@ -1444,52 +1411,25 @@ Maustasten:		ds.b	1
 			even
 Alte_st_farben:		ds.w	16
 Alte_videl_farben:	ds.l	256
+Plot_table:		ds.w	PLOT_BYTES	; workbase byte -> Falcon offset
+Fee_rettung:		ds.b	FALCON_FAIRY_ROWS*5*10	; under the fairy, planes 0-4
 			cnop	0,4
 Amiga_register:		ds.b	AR_GROESSE
-Blitter_zustand:	ds.b	30		; $8A20-$8A3D, fuer den VBL
-Spr_falcon:		ds.l	1		; Fee_sprites: gezeigter Schirm
-Spr_amiga:		ds.l	1		; sein Amiga-Zwilling
-Spr_alte:		ds.l	1		; Alte_fee_a oder _b
-Lauf_quellen:		ds.l	2*4		; je Paar: gerades, ungerades Sprite
-; Rechtecke: Falcon-Zeile, Zeilen (0 = leer), erste Gruppe, Gruppen
-Alte_fee_a:		ds.w	4		; zuletzt auf Falcon_a gezeichnet
-Alte_fee_b:		ds.w	4
-Neue_fee:		ds.w	4
-Lauf_paare:		ds.w	1
-Lauf_x:			ds.w	1
-Lauf_zeile:		ds.w	1		; Amiga-Zeile
-Lauf_zeilen:		ds.w	1
-Lauf_r:			ds.w	1		; Zeilenlaenge in Fee_quelle
-Lauf_p:			ds.w	1		; Ebenenlaenge in Fee_quelle
-Fee_quelle:		ds.w	5*AMIGA_ZEILEN*(4+1)	; 5 Ebenen, 4 Paare + Null
-	include	"amiga_blit_bss.i"
-	include	"amiga_messen_bss.i"
 	include	"amiga_notaus_bss.i"
-	ifd	STRAHL
-St_vbl:			ds.b	ST_LAENGE
-St_feealt:		ds.b	ST_LAENGE
-St_feeneu:		ds.b	ST_LAENGE
-St_umsetzen:		ds.b	ST_LAENGE
-St_vbl_schirm:		ds.l	1	; V_BASIS beim Eintritt in den VBL
-St_uz_schirm:		ds.l	1
-St_fz:			ds.w	1
-St_fn:			ds.w	1
-St_uz:			ds.w	1
-	even
-	endc
 	ifd	FEE_MESSEN
 Mess_bilder:		ds.w	1
 Mess_knapp:		ds.w	1
 Mess_spaet:		ds.w	1
 Mess_laengstes:		ds.w	1
-Text_puffer:		ds.b	512
-	ifd	AMIGA_MESSEN
-Fb_verlauf:		ds.w	4*MESS_SEKUNDEN	; Bilder, knapp, spaet, Summe vindex
 	endc
+	ifd	FEE_BERICHT
+Text_puffer:		ds.b	512
 	endc
 			cnop	0,4
-Amiga_schirme:		ds.b	2*AMIGA_SCHIRM
+Amiga_schirm:		ds.b	AMIGA_SCHIRM	; workbase: an address range only
 Amiga_ueberlauf:	ds.b	AMIGA_UEBERLAUF	; Sterne unter dem Schirm (Vorspann)
-Falcon_speicher:	ds.b	2*FALCON_SCHIRM+256
+Falcon_speicher:	ds.b	2*FALCON_ABSTAND+256
+Stapel:			ds.b	4096
+Stapel_ende:
 
 	SECTION	Fee_code,code

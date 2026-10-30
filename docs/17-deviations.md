@@ -11,7 +11,7 @@ happens, **why**, **where** it is in the code, and how to go back.
 and 2), ...` where both are touched:
 
 ```
-grep -rn "DEVIATION (goal" engine tools lader intro extro fantasy amiga musik fantasy_st intro_st
+grep -rn "DEVIATION (goal" engine tools lader intro extro fantasy amiga musik fantasy_st intro_st extro_st
 ```
 
 A deviation without the marker is a gap in this list; please add both.
@@ -26,7 +26,7 @@ markers of D2, D4 and D5 in the 2D session's files stand on `main`
 |---|---|---|---|---|---|
 | D1 | 2 | ST palettes reduced at build time, `STPAL.DAT` loaded once at start | ST/STE | user, 2026-10-17 | `ST_LIB.S`, `tools/build_st.sh`, `tools/st_palettes.py` |
 | D2 | 1, 2 | Library data, pure memory routines and the music player (operands bent onto shadow registers) of `AM2_CPU` taken at build time; `AM2_CPU` is never read at run time | both | user, 2026-09-27/28 | `tools/am2cpu_auszug.py`, `am2cpu_code.py`, `am2cpu_lesen.py`, `engine/engine.s`; open: 3D and music session |
-| D3 | 1, 2 | Intro, extro, fantasy intro: Thalion's programs taken apart at build time and bent (K1, K2), own routines at the bottlenecks (K3, `Fee_ablauf`); the ST builds both intros itself (below) | both | user, 2026-09-29 and 2026-10-04; ST 2026-10-22/24 | Falcon: open (Falcon Tempo); ST: `fantasy_st/`, `intro_st/`, `tools/fantasy_st_data.py`, `tools/intro_st_program.py` |
+| D3 | 1, 2 | Intro, extro, fantasy intro: Thalion's programs taken apart at build time and bent (K1, K2), own routines at the bottlenecks (K3, `Fee_ablauf`); the ST builds all three itself (below) | both | user, 2026-09-29 and 2026-10-04; ST 2026-10-22/24/29; Falcon fantasy intro 2026-10-30 | Falcon: `fantasy/FEE_SUP.S`, `fantasy/STARS_FALCON.S` (fantasy intro), the rest open (Falcon Tempo); ST: `fantasy_st/`, `intro_st/`, `extro_st/`, `tools/fantasy_st_data.py`, `tools/intro_st_program.py`, `tools/extro_st_program.py`, `tools/extro_st_data.py` |
 | D4 | 1, 2 | Our own start menu for `ENGINE.TOS` started alone; its four texts from `Ambermoon_intro` at build time | both | user, 2026-09-28 ("plain, for now") | `tools/intro_auszug.py`, `HULL/STARTMENUE.S` |
 | D5 | 2 | Positions of the library's texts inside `Text.amb` fixed at build time | both | finding 250 | `tools/textmarken.py`, `HULL/WORDS_SUP.S` |
 | D6 | 1, 2 | YM music from Big Alec's SNDH file (`big_alec/ambermon.snd`, until 2026-10-27 the "Ambermoon Music Demo" disk), extracted at build time; Big Alec's player instead of Thalion's | ST, Falcon with `YM` | user, 2026-09-29 (docs/11 7.1) | open (music session) |
@@ -205,7 +205,8 @@ over at build time and bent:
   $110-$2B0, tied to copper, CIA and DMA) is `Fee_ablauf` in
   `fantasy/FEE_SUP.S`, in Thalion's order and with Thalion's values.
 - *Atari format*: the extro's two screens lie in Falcon format and are
-  shown directly (`amiga/AMIGA_ZIEL.S`).
+  shown directly (`amiga/AMIGA_ZIEL.S`); the fantasy intro draws into
+  Falcon screens on the ST's model (below).
 
 Allowed by the decision: an own logo build-up in the fantasy intro
 (built on the ST, below), precomputed graphics (built on the ST for the
@@ -225,14 +226,49 @@ extraction have no way back without giving up the programs.
 **Where.** docs/11 (sections 3-7), docs/developer/10-amiga-layer.md; the
 files named above.
 
+### D3 on the Falcon: the fantasy intro
+
+*State 2026-10-30 (Falcon Tempo, step 3, test T71; Hatari: `FEECHECK` 497
+of 497 frames equal).* The Falcon's fantasy intro has the ST's cut (below,
+"Fantasy intro"); docs/11 7.3 has the details.
+
+- **Rewritten:** Thalion's main sequence is `Fee_ablauf`
+  (`fantasy/FEE_SUP.S`), in Thalion's order and with Thalion's values.
+- **Hooks:** Thalion's `make_funkel` plots through `plot_jmptab`, which
+  points to `Plot_falcon0..31`; `Blitter_warten` does Thalion's two blit
+  kinds (`$CA` star, `$E2` logo column) in Falcon format.
+- **Own routines:** `Magic_falcon` and `Dust_falcon`
+  (`fantasy/STARS_FALCON.S`) instead of Thalion's `make_magic` and
+  `make_funkel2`, with Thalion's logic, buffers, tables and random numbers,
+  as the ST's `Magic_st`/`Dust_st`; the stars through compiled routines.
+- **Precomputed graphics:** background, fairy, logo and stars from
+  `tools/fantasy_st_data.py --falcon` (8 planes, the Amiga colours, no
+  reduction); nothing is converted at run time, no Amiga screen is shown.
+- **The fairy:** from 16 preshifts made at start, put in every VBL with a
+  save-under (50 Hz, as the Amiga's sprites; E30).
+- **Colours:** no copper split needed; plane 5 is the bank, in the data
+  (0 above row 134, 1 from there).
+
+**What looks different:** nothing intended; `FEECHECK` compares Thalion's
+`make_magic`/`make_funkel2` with ours frame by frame.
+
+**Going back (Falcon):** call Thalion's `make_funkel2` and `make_magic`
+again in `Fee_ablauf` instead of `Dust_falcon`/`Magic_falcon`, then
+`Blitter_warten` once for the last blit (as `Check_stars` does);
+`Blitter_warten` draws their blits, slower.
+The Falcon format and the drawing hooks have no way back short of the
+general Amiga layer (docs/11 7.4-7.8, F1-F4).
+
 ### D3 on the ST: what is changed, and what looks different
 
 *State 2026-10-27: the fantasy intro passed T94 on the STE; the intro
 passed T96a, and the intro without live conversion (every scene a target
-screen) is built for T97.* The ST builds both programs itself, in its own
-files, independent of the Falcon's `fantasy/`, `intro/` and `amiga/`; only
-the emergency exit `amiga/AMIGA_NOTAUS.S` is shared, unchanged. Details
-and measurements: docs/05c-ST.md ("ST fairy intro, plan", "ST intro").
+screen) is built for T97. The extro is built for T100 (2026-10-30).* The
+ST builds the three programs itself, each in its own files, independent
+of the Falcon's `fantasy/`, `intro/`, `extro/` and `amiga/`; only the
+emergency exit `amiga/AMIGA_NOTAUS.S` is shared, unchanged. Details and
+measurements: docs/05c-ST.md ("ST fairy intro, plan", "ST intro", "ST
+extro").
 
 **Taken unchanged.** Thalion's `FAIRY.S` (flight path, fairy animation in
 `level3`, sparks, the stars' logic, random numbers, the 3-VBL frame);
@@ -241,7 +277,9 @@ Thalion's hunk-1 fades and tables of `Fantasy_intro`
 `Ambermoon_intro`, with K1 and K2 exactly as on the Falcon
 (`tools/intro_st_program.py` calls the functions of
 `tools/amiga_programm.py`): every scene, text, timing and the start menu
-are Thalion's code.
+are Thalion's code. All six hunks of `Ambermoon_extro`, with K1 and K2 as
+on the Falcon (`tools/extro_st_program.py`): the flow, the texts and their
+writers, the fades, the brightened text plane (`$2B2E`), the timing.
 
 **Replaced: our code instead of Thalion's (or instead of Amiga hardware).**
 
@@ -262,7 +300,10 @@ are Thalion's code.
 | intro | the four-plane scenes (space, Twinlake, meteors): Thalion's two Amiga screens, written by the blitter and by Thalion's CPU code | target screens in ST format, shown directly (the Falcon's method, docs/11 7.8): the same K3 places as the Falcon ($4F4, $AD4 table; $294E, $1A42, $776, $B40, $169C, $12C0 our writers; $7BA, $994/$A36 Thalion's CPU code between fetch and bring; $6EE a reader; $24BE the base at once); blits redirected into the target | yes: `CHECK_TARGET` 0 differences through space, Twinlake and meteors (each writer against Thalion's way; the VBL compares the rows against unknown writers) | `intro_st/TARGET_ST.S`, `intro_st/INTRO_ST.S` |
 | intro | the logo phase, the clouds and the menu (E30, docs/11 7.8b): Thalion's screens with five planes (logo, menu) or four (clouds), written by the blitter and Thalion's CPU code | target screens too, the Falcon's K3 places and names: $1E0, $D00, $FB2 table; $21E, $137E, $2646 (the stars in Thalion's VBL), $310, $DA2, $1270 our writers; $14E6 a scratch screen for Thalion's logo stages; $D74, $1030 Thalion's CPU code, then bring; $3C0, $AD4, $D00, $F4E the picture held while Thalion changes the screens' format. Plane 4 is not in the ST target: the logo's stars only in the target, with a list per screen; the menu's text laid over planes 0-3 | see the colours below | `intro_st/INTRO_ST.S`, `intro_st/TARGET_ST.S`, `intro_st/SHOW_ST.S` |
 | intro | the four cloud blits a frame ($4E2A, $CA, from $E3A to $EB2) | `Clouds_draw` (K3 at $E3A, the Falcon's method of 2026-10-29): both clouds shifted once at program start into all 16 positions, in ST format, masked; put with the CPU (a group covered whole written, a free one skipped); `Clouds_column` copies whole groups from the menu picture converted once into ST format (`Menu_st`) | the same pixels in the rows the ST shows (Hatari against the old build; T99 passed); Thalion's rows 248-255 get no cloud, they are never shown | `intro_st/CLOUDS_ST.S`, `intro_st/INTRO_ST.S` |
-| both | lower border closed at line 200 of an ST | opened by Timer B (`Tb_border`, T93) | more lines visible | both layers |
+| extro | the scroll text: five blits D = C ? B : A ($D8) a step, one per plane, then a blit moving the mask up a row ($450-$524) | `Text_scroll` (K3 at $450): screen = A xor (X and mask) for all four planes at once, A and X from the build; a line without text skipped unless it had text when that screen was drawn last; the mask in a ring, moved by a pointer (`Text_begin` $420, `Text_row` $534) | the same mask and choice per pixel; the colours as below | `extro_st/TEXT_ST.S` |
+| extro | copper list, bitplane DMA; Thalion's two screens | three ST screens in turn; `Extro_after_copy` ($2EC) puts the picture in ST format into all, `Extro_switch_1/2` ($1E8, $596) set the base (the Falcon's places) | yes | `extro_st/EXTRO_ST.S` |
+| extro | two VBL waits after each step ($43A-$449: `bsr $F54`, the closing text once) | `Step_wait` (K3 at $43A): wait until `STEP_VBL` VBL (the closing text one less) have passed since the last step, then Thalion's pause check | a fixed pace of 4 VBL a step (3), near the Amiga's work plus waits; chosen by the user against 3 | `extro_st/TEXT_ST.S` |
+| fantasy, intro | lower border closed at line 200 of an ST | opened by Timer B (`Tb_border`, T93) | more lines visible | both layers |
 
 **Precomputed (goal 2).** Fantasy intro, at build time
 (`tools/fantasy_st_data.py`, from what `fantasy_auszug.py` extracted):
@@ -271,7 +312,9 @@ colour maps; the fairy's 16 preshifts at program start (1.15 MB from
 `Malloc`). Intro: nothing at build time yet; the zoom converts its source
 pictures once at run time (`Zoom_store`); the clouds are shifted at
 program start (`Clouds_prepare`, 2 x 192 KB), the menu picture is
-converted once per clouds scene (`Menu_st`, 39 KB).
+converted once per clouds scene (`Menu_st`, 39 KB). Extro, at build time
+(`tools/extro_st_data.py`): per picture A and X = A xor B in ST format and
+the 16 representatives (320 KB in `EXTROST.TOS`).
 
 **What looks or behaves different from the Amiga.**
 
@@ -336,7 +379,29 @@ converted once per clouds scene (`Menu_st`, 39 KB).
   blit, `Clouds_column` or `Clouds_draw` into that target waits for the
   VBL first. On the Amiga Thalion's frames never last that long.
 
-**Going back (ST).** Intro: delete an entry in `HOOKS`
+*Extro:*
+- **16 colours a picture instead of 32.** 16 representative Amiga
+  colours per picture (the fairy's way, V3), chosen for the picture and
+  its text colours alike; each register shows the fade of its
+  representative, so Thalion's fades work. Small accents can lose their
+  hue (the red cloak in the second picture turns brown). The text colour of a pixel
+  is the register nearest to Thalion's brightened colour, and never the
+  pixel's own register where Thalion's differs, so the text cannot vanish.
+- **Picture position.** Rows 28-227 of 256 (S1, centred); the lower
+  border stays closed.
+- **No music:** no YM version of the extro music is known
+  (`Music_silent`).
+- **Speed:** the mixing takes about 1.1 VBL a step on the 8 MHz STE
+  (Hatari) and varies with the text; `Step_wait` (K3 at $43A) waits for
+  a fixed 4 VBL since the last step (the closing text 3) instead of
+  Thalion's 2 VBL (1) after it. On the Amiga the blits add an estimated
+  1.6-2.5 VBL, so 3 or 4 there; 2 was too fast to read, and of 3 and 4
+  the user chose 4 (2026-10-30). The way back: Thalion's waits at $43A, then the pace
+  varies with the mixing time.
+
+**Going back (ST).** Extro: delete an entry in `HOOKS`
+(`tools/extro_st_program.py`) and its routine; without `Text_scroll` the
+K2 trap does no blit, so the text stays empty. Intro: delete an entry in `HOOKS`
 (`tools/intro_st_program.py`) and its routine, and Thalion's code runs
 there again (without `Zoom_st` the intro does not get past the logo).
 Fantasy intro: call Thalion's `make_magic` and `make_funkel2` again in
@@ -346,7 +411,8 @@ have no way back short of the Falcon's general Amiga layer, which is too
 slow on the ST.
 
 **Markers.** `DEVIATION (goals 1 and 2), docs/17-deviations.md D3` in the
-files of the table and in `tools/fantasy_st_data.py`,
+files of the table (on the Falcon `fantasy/FEE_SUP.S` and
+`fantasy/STARS_FALCON.S`) and in `tools/fantasy_st_data.py`,
 `tools/intro_st_program.py`.
 
 ## D4: start menu (goals 1 and 2)

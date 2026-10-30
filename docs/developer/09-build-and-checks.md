@@ -21,10 +21,8 @@ on the other. The program names are unique per machine:
 | fantasy intro | `FANTASY.TOS` | `FANTSYST.TOS` |
 | intro, extro | `INTRO.TOS`, `EXTRO.TOS` | `INTROST.TOS`, `EXTROST.TOS` |
 
-The ST has its fantasy intro and intro, no extro yet; `AMBER.TOS` skips a
-missing program silently. `BOMBEN.TOS`
-(68000) is the same for both. Only the ST build delivers `STPAL.DAT`, the
-precomputed ST palettes (`tools/st_palettes.py build`; deviation D1 in
+`AMBER.TOS` skips a missing program silently. Only the ST build delivers
+`STPAL.DAT`, the precomputed ST palettes (`tools/st_palettes.py build`; deviation D1 in
 `docs/17-deviations.md`).
 
 **What a build removes.** Before delivering, each build empties
@@ -92,10 +90,10 @@ and `-DZIEL_ST=1`.
 
 **The Falcon build** then adds a 68000 cross-check of both units, the
 fantasy intro, intro and extro with their diagnostic versions, the loader,
-`FREQ.TOS`, `BOMBEN.TOS`, the checks (below) and the appendices of this
+`FREQ.TOS`, the checks (below) and the appendices of this
 documentation into `build/doku/`. **The ST build** adds the ST palettes
 (`STPAL.DAT`), the ST fantasy intro (`FANTSYST.TOS`), the ST intro
-(`INTROST.TOS`), its loader, `BOMBEN.TOS` and, when it runs alone, the
+(`INTROST.TOS`), the ST extro (`EXTROST.TOS`), its loader and, when it runs alone, the
 source checks.
 
 **Expected warnings, in every engine build:** vasm 22 in Thalion's

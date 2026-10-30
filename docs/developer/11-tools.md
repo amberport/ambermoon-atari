@@ -1,8 +1,7 @@
 # 11. Tools
 
 Everything in `tools/` runs on the host, not on the Atari, except the
-small Atari programs in their own folders (`tools/bomben/`,
-`tools/st_rand/`). The
+small Atari programs in their own folder (`tools/st_rand/`). The
 Python tools need Python 3.9 or newer and the standard library only;
 `PIL` is loaded only where a tool writes a picture. Most of them are
 German inside, comments and messages; their header says what they are
@@ -122,7 +121,6 @@ All are called as `python3 tools/<name>.py` from the repository root.
 |---|---|---|
 | `hatari/teste.sh` | runs the delivered build in Hatari without a window and takes screenshots; good for "does it crash" and "is the picture right", not for timing on the Falcon or for the mouse (`hatari/LIESMICH.txt`) | `sh tools/hatari/teste.sh [-m rgb\|vga] [-v 800,2000] [-p PROGRAM]`; needs `AMBER_TOS` |
 | `testpaket.py` | the test package: collects the test builds of all working trees, by their tables `tools/testpaket_<branch>.tab`, into one folder `ATARI/` with one `TESTS.TXT` | `zeigen`; `ordner [PATH]`; `karte TARGET [--echt]`; `falcon [--echt] [--pruefen]` (over uIPtool). Acts only with `--echt`; save games and `*.INF` are never touched |
-| `bomben/bomben.s` → `ATARI/BOMBEN.TOS` | after a crash on the Atari: shows and writes to `BOMBEN.TXT` what TOS saved at `$380` (PC, access address, registers, the exception frame); PC minus the load address that `ENGINE.TOS` shows is the offset in the symbol map (chapter 9) | built and delivered by both builds; start it from the desktop after the bombs |
 | `spielstand_setzen.py` | moves a copy of a save game to another map, place and direction, to start a test there; with `--saves` also a copy of `SAVES`, so "continue" loads it | `python3 tools/spielstand_setzen.py --ziel DIR --platz 9 --karte 260 --x 28 --y 8 --richtung 0 --name "NAME" [--quelle DIR] [--saves FILE]` |
 | `musik_messbau.sh` | three measuring versions of the engine, without music, mixer on the CPU, mixer on the DSP; each writes frames, VBLs and the time in `Musik_vbl` to `MESS_OHN.TXT`, `MESS_CPU.TXT`, `MESS_DSP.TXT` | `sh tools/build_falcon.sh && sh tools/musik_messbau.sh` |
 | `mess_auswerten.py` | reads the file of an intro or fantasy intro measuring version (`*.MES`: where Timer A found the program, per second blits, display and the rest) with its link map | `python3 tools/mess_auswerten.py FILE.MES build/NAME.map [--verlauf]` |
@@ -141,10 +139,12 @@ here only what they are for.
 
 | Tool | What for |
 |---|---|
-| `st_palettes.py` | the ST palettes: Thalion's 32 colours on 16 registers, recomputed like `St_bauen` in `ST_LIB.S`. `build` writes `STPAL.DAT` with the hand corrections from `st_palettes.txt` (deviation D1; called by `build_st.sh`); `sheet` writes a review page `build/st_palettes/index.html`; `ramp`, `screen`, `measure` compare with and without the ramp protection |
-| `st_palettes.txt` | the hand corrections, read by `st_palettes.py build` |
+| `st_palettes.py` | the ST palettes: Thalion's 32 colours on 16 registers, recomputed like `St_bauen` in `ST_LIB.S`. `build` writes `STPAL.DAT` with the hand corrections from `st_palettes.txt` (deviation D1; called by `build_st.sh`); `sheet` writes ST's own review page `build/st_palettes/index.html` (to be replaced by the palette editor below); `ramp`, `screen`, `measure` compare with and without the ramp protection |
+| `st_palettes.txt` | the hand corrections and the method per palette, read by `st_palettes.py build` |
+| `palette_editor/palette_sheet.py` | the palette editor (session Docs): a page `build/palette_editor/index.html` that shows each palette as Thalion has it and as STE and ST show it with each method (`unweighted`, the default, and `weighted 1`, `weighted 3`), each method described, beside pictures from the game. It preselects the method `st_palettes.txt` names; "Open st_palettes.txt" reads a newer file without a new build; it gives the method lines and the whole file to download. Imports `st_palettes.py` for all it shows, so the computation exists once. Call `python3 tools/palette_editor/palette_sheet.py [NAME …] [--file FILE]`; needs the extract `build/am2cpu_daten.i` of a build and Pillow. Contains Thalion's graphics: stays in `build/` |
 | `farbreduktion.py` | the first study of 32 to 16 colours (`messen`, `bild`); `st_palettes.py` still imports it |
 | `fantasy_st_build.sh`, `fantasy_st_data.py` | the ST fantasy intro `FANTSYST.TOS`: Thalion's unchanged `FAIRY.S`, graphics in ST format; called by `build_st.sh` |
 | `intro_st_build.sh`, `intro_st_program.py` | the ST intro `INTROST.TOS` with its own K3 hooks; called by `build_st.sh` |
+| `extro_st_build.sh`, `extro_st_program.py`, `extro_st_data.py` | the ST extro `EXTROST.TOS`: Thalion's hunks with K1, K2 and its own K3 hooks, the pictures and the scroll text's data in ST format at build time; called by `build_st.sh` |
 | `st_shot.py` | `SHOTnn.RAW` of the ST intro's test build (key S) as a PNG |
 | `st_rand/` | probe programs for the lower border on the ST, at three delays |

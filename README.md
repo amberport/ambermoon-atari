@@ -38,8 +38,8 @@ That is how this project began.
 **Atari ST/STE**
 - **16 colours**, reduced from the original's 32.
 - **Uses what the machine has:** the STE's 4-bit palette and the blitter where present; `PLAIN_ST=YES` makes an STE behave like a plain ST.
-- **Big Alec's YM music**, the fantasy intro and the intro with its start menu.
-- **A palette check page:** every ST build writes `build/st_palettes/index.html` from your own game files. For each palette it shows Thalion's colours next to the STE and ST results of each reduction method; choose a method per palette and download the resulting `tools/st_palettes.txt` for the next build.
+- **Big Alec's YM music**, the fantasy intro, the intro with its start menu, and the extro (without music).
+- **A palette check page:** every ST build writes `build/palette_editor/index.html` from your own game files. For each palette it shows Thalion's colours next to the STE and ST results of each reduction method; choose a method per palette and download the resulting `tools/st_palettes.txt` for the next build.
 
 **On both machines**
 - **One folder for the Falcon and the ST:** one `AMBER.TOS` detects the machine.
@@ -174,11 +174,11 @@ The ST always plays the YM music; there only `MUSIC=OFF` counts.
 
 ### Known limitations
 
-State: 2026-10-29. This list is updated before the release.
+State: 2026-10-30. This list is updated before the release.
 
 - **ST, 3D on 8 MHz is slow.** Thalion's 3D code runs unchanged; a real gain would mean replacing parts of it with our own. That would break the first principle of this project (see "Goals of the project") and is deliberately not decided yet.
 - **YM music: 18 pieces instead of 32.** Big Alec's YM version covers 18 of Thalion's pieces; with YM, the other places stay silent, intro and extro too.
-- **ST: no extro yet**, and the intro's start menu does not yet highlight the entry under the pointer.
+- **ST: the intro's start menu** does not yet highlight the entry under the pointer.
 - **ST: the "drugged" effect** shows no colours; only the mouse pointer shakes.
 - **ST: the palettes are not fine-tuned yet**; the build writes a check page for it.
 - **Falcon: not at full speed yet.** The 2D maps are meant to need at most 4 screen refreshes (VBLs) per picture drawn; scrolling text is slow; moving the mouse costs frames in 3D.
@@ -313,7 +313,7 @@ This reduction is one of the most visible differences from the Amiga and Falcon,
 
 Not finished yet are in particular:
 
-- the extro, and the highlighting in the intro's start menu
+- the highlighting in the intro's start menu
 - further performance optimisations
 - fine-tuning of individual hardware-specific routines
 

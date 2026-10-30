@@ -75,9 +75,8 @@ names (`Mouse_int`); the keyboard is read in `Read_key`
   nothing after a regular exit), with the interrupt mask lowered so
   that `Close_screen` can wait for a VBL. Without it, our VBL, mouse
   vector and Timer B would point into freed memory after a crash.
-- **After a crash:** `ENGINE.TOS` shows its load address at start.
-  `ATARI/BOMBEN.TOS` then reads what TOS left at `$380` (PC, access
-  address, registers, frame) and writes it to `BOMBEN.TXT`. PC minus load
+- **After a crash:** `ENGINE.TOS` shows its load address at start; the
+  PC of the crash comes from the debugger or a savestate. PC minus load
   address is the offset in the symbol map (chapter 9).
 
 ## The program chain
@@ -91,8 +90,8 @@ skipped quietly, any other load error is reported.
 the cookie `_MCH`: high word 3 is a Falcon, which starts `FANTASY.TOS`,
 `INTRO.TOS`, `ENGINE.TOS`, `EXTRO.TOS`. Anything else, or no cookie jar
 at all (an old ST TOS), is an ST, which starts `FANTSYST.TOS`,
-`INTROST.TOS`, `ENGINEST.TOS`, `EXTROST.TOS`. The ST has no extro yet,
-so there the chain skips it.
+`INTROST.TOS`, `ENGINEST.TOS`, `EXTROST.TOS`. A program that is
+missing is skipped.
 
 The programs talk through
 the command line (length byte 1, one ASCII digit, terminating zero) and
@@ -113,4 +112,5 @@ Each program also runs alone.
 |---|---|---|
 | `FANTASY.TOS` | `start` in `fantasy/FEE_SUP.S`, included before Thalion's `FAIRY.S` | the hardware below Thalion's source |
 | `INTRO.TOS`, `EXTRO.TOS` | `start` in `intro/INTRO_SUP.S`, `extro/EXTRO_SUP.S` | hand-over to Thalion's hunks on the Amiga layer (`amiga/`, chapter 10) |
+| `FANTSYST.TOS`, `INTROST.TOS`, `EXTROST.TOS` | `start` in `fantasy_st/FANTASY_ST.S`, `intro_st/INTRO_ST.S`, `extro_st/EXTRO_ST.S` | the ST's own layers (chapter 10, "The ST") |
 | `AMBER.TOS` | `lader/lader.s` | all of it |

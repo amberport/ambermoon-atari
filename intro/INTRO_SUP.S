@@ -26,6 +26,7 @@ start:
 	lea	Musik_datei,a0		; Thalion's music (AMIGA_MUSIK.S)
 	lea	Musik_datei+9,a1
 	bsr	Musik_laden
+	bsr	Clouds_prepare		; our clouds (INTRO_CLOUDS.S)
 	clr.l	-(sp)
 	move.w	#Super,-(sp)
 	trap	#1
@@ -254,6 +255,9 @@ Sterne_setzen:
 	bsr	Schirm_suchen
 	beq.b	.thalion
 	move.l	SCH_ZIEL(a5),a1
+	moveq	#0,d0			; first: the buffer lines are stale
+	move.w	#200,d1
+	bsr	Zeilen_ungueltig
 	lea	Ziel_sterne,a0
 	move.w	(a0)+,d7
 	bra.b	.n
@@ -261,9 +265,6 @@ Sterne_setzen:
 	move.w	(a0)+,d0
 	move.w	(a0)+,0(a1,d0.l)
 .n:	dbf	d7,.s
-	moveq	#0,d0
-	move.w	#200,d1
-	bsr	Zeilen_ungueltig
 	movem.l	(sp)+,d0-d1/a5
 	rts
 .thalion:
@@ -470,14 +471,17 @@ Kopie_vorn_hinten:
 	jmp	Intro_h0+$12C6
 
 ; ***************************************************************************
-; The logo phase, the clouds and the menu in the target format (E30, docs/11
-; 7.8a): the intro without live conversion.  Each scene has its table
-; (Screens_logo, Screens_clouds, Screens_menu) and the Videl shows it
-; directly; the blits find their way into the target themselves
-; (Bl_ziel_waehlen: logo stages $F0, clouds $CA, text $FA/$0A).  Where
-; Thalion changes the format of the screens with the CPU (logo -> space at
-; $3C0, any scene -> clouds at $D00, clouds -> menu at $F4E), Display_hold
-; keeps the last picture on the screen until the next table shows.
+; The logo phase and the clouds in the target format (E30, docs/11 7.8a):
+; the intro without live conversion.  Each scene has its table
+; (Screens_logo, Screens_clouds) and the Videl shows it directly; the blits
+; find their way into the target themselves (Bl_ziel_waehlen: logo stages
+; $F0, clouds $CA, text $FA/$0A).  Where Thalion changes the format of the
+; screens with the CPU (logo -> space at $3C0, any scene -> clouds at $D00,
+; clouds -> menu at $F4E), Display_hold keeps the last picture on the
+; screen until the next table shows.  The menu has none: it is converted,
+; as before E30 (user, 2026-10-29, T70).  In the target, every blit of its
+; highlight took the pointer away (Bl_umlenken), and the pointer hung and
+; jumped; converted, Thalion's menu writes only its own screens.
 ; ***************************************************************************
 LS_STERNE	equ	150		; Thalion's stars in the logo phase ($1A5C)
 
@@ -708,14 +712,20 @@ Clouds_fill:
 ; picture column by column, d2 words from word d0 on, all 256 lines and 4
 ; planes (one blit of 1024 rows), from the unpacked picture (Intro_h5+
 ; $12206, Thalion's format) into the drawing screen.  In the table: the
-; Falcon blitter, one blit per plane, straight into the target.  All
-; registers are preserved, a6 = Amiga_register as Thalion leaves it.
+; Falcon blitter, one blit per plane, straight into the target, once the
+; Videl no longer shows it (Ziel_frei); the buffer lines are marked stale
+; before.  All registers are preserved, a6 = Amiga_register as Thalion
+; leaves it.  The four clouds after it: Clouds_draw (INTRO_CLOUDS.S).
 ; Covered: movea.l Intro_h5+$12206,a0.
 Clouds_column:
 	movem.l	d0-d7/a0-a5,-(sp)
 	move.l	Intro_h5+$18,d0
 	bsr	Schirm_suchen
 	beq	.thalion
+	bsr	Ziel_frei
+	moveq	#0,d0			; first: the buffer lines are stale
+	move.w	SCH_ZEILEN(a5),d1
+	bsr	Zeilen_ungueltig
 	movem.l	(sp),d0-d2
 	move.l	Intro_h5+$12206,a0
 	add.w	d0,a0
@@ -753,9 +763,6 @@ Clouds_column:
 	addq.l	#2,a1
 	dbf	d6,.eb
 	move.w	(sp)+,sr
-	moveq	#0,d0
-	move.w	SCH_ZEILEN(a5),d1
-	bsr	Zeilen_ungueltig
 	movem.l	(sp)+,d0-d7/a0-a5
 	lea	Amiga_register,a6
 	rts
@@ -773,34 +780,18 @@ Menu_hold:
 	move.l	#Intro_h6+$C8C0,d0
 	jmp	Intro_h0+$F54
 
-; Menu_begin -- K3 at $FB2: Thalion's copy of the shown menu screen into the
-; other one, then both into the table (6:$C8C0 and 6:$C0, 320 x 256 x 5).
-; From here Thalion's menu draws into the shown screen: the entries with
-; the CPU (Menu_texts), the highlight by blits.  Covered: movea.l
-; Intro_h5+$20,a0.
+; Menu_begin -- K3 at $FB2: the menu's list is written ($FA0-$FAE), the
+; shown screen holds the whole menu picture: the hold ends, and from the
+; next VBL the menu is converted (Display_release).  Then Thalion's copy of
+; the shown screen into the other one.  Covered: movea.l Intro_h5+$20,a0.
 Menu_begin:
+	bsr	Display_release
 	move.l	Intro_h5+$20,a0
-	move.l	Intro_h5+$1C,a1
-	move.w	#12800-1,d7
-.k:	move.l	(a0)+,(a1)+
-	dbf	d7,.k
-	move.l	a0,-(sp)
-	lea	Screens_menu,a0
-	bsr	Schirme_wechseln
-	move.l	(sp)+,a0
-	jmp	Intro_h0+$FC8
-
-; Menu_texts -- K3 at $1030: Thalion has written the menu's entries into
-; plane 4 of the shown screen with the CPU ($FE6-$102C): into the target.
-; Covered: lea Intro_h1+$180,a4.
-Menu_texts:
-	move.l	Intro_h5+$20,d0
-	bsr	Schirm_nachher
-	lea	Intro_h1+$180,a4
-	jmp	Intro_h0+$1036
+	jmp	Intro_h0+$FB8
 
 	include	"AMIGA_RAHMEN.S"
 	include	"INTRO_ZOOM.S"
+	include	"INTRO_CLOUDS.S"
 
 ; ***************************************************************************
 ; Daten
@@ -837,11 +828,6 @@ Screens_clouds:
 	SCHIRM	Intro_h6+$C0,256,4
 	SCHIRM	Intro_h6+$C0+40960,256,4
 	dc.l	0
-; the menu: 320 x 256 x 5 ($F4E, $F98-$FAE)
-Screens_menu:
-	SCHIRM	Intro_h6+$C0,256,5
-	SCHIRM	Intro_h6+$C8C0,256,5
-	dc.l	0
 	include	"amiga_rahmen_daten.i"
 	include	"intro_musik.i"	; build: tools/musik_k1.py
 Musik_datei:
@@ -853,6 +839,9 @@ Musik_datei:
 	SECTION	Intro_bss,bss
 	include	"amiga_rahmen_bss.i"
 	include	"intro_zoom_bss.i"
+	even
+Clouds_left:	ds.b	CW_WOLKE	; INTRO_CLOUDS.S: the left cloud, shifted
+Clouds_right:	ds.b	CW_WOLKE	; the right one
 Ziel_sterne:	ds.w	1+2*STERNE_MAX	; count, per star offset and word
 Ls_alt:		ds.w	2*(1+2*LS_STERNE)	; per logo screen: count, the
 					; words of its stars (Logo_stars)

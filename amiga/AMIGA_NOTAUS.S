@@ -31,7 +31,7 @@
 ; Privileg).  Unser Halter baut ab, gibt die Vektoren zurueck und springt
 ; mit unveraenderten Registern und Stapel in den Halter von TOS.  So malt
 ; TOS 4.04 die Bomben auf den Desktop, und $380 bekommt seine Angaben wie
-; bisher (BOMBEN.TOS).  Line-A und Line-F ($28, $2C) bleiben bei TOS: die
+; bisher.  Line-A und Line-F ($28, $2C) bleiben bei TOS: die
 ; braucht TOS selbst.  Merker Ab_absturz: die Vektoren sind unsere.
 ; ***************************************************************************
 

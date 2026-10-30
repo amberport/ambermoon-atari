@@ -10,8 +10,9 @@
 # along here; tools/build_all.sh builds both, so whoever breaks the ST build
 # sees it at once.  Target dependent are only ST.S/ST_LIB.S against FALCON.S
 # and the places behind IFD ZIEL_ST.  The fantasy intro comes from
-# tools/fantasy_st_build.sh (FANTSYST.TOS, Thalion's FAIRY.S unchanged); no
-# ST versions of intro and extro yet: AMBER.TOS skips them.
+# tools/fantasy_st_build.sh (FANTSYST.TOS, Thalion's FAIRY.S unchanged), the
+# intro and the extro from tools/intro_st_build.sh and tools/extro_st_build.sh
+# (INTROST.TOS, EXTROST.TOS).
 set -e
 cd "$(dirname "$0")/.."
 . tools/build_common.sh
@@ -40,7 +41,8 @@ note "ENGINEST.TOS $(( $(wc -c < build/st/ENGINEST.TOS) / 1024 )) KB, 68000, -DZ
 # tools/st_palettes.txt; ENGINEST.TOS loads STPAL.DAT once at start.
 step "ST palettes"
 python3 tools/st_palettes.py build -o build/st/STPAL.DAT
-note "STPAL.DAT, sheet build/st_palettes/index.html"
+python3 tools/palette_editor/palette_sheet.py
+note "STPAL.DAT, sheet build/palette_editor/index.html"
 
 step "Game files and delivery"
 clean_output st
@@ -63,11 +65,17 @@ sh tools/intro_st_build.sh
 deliver build/st_intro/INTROST.TOS "$DATA"
 note "INTROST.TOS"
 
+step "Extro"
+# Thalion's Ambermoon_extro rebound for the 68000, pictures and scroll text
+# in ST format, no music (docs/05c-ST.md, "ST extro"); AMBER.TOS starts it
+# on the ST when the game ends.
+sh tools/extro_st_build.sh
+deliver build/st_extro/EXTROST.TOS "$DATA"
+note "EXTROST.TOS"
+
 step "Loader and tools"
 build_loader
-
-build_bomben
-note "AMBER.TOS, BOMBEN.TOS"
+note "AMBER.TOS"
 
 # Under build_all.sh the Falcon build has run them already.
 [ -n "$_AMBER_PREPARED" ] || source_checks

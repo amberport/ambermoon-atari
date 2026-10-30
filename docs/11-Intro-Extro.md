@@ -62,7 +62,7 @@ Stufe I4 Test bestanden, Nutzer 2026-09-30) macht es wie Thalions Lader:
 (since 2026-10-21 one for both machines: the cookie `_MCH` decides; on the
 ST it starts `FANTSYST.TOS`, `INTROST.TOS`, `ENGINEST.TOS`, `EXTROST.TOS`)
 and the desktop files, everything else in
-`ATARI/AMBFILES/`, also `FANTASY.TOS`, `FEEMESSB/C.TOS` and `INTRO.TOS`. Der Lader sucht jede Datei zuerst als `AMBFILES\Name`, dann
+`ATARI/AMBFILES/`, also `FANTASY.TOS`, `FEEMESS.TOS` and `INTRO.TOS`. Der Lader sucht jede Datei zuerst als `AMBFILES\Name`, dann
 als bloßen Namen (flache Ablage); das Arbeitsverzeichnis bleibt seines, von
 dort findet `ENGINE.TOS` den Ordner. Fantasy-Intro und Intro lesen zur
 Laufzeit keine Dateien.
@@ -579,67 +579,85 @@ sie ist; geändert wird nur die Übersetzung, wie mit `opt t-` bei
 `ACTIONS.S`. Verworfen wurden K2 (die MMU, nur auf dem Falcon möglich) und
 K3 (den Busfehler abfangen).
 
-### 7.3 Aufbau
+### 7.3 Structure (since step 3, E30, 2026-10-30, test T71)
 
-| Datei | Sorte | Inhalt |
+| File | Kind | Contents |
 |---|---|---|
-| `fantasy/fantasy.s` | unsere | bindet nur ein |
-| `FAIRY.S` | Thalions | unverändert, aus `$AMBER_URCODE` |
-| `fantasy/fee_vorspann.i` | unsere | `waitblit` → `jsr Blitter_warten`, Registerversätze, Maße |
-| `fantasy/FEE_SUP.S` | unsere | Amiga-Schicht: Start und Ende, Hauptablauf nach Hunk 1 $110–$2B0, VBL, Anzeige, Maus, Blitter, Sprites |
-| `build/fantasy_werte.i` | Bau | Konstanten für `FAIRY.S`, gegen den Binärcode geprüft |
-| `build/fantasy_daten.i` | Bau | Hunk 2 (`incbin`) mit Namen, Hunk 3 als BSS in Originalanordnung, Thalions Blenden, Schirmtausch und Tabellen aus Hunk 1 |
+| `fantasy/fantasy.s` | ours | includes only; checks the data's sizes |
+| `FAIRY.S` | Thalion's | unchanged, from `$AMBER_URCODE` |
+| `fantasy/fee_vorspann.i` | ours | `waitblit` → `jsr Blitter_warten`, register offsets, picture sizes |
+| `fantasy/FEE_SUP.S` | ours | start and end, the main flow after hunk 1 $110–$2B0 (`Fee_ablauf`), VBL, display, mouse, the fairy, the plot hook, `Blitter_warten` |
+| `fantasy/STARS_FALCON.S` | ours | `Magic_falcon` and `Dust_falcon` for Thalion's `make_magic` and `make_funkel2`, the check `CHECK_STARS` |
+| `build/fantasy_werte.i` | build | constants for `FAIRY.S`, checked against the binary |
+| `build/fantasy_daten.i` | build | hunk 2 (`incbin`) with names, hunk 3 as BSS in the original layout, Thalion's fades, screen swap and tables from hunk 1 |
+| `build/falcon_fantasy/` | build | `tools/fantasy_st_data.py --falcon` (shared with the ST): background, fairy, logo in Falcon format, the stars as code |
 
-Bauen: `tools/fantasy_bauen.sh`, von `build_falcon.sh` gerufen, erzeugt
-`ATARI/AMBFILES/FANTASY.TOS` und zwei Messfassungen: `FEEMESSB.TOS` (Blitter) und
-`FEEMESSC.TOS` (Zeilen mit der CPU, Schalter `FEE_CPU`). Beide zählen
-(`FEE_MESSEN`) die Bilder, die knapp (erst nach dem 2. VBL) oder zu spät
-(erst nach dem 3. VBL) fertig wurden, dazu die Amiga-Blits, und schreiben
-das Ergebnis nach dem Ende auf den Desktop. Thalions Schleife braucht drei
-VBL je Bild; knapp kostet also noch nichts.
+Build: `tools/fantasy_bauen.sh`, called by `build_falcon.sh`, makes
+`FANTASY.TOS` and two test builds. `FEEMESS.TOS` (`FEE_MESSEN`) counts
+the frames done just in time (after the 2nd VBL) or late (after the 3rd);
+Thalion's loop takes three VBL a frame, so "just in time" costs nothing
+yet. `FEECHECK.TOS` (`CHECK_STARS`, `CHECK_DEFER`) runs Thalion's
+`make_funkel2` and `make_magic` and ours every frame from the same state
+and counts the frames whose state or lower band differ. Both show the
+result at the end and write it to `FEEMESS.TXT` or `FEECHECK.TXT`.
 
-**Die Schicht:**
+**The layer**, on the model of `fantasy_st/` (7.8a; the ST's D3 cut,
+docs/17):
 
-- **Anzeige:** Jeder Amiga-Puffer hat einen Falcon-Zwilling. Umgesetzt
-  werden die Ebenen 0–4 aus den fünf Amiga-Zeilen. Ebene 5 ist die Bank:
-  0 bis Zeile 133, 1 ab Zeile 134. Die Ebenen 5–7 stehen fest. Je Bild
-  werden die Zeilen 134–255 umgesetzt, denn nur die stellt Thalions Rahmen
-  jedes Mal aus dem Hintergrund her.
-- **Zeilen (Nutzer):** RGB. Der Videl wird von 200 auf 256 Zeilen gezogen
-  (VDB/VDE ±28 Zeilen, VBE/VBB mit), wenn die Grenzen es erlauben. Sonst
-  gibt es 200 Zeilen ab Amiga-Zeile 28, an VGA 240 ab Zeile 8. Ob der Videl
-  mitgeht, ist **ungeprüft**; das zeigt der Test auf RGB.
-- **VBL:** Bildbasis und Farben setzen, dann in Thalions `level3` springen.
-  Der Ausnahmerahmen des Falcon-VBL liegt dabei schon richtig auf dem
-  Stapel, Thalions `rte` kehrt also richtig zurück. Bank 0 bekommt die
-  32 Farben, die `level3` schrieb. Bank 1 bekommt dieselben, sechs davon aus
-  `Palette_unten`, wie es die Copperliste tut.
-- **Maus:** Mausvektor (`Kbdvbase`), linke Taste, wie Thalions
+- **Picture:** Thalion draws into `workbase`, one Amiga buffer nobody
+  shows and nobody converts. What shows is two Falcon screens of all 256
+  Amiga rows, 8 planes word-interleaved, row for row; the picture base
+  starts the window (`Anzeige_erste`). Plane 5 is the bank (0 above row
+  134, 1 from there; it is in the background data), planes 6 and 7 are 0.
+  Below each screen 16 rows nobody shows, for a star that reaches below
+  row 255 (once the "garbage at the top").
+- **Lines (user):** RGB. The Videl is pulled from 200 to 256 lines
+  (VDB/VDE ±28 lines, VBE/VBB with them) when its limits allow; otherwise
+  200 lines from Amiga row 28, at VGA 240 from row 8.
+- **Every frame** (`Fee_ablauf`, Thalion's order): Thalion's screen swap
+  (both are `workbase`), ours (`Falcon_swap`), show the new screen
+  (`Anzeige_setzen`), wait, the lower band from the background
+  (`Unten_herstellen`, Thalion's $BC0 blit), Thalion's `make_funkel`, then
+  `Dust_falcon` and `Magic_falcon`.
+- **Sparks:** Thalion's `make_funkel` plots through `plot_jmptab`; it
+  points to `Plot_falcon0..31`, and `Plot_table` turns the `workbase`
+  address into the Falcon one. The colour is the Amiga colour, plane 5
+  stays.
+- **Dust, stars, logo:** `Dust_falcon` and `Magic_falcon`
+  (`STARS_FALCON.S`) keep Thalion's logic, buffers, tables and random
+  numbers, as the ST's `Dust_st`/`Magic_st`, and draw straight into the
+  Falcon work screen; the stars through the compiled routines per image
+  and shift, the logo column into `Falcon_background`. `Blitter_warten`
+  does Thalion's two blit kinds (`$CA` star, `$E2` logo column) in Falcon
+  format; since our two routines only `FEECHECK` has any.
+- **The fairy** (E30: 50 Hz as the Amiga's sprites): `Fairy_put` in every
+  VBL on the shown screen. It puts back what it covered last time (planes
+  0–4, `Fee_rettung`), saves the new place and draws the fairy there: frame
+  and place from the sprite pointer and control words `level3` wrote, the
+  frame from 16 preshifts made at start into memory from `Mxalloc` (1.1 MB;
+  without it no fairy), during the fade in (`Wait_vbl`). Planes 0–3 take
+  the sprite value, plane 4 the mask (colours 16–31); plane 5 stays the
+  row's bank, as the copper changes the sprite colours too. At a screen
+  change the save-under of the old screen is dropped (its lower band is
+  restored anyway) and the fairy goes into the new screen before it shows.
+  One frame late, as before: drawn is what `level3` set in the previous
+  VBL, so Thalion's `rte` stays untouched.
+- **VBL:** picture base and colours, `Fairy_put`, then Thalion's `level3`.
+  Bank 0 gets the 32 colours `level3` wrote, bank 1 the same with six from
+  `Palette_unten`, as the copper list does.
+- **Mouse:** mouse vector (`Kbdvbase`), left button, as Thalion's
   `btst #6,$bfe001`.
-- **Blitter** (F2, der ST(E)-Blitter des Falcon): `Ebenen_umsetzen` setzt
-  ein Rechteck mit fünf Blits um, einen je Ebene (Quelle Schritt 2, Ziel
-  Schritt 16). Der Bus bleibt geteilt, damit die Tastatur keine Bytes
-  verliert. Der VBL blittet auch: Er wartet, bis der Blitter frei ist, und
-  stellt dessen Register danach wieder her.
-- **Sprites** (F2): Im VBL werden die acht Spritezeiger gelesen, die
-  `level3` nach `$DFF120` schrieb, dazu die Steuerwörter am Anfang jedes
-  Sprites, so wie die Sprite-DMA es tut. Angehängte Paare ergeben die
-  Farben 16–31. Nebeneinanderliegende Paare fasst die Schicht zu einem Lauf
-  zusammen; die Fee ist einer. Je Lauf legt die CPU die Maske und vier
-  Ebenen mit einem Nullwort je Zeile ab. Dann stanzt der Blitter die
-  Ebenen 0–3 aus und odert sie ein, Ebene 4 bekommt die Maske (neun Blits).
-  Ebene 5 trägt schon die Bank der Zeile, denn die Copperliste wechselt
-  auch Spritefarben. Links und rechts schneiden FXSR und die Endmasken zu,
-  oben und unten der Zeilenausschnitt.
-  - Unter der Fee wird nichts gesichert: Beim nächsten Mal setzt die
-    Schicht das Rechteck aus dem Amiga-Zwilling neu um.
-  - **Ein Bild Versatz:** Gezeichnet wird, was `level3` im *vorigen* VBL
-    eintrug. So bleibt Thalions `rte` unberührt.
-  - Nullpunkt wie bei Thalion: `$80` waagerecht, `$28` senkrecht
-    („screen_start“). Ob die Hardware waagerecht um einen Punkt versetzt,
-    ist nicht geprüft.
-  - Die Flugbahn reicht waagerecht von −64 bis 324 und senkrecht bis 265
-    (Unterkante): Die Fee fliegt links herein und rechts hinaus.
+- No blitter, no line conversion: everything is drawn by the CPU.
+  Sections 7.4 to 7.8 describe the way before (conversion, Falcon
+  blitter, `Amiga_blit`) and its measurements.
+
+*Hatari (2026-10-30, RGB):* `FEECHECK` 497 of 497 frames equal;
+`FEEMESS` 497 frames, none tight or late. Profile VBL 900–1500 (logo phase
+and flight): about 1.5 of 3 VBL a frame busy; `Unten_herstellen` 0.49,
+the fairy 0.57 (0.15 a VBL), `Magic_falcon` with the stars 0.24,
+`Dust_falcon` 0.08, Thalion's `make_funkel` 0.06 VBL a frame. Hatari is
+too fast on memory copies (docs/developer/09). On the Falcon (T71, user,
+2026-10-30): no faults, very smooth; numbers not reported.
 
 ### 7.4 Stufen
 
@@ -649,6 +667,7 @@ VBL je Bild; knapp kostet also noch nichts.
 | F2 | Blitter-Schicht; Zeilen mit dem Blitter umsetzen; Sprites: die Fee | Fee in Hatari sauber (Nutzer, 2026-09-29); Hardware offen. Hatari: beide Fassungen halten den Takt, die Blitterfassung mit weniger Reserve (199 von 443 Bildern über zwei VBL, CPU 2) |
 | F3 | Thalions Blits: Schriftzug im Sternenschweif, Sterne im Flugstaub (`Amiga_blit`, CPU) | in Hatari „sehr schön“, Schriftzug und Sternenstaub klar (Nutzer, 2026-09-29); Hardware offen. Hatari: rund 10 650 Amiga-Blits, 0 nicht unterstützt; 63–65 Bilder zu spät (F2: 2), höchstes vindex 11, in beiden Fassungen gleich, also Kosten der Blits in der CPU (F4) |
 | F4 | Tempo: zuerst ein schneller Weg in `Amiga_blit` für die Sterne (`$CA`), geprüft gegen den genauen (7.6); der Atari-Blitter erst, wenn das nicht reicht | T2 gebaut 2026-10-01, ungetestet |
+| F5 | E30: Falcon format on the model of `fantasy_st/`, nothing converted, the fairy at 50 Hz with a save-under (7.3); replaces F2–F4 | built 2026-10-30, Hatari: `FEECHECK` 497 of 497 frames equal; T71 passed (user, 2026-10-30: no faults, very smooth) |
 
 In F1 läuft Thalions ganzer Ablauf: Einblenden, Flugbahn, Flugstaub,
 Ausblenden bei Maustaste oder am Ende der Bahn. F2 bringt die Fee, F3
@@ -1176,11 +1195,13 @@ nicht in einen direkten Schirm, denn der ist Thalions Zeichenfläche.
 **3. Blits umlenken.** `Amiga_blit` fragt zuerst, ob ein benutzter Kanal
 in einem Schirm der Tabelle liegt (ohne Tabelle kostet das einen Vergleich).
 Dann:
-- *direkt ins Ziel*, wenn nur D im Schirm liegt und es einen Weg gibt:
-  aufsteigend, jede Zeile bleibt in einer Ebene einer Amiga-Zeile, der
-  Schritt sind ganze Zeilen. Bisher `Bl_ziel_d8` (Minterm `$D8`, Extro),
-  derselbe Code wie `Bl_schnell_d8`, nur mit dem Wortschritt als
-  Makrowert. Die Zeilen im Zwischenspeicher gelten danach nicht mehr.
+- *straight into the target* when only D lies in the screen and there is
+  a way for it: ascending, each line stays in one plane of one Amiga line,
+  the step is whole lines. So far `Bl_ziel_d8` (minterm `$D8`, extro),
+  the same code as `Bl_schnell_d8`, only with the word step as a macro
+  value. The buffer lines are marked stale *before* the target is written
+  (since 2026-10-30, ST's finding, T72): marked after, a VBL in between
+  would take stale lines as valid.
 - *über den Zwischenspeicher* in allen anderen Fällen: die berührten
   Zeilen holen (nur ungültige), Thalions Blit unverändert dort, die Zeilen
   von D ins Ziel bringen. Das ist immer richtig, aber teuer, wenn es oft
@@ -1576,8 +1597,9 @@ Copperliste.
     `$1A42` star picture, `$1BAE` zoom (ours), `$776`/`$B40` city picture
     (128 lines at line 36, word 5), `$165E`/`$169C` Twinlake's animation
     (byte EOR, lines 7-183), `$12C0` copy shown -> hidden (same area).
-    Our routines write the target and mark the buffer lines invalid
-    (`Zeilen_ungueltig`; clearing is one Falcon blit, `Ziel_loeschen`).
+    Our routines mark the buffer lines invalid and then write the target
+    (`Zeilen_ungueltig`, first since 2026-10-30, T72; clearing is one
+    Falcon blit, `Ziel_loeschen`).
     Once per scene Thalion's code runs between `Schirm_vorher` (fetch)
     and `Schirm_nachher` (bring): the city text `$7BA`, Twinlake's
     picture `$994`-`$A36` (both screens, `Alle_*`). The reader `$15A6`
@@ -1601,7 +1623,7 @@ fetch and bring, the STE's low base byte) may differ.
 | Program | Falcon | ST | State |
 |---|---|---|---|
 | Intro | every scene in the target format, nothing converted live (7.8, T63; 7.8b, T66): own zoom, own stars in the logo phase, the clouds and the menu's text by blits straight into the target, the picture held at the three format changes | the same plan (docs/05c "The intro without live conversion"), the same hooks and names where they exist (docs/05c "Target screens"); the ST builds it after the Falcon | same plan; the ST follows |
-| Fantasy intro | Thalion draws into Amiga buffers, we convert every frame (`Zeilen_umsetzen`) and stamp the fairy in the VBL | no Amiga screen (`workbase` a dummy), graphics in ST format at build, fairy preshifted at start, hooks at `plot_jmptab` and `Blitter_wait`, own `make_magic`/`make_funkel2` (E41, `fantasy_st/`) | **differs**: the Falcon follows `fantasy_st/` (plan before building) |
+| Fantasy intro | no Amiga screen (`workbase` an address range), graphics in Falcon format at build, fairy preshifted at start and put in every VBL with a save-under (50 Hz), hooks at `plot_jmptab` and `Blitter_warten`, own `make_magic`/`make_funkel2` (`fantasy/STARS_FALCON.S`; 7.3, T71) | no Amiga screen (`workbase` a dummy), graphics in ST format at build, fairy preshifted at start, hooks at `plot_jmptab` and `Blitter_wait`, own `make_magic`/`make_funkel2` (E41, `fantasy_st/`) | same method since step 3 (2026-10-30, T71); the fairy at 50 Hz on the Falcon, once a frame on the ST |
 | Extro | target format, 5 planes, 256 lines | none yet | the ST takes the Falcon's method when it builds one |
 
 Both take Thalion's data from `Amberfiles/` at build time (7.1).
@@ -1618,8 +1640,8 @@ measurement counts the fallback ("Converted (fallback): pictures, bands",
 | Scene | Thalion's screens | Our table | Writers into the target |
 |---|---|---|---|
 | Logo phase, $190-$3C0 | 6:$C0, +40000; 320 x 200 x 5 | `Screens_logo` from `$1E0` (`Logo_begin`, before the first copper list) | clear `$21E` (`Logo_clear`); stage blits `$13D0` ($F0 way); zoom loop clear `$137E` (`Zoom_loeschen`, planes 0-3); stars in Thalion's VBL `$2646` (`Logo_stars`, plane 4 of the shown target); PRESENTS wipe `$310` (`Presents_row`) |
-| LYRAMION, clouds, $D00-$F4E | 6:$C0, +40960; 320 x 256 x 4 | `Screens_clouds` from `$D00` (`Clouds_begin`) | fill `$DA2` (`Clouds_fill`); after a click the picture `$D74` (`Clouds_background`); columns of the menu picture `$1270` (`Clouds_column`, Falcon blitter); clouds `$4E2A` ($CA way); text `$29F4` (any minterm) |
-| Menu, from $F4E | 6:$C8C0, 6:$C0; 320 x 256 x 5 | `Screens_menu` from `$FB2` (`Menu_begin`) | entries `$FE6-$102C` (CPU, brought at `$1030`, `Menu_texts`); highlight `$29F4` (blits) |
+| LYRAMION, clouds, $D00-$F4E | 6:$C0, +40960; 320 x 256 x 4 | `Screens_clouds` from `$D00` (`Clouds_begin`) | fill `$DA2` (`Clouds_fill`); after a click the picture `$D74` (`Clouds_background`); columns of the menu picture `$1270` (`Clouds_column`, Falcon blitter); clouds `$E3A` (`Clouds_draw`, our CPU code, `INTRO_CLOUDS.S`; Thalion's `$4E2A` blits only outside the table); text `$29F4` (any minterm) |
+| Menu, from $F4E | 6:$C8C0, 6:$C0; 320 x 256 x 5 | none: converted (T70, user 2026-10-29); held from `$F4E` (`Menu_hold`) to `$FB2` (`Menu_begin`, `Display_release`) | none, Thalion writes only its own screens |
 
 **Thalion's scratch screen.** Before each logo zoom Thalion computes the
 stages ($14E6): it clears the hidden screen as 4 planes of 160 bytes,
@@ -1658,10 +1680,63 @@ a word left of the line, at line 0 before the screen or in the screen
 before. When that first word only gives D = C (`$CA`, AFWM < 1 << ASH,
 `Bl_erstes_wort`), the way starts with the second word.
 
+**The menu is converted** (user, 2026-10-29, T70), as before E30. In
+the target, Thalion's menu wrote into the picture shown, and before every
+blit of its highlight the pointer had to go; the pointer hung and jumped,
+and entries were chosen without a click (T67-T69). Converted, Thalion's
+menu writes only its own screens, and the menu's copper list, not in a
+table, is converted by the VBL. `Display_hold` at `$F4E` keeps the clouds'
+last picture over the change 4 -> 5 planes; at `$FB2` the shown screen
+holds the whole menu, and `Display_release` lets the VBL convert it.
+
 **The mouse pointer** is drawn into the picture shown (`Basis_jetzt`),
-in the menu the target. Before anyone writes or reads a target the
+in the scenes with a table the target. Before anyone writes or reads a target the
 pointer goes (`Bl_umlenken` with the VBL held off, `Schirme_wechseln`,
 `Display_hold`); the VBL draws it again.
+
+**HOG blits in pieces (T68).** While the Falcon blitter holds the bus in
+HOG mode, the CPU takes no interrupt, the ACIA's neither. The IKBD sends a
+byte every 1.3 ms; a blit over a whole plane takes longer, and after one
+lost byte TOS reads the mouse packets shifted: the pointer jumps, and a dx
+of $F8-$FB counts as a header with buttons (T67: a menu entry chosen
+without a click; derived from the code). `Blit_starten` therefore runs a
+blit in pieces of about 512 words (`BLIT_STUECK`), whole lines each; the
+blitter carries its addresses on, and between two pieces the CPU takes
+what is pending.
+
+**Our clouds (T67, user 2026-10-29: "flüssig", own code and Falcon
+format, visually the same).** T66 on the Falcon: the clouds slow, white
+flicker in vertical areas. Measured in Hatari (`INTROMES`, 300 s, no
+click): during the clouds 77-86 % of the time went into the four cloud
+blits per frame ($4E2A, `$CA`, 8 words x 512 rows each, through
+`Bl_ziel_ca` in software); Thalion's loop wants one frame per 2 VBL, and
+already in Hatari the clouds fell behind (screenshots at the same VBL,
+old against new build: the old clouds visibly further back).
+`intro/INTRO_CLOUDS.S` replaces the four blits (K3 at `$E3A`, up to
+`$EB2`, `Clouds_draw`): `Clouds_prepare` shifts both clouds (hunk 4
+`$1BF88`, `$1E288`; 7 words, 4 planes and a mask per line) at the start
+into all 16 positions, in the target's format (per 16-pixel group the
+inverted mask and planes 0-3, the cloud masked; 2 x 192 KB), and
+`Cloud_put` writes them with the CPU: a group the mask covers whole is
+written, a free one skipped, only the rest reads the target. The result
+is Thalion's blit, pixel for pixel, clipped at both edges; planes 4-7
+stay. Per cloud about 190 groups are free, 570 full, 250 partial.
+
+**No drawing into the picture still shown** (`Ziel_frei`,
+`AMIGA_ZIEL.S`). A new base (`Basis_setzen`) takes over at the next VBL,
+as a copper list does on the Amiga; until then the Videl shows
+`Basis_vorher` (`Basis_wartet`, cleared in `Amiga_vbl`). Thalion's cloud
+loop only waits until 2 VBL have passed since the frame began; a frame
+that took longer went straight on into the screen the Videl still showed,
+which drew frame n+2 over n before n+1 came: edges jumping back and
+forth, plane by plane in between colours, the white flicker of T66.
+`Ziel_frei` waits for that VBL before a direct write into that target:
+in `Bl_umlenken` (D's screen), `Clouds_column` and `Clouds_draw`. Not
+in the switch itself: seven times Thalion waits for the next VBL right
+after a new copper list ($288A), and a wait there would halve those
+scenes' frame rate. Inside the VBL or with it held off `Ziel_frei`
+returns at once. `Clouds_column` now marks the buffer lines stale before
+writing the target (the order of ST's finding (2)).
 
 ### 7.9 Notausgang (Nutzer, OK 2026-10-09)
 
@@ -1697,7 +1772,7 @@ schreibt den alten Vektor zurück und springt hinein.
   Halter (`Absturz`) baut ab wie der Notausgang (`Notabbau`), gibt die
   Vektoren zurück und springt mit unveränderten Registern, Stufe und
   Ausnahmerahmen in den Halter von TOS. TOS 4.04 malt die Bomben dann auf
-  den Desktop, `$380` bekommt seine Angaben wie bisher (`BOMBEN.TOS`).
+  den Desktop, `$380` bekommt seine Angaben wie bisher.
   Merker `Ab_absturz`; nach einem geordneten Ende gibt der Notausgang die
   Vektoren zurück.
 - Nicht abgedeckt: ein Absturz bei gesperrten Interrupts, der nie bis

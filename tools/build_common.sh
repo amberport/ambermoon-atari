@@ -474,14 +474,6 @@ build_loader() {
 	deliver build/AMBER.TOS "$OUT"
 }
 
-# build_bomben -- BOMBEN.TOS shows after a crash what TOS put down from
-# $380 and looks for the engine in memory (2026-10-02).  A tool, not part
-# of the game; 68000, the same for both machines.
-build_bomben() {
-	vasmm68k_mot -m68000 -Ftos -quiet -o build/BOMBEN.TOS tools/bomben/bomben.s
-	deliver build/BOMBEN.TOS "$OUT"
-}
-
 # source_checks -- the checks that read only our source, not a build.
 # Under build_all.sh they run once, after the Falcon build.
 source_checks() {
