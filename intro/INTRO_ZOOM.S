@@ -50,7 +50,7 @@
 ; Weg gehen, dann unseren, und vergleicht die Zeilen (Zp_text).
 ; ***************************************************************************
 
-ZM_BASIS	equ	$11CF0		; Thalions Zoomvariablen in Hunk 5, ab hier:
+ZM_BASIS	equ	Intro_h5_11CF0		; Thalions Zoomvariablen in Hunk 5, ab hier:
 ZM_X		equ	0		; Ziel-x, beschnitten
 ZM_Y		equ	2		; Ziel-y, beschnitten
 ZM_QBREITE	equ	4		; Quellbreite
@@ -65,7 +65,7 @@ ZM_MASKE	equ	$1C		; <> 0: Farbe 0 laesst den Schirm stehen
 ZM_QUELLE	equ	$1E		; Quellbild, je Zeile vier Ebenen
 ZM_SPALTENTAB	equ	$22		; ($11D12) Spaltenschritte, von rechts
 ZM_ZEILENTAB	equ	$2A2		; ($11F92) Zeilenschritte
-ZM_SCHIRM	equ	$18		; in Hunk 5: Zeiger auf Thalions Zeichenschirm
+ZM_SCHIRM	equ	Intro_h5_18		; in Hunk 5: Zeiger auf Thalions Zeichenschirm
 ZM_ZEILE	equ	160		; Bytes je Schirmzeile: 4 Ebenen zu 40
 ZM_EBENE	equ	40
 ZM_MAXBREITE	equ	512		; breitere Quellen nimmt Thalions Weg
@@ -88,7 +88,7 @@ ZL_LAENGE	equ	16
 ; ***************************************************************************
 Zoom_eigen:
 	IFND	ZOOM_THALION
-	cmp.w	#ZM_MAXBREITE,Intro_h5+ZM_BASIS+ZM_QBREITE
+	cmp.w	#ZM_MAXBREITE,ZM_BASIS+ZM_QBREITE
 	bhi.b	Zoom_thalion
 	IFD	ZOOM_PRUEF
 	bra	Zp_pruefen
@@ -99,14 +99,14 @@ Zoom_eigen:
 
 ; Zoom_thalion -- Thalions Weg ab $1C98, mit dem Befehl, den K3 ersetzt hat.
 Zoom_thalion:
-	move.w	Intro_h5+$11CF8,d0
-	jmp	Intro_h0+$1C9E
+	move.w	Intro_h5_11CF8,d0
+	jmp	Intro_h0_1C9E
 
 ; ***************************************************************************
 ; Zoom_neu -- der Zoom auf unserem Weg.  Veraendert alle Register ausser a7.
 ; ***************************************************************************
 Zoom_neu:
-	lea	Intro_h5+ZM_BASIS,a5
+	lea	ZM_BASIS,a5
 	; Spaltenkarte: je Punkt der Zielworte der Versatz in Zm_chunky, also
 	; Quellspalte + 1; 0 = ausserhalb des Rechtecks, dort steht Farbe 0
 	lea	Zm_karte,a0
@@ -175,15 +175,15 @@ Zoom_neu:
 	move.w	d0,Zm_qzeile_bytes
 	clr.b	Zm_chunky		; Farbe 0 fuer "ausserhalb"
 	bsr	Zm_quelle_suchen
-	lea	Intro_h5+ZM_BASIS,a5
+	lea	ZM_BASIS,a5
 
 	; Ziel: Thalions Schirm, Zeile y, Wort von x
-	move.l	Intro_h5+ZM_SCHIRM,d0
+	move.l	ZM_SCHIRM,d0
 	bsr	Schirm_suchen
 	sne	Zm_im_ziel
 	bne.b	.ziel
 	move.l	d0,a4
-	lea	Intro_h5+ZM_BASIS,a5	; Schirm_suchen took a5
+	lea	ZM_BASIS,a5	; Schirm_suchen took a5
 	move.w	ZM_Y(a5),d0
 	mulu.w	#ZM_ZEILE,d0
 	add.l	d0,a4
@@ -197,19 +197,19 @@ Zoom_neu:
 	; The screen is in the target format (docs/11 7.8): the target is
 	; written, the buffer lines are no longer valid.
 .ziel:	move.l	SCH_ZIEL(a5),a4
-	move.w	Intro_h5+ZM_BASIS+ZM_Y,d0
-	move.w	Intro_h5+ZM_BASIS+ZM_ZEILEN,d1
+	move.w	ZM_BASIS+ZM_Y,d0
+	move.w	ZM_BASIS+ZM_ZEILEN,d1
 	bsr	Zeilen_ungueltig
 	mulu.w	#ZIEL_ZEILE,d0
 	add.l	d0,a4
-	move.w	Intro_h5+ZM_BASIS+ZM_X,d0
+	move.w	ZM_BASIS+ZM_X,d0
 	lsr.w	#4,d0
 	mulu.w	#ZIEL_WORT,d0
 	add.l	d0,a4
 	move.l	a4,Zm_ziel
 	move.l	#ZIEL_ZEILE,Zm_zeilenschritt
 .ziel_da:
-	lea	Intro_h5+ZM_BASIS,a5
+	lea	ZM_BASIS,a5
 
 	tst.w	ZM_MASKE(a5)
 	sne	Zm_mit_maske
@@ -233,7 +233,7 @@ Zoom_neu:
 	bra.b	.falten
 .wandeln:
 	mulu.w	Zm_qzeile_bytes,d0	; Zeile einzeln wandeln
-	move.l	Intro_h5+ZM_BASIS+ZM_QUELLE,a0
+	move.l	ZM_BASIS+ZM_QUELLE,a0
 	add.l	d0,a0
 	lea	Zm_chunky+1,a1
 	bsr	Zm_wandeln
@@ -270,7 +270,7 @@ Zm_quelle_suchen:
 	bne.b	.bereit
 	move.l	#Zm_lager,Zm_lager_frei	; erster Zoom: Lager leer
 .bereit:
-	lea	Intro_h5+ZM_BASIS,a5
+	lea	ZM_BASIS,a5
 	move.l	ZM_QUELLE(a5),d0
 	cmp.l	#Intro_h2,d0		; nur Thalions feste Daten
 	blo	.aus
@@ -503,8 +503,8 @@ ZP_MAX		equ	256*ZM_ZEILE
 
 Zp_pruefen:
 	addq.l	#1,Zp_anzahl
-	move.w	Intro_h5+ZM_BASIS+ZM_ZHOEHE,d0
-	cmp.w	Intro_h5+ZM_BASIS+ZM_QHOEHE,d0
+	move.w	ZM_BASIS+ZM_ZHOEHE,d0
+	cmp.w	ZM_BASIS+ZM_QHOEHE,d0
 	blt.b	.a
 	addq.l	#1,Zp_weg_b		; Thalions zweiter Weg ($2060)
 .a:	bsr	Zp_bereich
@@ -535,7 +535,7 @@ Zp_pruefen:
 	addq.l	#1,Zp_abweichend
 	tst.l	Zp_erster+20
 	bne.b	.aus
-	lea	Intro_h5+ZM_BASIS,a5	; den ersten abweichenden merken
+	lea	ZM_BASIS,a5	; den ersten abweichenden merken
 	lea	Zp_erster,a0
 	move.w	ZM_X(a5),(a0)+
 	move.w	ZM_Y(a5),(a0)+
@@ -556,8 +556,8 @@ Zp_pruefen:
 ; Zp_bereich -- a0 = erste Zeile des Rechtecks in Thalions Schirm,
 ;   d0.l = Langworte bis zur letzten.
 Zp_bereich:
-	lea	Intro_h5+ZM_BASIS,a5
-	move.l	Intro_h5+ZM_SCHIRM,a0
+	lea	ZM_BASIS,a5
+	move.l	ZM_SCHIRM,a0
 	move.w	ZM_Y(a5),d0
 	mulu.w	#ZM_ZEILE,d0
 	add.l	d0,a0

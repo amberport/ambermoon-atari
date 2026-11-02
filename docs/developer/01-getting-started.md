@@ -6,8 +6,8 @@
 
 | What | Where it comes from | Key (default below `ambermoon_gamedata/` next to the repository) |
 |---|---|---|
-| Thalion's released 68000 source, its `src/` folder with `GAME_OFF.S`, `HULL/`, `MAP/` … | [jhorneman/ambermoon](https://github.com/jhorneman/ambermoon) | `AMBER_URCODE` (`ambermoon-main-asm/src`) |
-| The game files, German version 1.20, unpacked so that `Amberfiles/` is a folder | your own copy of the game | `AMBER_DATEN`, the folder *above* `Amberfiles/` (`ambermoon_german_1.20_extracted`) |
+| Thalion's released 68000 source, its `src/` folder with `GAME_OFF.S`, `HULL/`, `MAP/` … | [jhorneman/ambermoon](https://github.com/jhorneman/ambermoon); if it is missing at its default place, the build fetches it (`tools/fetch_source.py`) | `AMBER_URCODE` (`ambermoon-main-asm/src`) |
+| The game files of one version: 1.01 German, 1.07 English, 1.20 German, 1.21 German, English or French. A folder, a zip or disk images (ADF, IPF, DMS with `xdms`) | your own copy of the game | `AMBER_DATEN`, for a folder the one *above* `Amberfiles/` (`ambermoon_german_1.20_extracted`), or on the command line; unset and missing, the one set in `ambermoon_gamedata/` |
 | Optional: Big Alec's YM arrangement as an SNDH file (released by PHF/Nokturnal in 2019 as the *Ambermoon Music Demo*, linked into one file by Grazey) | `big_alec/ambermon.snd` from the SNDH archive | `AMBER_YMSNDH` (`ambermon.snd`); if it is set and the file is missing, the build stops |
 | Optional: a TOS image for Hatari | your own | `AMBER_TOS` (`TOS404.IMG`) |
 
@@ -19,16 +19,25 @@ checkout's; it holds personal paths and is never committed, template
 shows what it finds and where from; the first step of every build,
 "Sources and switches", checks the same, with the details in
 `build/build.log`. `AMBER_OBJDUMP` works the same way and has no
-default (below).
+default (below). `AMBER_DOWNLOAD=NO` forbids the build every download.
+
+The build finds out by itself which version it has. Our code is written
+against 1.20; for the others the build moves each place it needs and
+makes the files Thalion's older disks lack (chapters 9 and 10). A build
+fits the game files it was built from: the engine checks that at start.
 
 The rights to Thalion's games are unclear; the source is published for
 study. That is why nothing of Thalion's ever goes into this repository,
 neither source nor game data nor anything extracted from them.
 
-**Tools:** `vasmm68k_mot` and `vlink` (Volker Barthelmann), `a56` (the
-DSP56001 assembler; Debian/Ubuntu package `a56`), an m68k `objdump`
-(`AMBER_OBJDUMP`, `PATH`, or the VS Code extension `atari-st-dev`),
-Python 3, a POSIX shell. Hatari for emulator runs.
+**Tools:** `vasmm68k_mot` 1.9a and `vlink` 0.17a (Volker Barthelmann,
+Frank Wille; vasm 2.0f does not build this project), on Linux x86-64
+fetched by the build when they are missing (`tools/fetch_vbcc.py`), an
+m68k `objdump` (`AMBER_OBJDUMP`, `PATH`, or the VS Code extension
+`atari-st-dev`), Python 3, a POSIX shell. `a56` (the DSP56001 assembler;
+Debian/Ubuntu package `a56`) only to change the music mixer: without it
+the build takes the assembled `musik/musik_dsp.dsp`. Pillow
+(`python3-pil`) only for the palette check page. Hatari for emulator runs.
 
 **Hardware it runs on:** a Falcon030 (tested with 14 MB, TOS 4.04, RGB and
 VGA; a CT60 in 68030 mode). The ST build targets an STE with 8 MHz and
@@ -41,25 +50,31 @@ program. Minimum memory and other TOS versions are not measured yet.
 
 ```
 sh tools/build_all.sh          both machines
-sh tools/build_falcon.sh       the Falcon only (needs a56)
-sh tools/build_st.sh           the ST only (no a56)
+sh tools/build_all.sh FILE     the same, from these game files
+sh tools/build_falcon.sh       the Falcon only
+sh tools/build_st.sh           the ST only
+TESTBUILDS=1 sh tools/build_all.sh   also the test builds (chapter 9)
 ```
 
-Step by step for Linux, macOS and Windows, with where each tool comes
-from: [building it yourself](building.md).
+The short way, with the versions and how far each is tested, is the
+[Quickstart in the README](../../README.md#quickstart). What the build
+looks for and where, the tools, and the way on macOS and Windows:
+[building it yourself](building.md).
 
 `build_all.sh` is the one build. It shows one line per step and writes
 everything else into `build/build.log` (`VERBOSE=1` shows all); its first
 step, "Sources and switches", stops it if a required source is missing.
-Both machines' builds write into one folder:
+Its last line names the build: our version (the file `VERSION`), the
+commit, and the game files it was built for. Both machines' builds write
+into one folder:
 
 ```
 ATARI/AMBER.TOS           the loader for both: start this on Falcon or ST/STE
 ATARI/AMBFILES/           ENGINE.TOS, FANTASY.TOS, INTRO.TOS, EXTRO.TOS
                           (Falcon), ENGINEST.TOS, FANTSYST.TOS, INTROST.TOS,
                           EXTROST.TOS (ST), Thalion's game files
-                          under 8.3 names, save games, MUSIK_YM.BIN (with
-                          AMBER_YMSNDH)
+                          under 8.3 names, save games, BUILD.TXT (the build's
+                          name), MUSIK_YM.BIN (with AMBER_YMSNDH)
 build/                    everything intermediate, never versioned
 ```
 

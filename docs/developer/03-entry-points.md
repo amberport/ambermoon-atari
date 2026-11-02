@@ -14,6 +14,8 @@ start                         engine/src/MAIN.S, the program entry
   own stack, supervisor, etv_term -> Notausgang
   library data                AMBFILES\ found?  Objects.amb, button graphics,
                               Text.amb, Keymap, CPU check for 3D
+  Check_game_files            the game files of the version built for? else
+                              a message, a key, back to the desktop (chapter 9)
   screen, raster, mouse       Bildpuffer_anlegen, Open_screen, Raster_install,
                               Musik_install, Set_mouse_ptr, Mouse_install
   without a choice            Startmenue (HULL/STARTMENUE.S)

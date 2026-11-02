@@ -27,7 +27,7 @@ from ambtool import read_hunks                          # noqa: E402
 import paths  # noqa: E402
 
 MENUE_HUNK, MENUE_ANFANG = 1, 0x297
-MENUE_ERWARTET = ["WEITERSPIELEN", "NEUE QUEST STARTEN", "INTRO", "QUIT"]
+MENU_Y = [70, 100, 130, 160]
 
 
 def main():
@@ -36,21 +36,36 @@ def main():
     p.add_argument("--out", default="build/intro_daten.i")
     a = p.parse_args()
 
+    # find the menu by its layout instead of 1:$297 and the
+    # German words.  Four entries (x, y, text, 0) with y = 70, 100, 130,
+    # 160 (1.20 de; 1.21 de/en/fr in hunk 1 behind a count byte 4; 1.21
+    # pl/cz in hunk 7 without one).
     hunks = {h["index"]: h["data"] for h in read_hunks(
         open(os.path.join(a.amberfiles, "Ambermoon_intro"), "rb").read())}
-    d = hunks[MENUE_HUNK]
-    o = MENUE_ANFANG
-    anzahl = d[o]
-    o += 1
-    eintraege = []
-    for _ in range(anzahl):
-        x, y = d[o], d[o + 1]
-        ende = d.index(b"\0", o + 2)
-        eintraege.append((x, y, d[o + 2:ende].decode("latin-1")))
-        o = ende + 1
-    if [t for _, _, t in eintraege] != MENUE_ERWARTET:
-        raise SystemExit("intro_auszug: Menue in Ambermoon_intro passt nicht: %r"
-                         % eintraege)
+    funde = []
+    for hn, d in sorted(hunks.items()):
+        for o in range(len(d) - 12):
+            p, eintraege = o, []
+            for y_expected in MENU_Y:
+                if p + 3 > len(d) or d[p + 1] != y_expected:
+                    break
+                ende = d.find(b"\0", p + 2)
+                text = d[p + 2:ende]
+                if ende < 0 or not 2 <= len(text) <= 24 or min(text) < 32:
+                    break
+                eintraege.append((d[p], d[p + 1], text))
+                p = ende + 1
+            if len(eintraege) == len(MENU_Y):
+                funde.append((hn, o, eintraege))
+    if len(funde) != 1:
+        raise SystemExit("intro_auszug: start menu found %d times in Ambermoon_intro"
+                         % len(funde))
+    hn, o, eintraege = funde[0]
+    anzahl = len(eintraege)
+    if o and hunks[hn][o - 1] == anzahl:
+        art = "count byte"
+    else:
+        art = "no count byte"
 
     z = ["; build/intro_daten.i -- erzeugt von tools/intro_auszug.py aus",
          "; Ambermoon_intro.  Nicht von Hand aendern, nicht ins Repository.",
@@ -64,13 +79,15 @@ def main():
     for i, (_, _, t) in enumerate(eintraege):
         z.append("\tdc.l\tMenue_text_%d" % i)
     for i, (_, _, t) in enumerate(eintraege):
-        z.append('Menue_text_%d:\tdc.b\t"%s",0' % (i, t))
+        z.append('Menue_text_%d:\tdc.b\t%s,0\t; %s' % (
+            i, ",".join("$%02X" % c for c in t), t.decode("latin-1")))
     z += ["\teven", ""]
 
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     with open(a.out, "w") as fh:
         fh.write("\n".join(z))
-    print("  Ambermoon_intro: Startmenue, %d Eintraege -> %s" % (anzahl, a.out))
+    print("  Ambermoon_intro: start menu, %d entries (%d:$%X, %s): %s -> %s" % (
+        anzahl, hn, o, art, " / ".join(t.decode("latin-1") for _, _, t in eintraege), a.out))
     return 0
 
 

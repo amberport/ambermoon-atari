@@ -39,7 +39,7 @@ That is how this project began.
 - **16 colours**, reduced from the original's 32.
 - **Uses what the machine has:** the STE's 4-bit palette and the blitter where present; `PLAIN_ST=YES` makes an STE behave like a plain ST.
 - **Big Alec's YM music**, the fantasy intro, the intro with its start menu, and the extro (without music).
-- **A palette check page:** every ST build writes `build/palette_editor/index.html` from your own game files. For each palette it shows Thalion's colours next to the STE and ST results of each reduction method; choose a method per palette and download the resulting `tools/st_palettes.txt` for the next build.
+- **A palette check page:** with Pillow installed, every ST build writes `build/palette_editor/index.html` from your own game files. For each palette it shows Thalion's colours next to the STE and ST results of each reduction method; choose a method per palette and download the resulting `tools/st_palettes.txt` for the next build.
 
 **On both machines**
 - **One folder for the Falcon and the ST:** one `AMBER.TOS` detects the machine.
@@ -50,7 +50,7 @@ That is how this project began.
 **For those who build it themselves**
 - **The build checks every place it takes from the original files:** another version of the game stops it with a message instead of giving a broken program.
 - **Paths in `build.cfg`** or a folder next to the repository; no environment variables needed.
-- **Developer documentation in English**, with a guide to the Atari layer.
+- **Documentation:** a developer documentation in English has started: the architecture, how Thalion's code meets the new Atari layer, the build and its checks, and a guide to the Atari layer. It keeps growing. I'd like to share what I've learned openly, since I built on what others learned and shared openly.
 
 ---
 
@@ -109,40 +109,87 @@ The same moments on both machines, Falcon030 on the left, ST/STE on the right. T
 
 ## Quickstart
 
-### Requirements
+New in this version: more versions of the game and a simpler build, see the [release notes](RELEASE-NOTES.md).
 
-**To play:**
+### What you need
 
-- Atari Falcon030 with at least 4 MB RAM, or (tested on real Falcon 030/14MB and Hatari 4MB)
-- Atari ST/STE with 4 MB RAM (target platform: 8 MHz 68000)
-- Hard disk required
+**To play:** an Atari Falcon030 (tested: a real Falcon with 14 MB, and Hatari with 4 MB) or an Atari ST/STE with 4 MB (target: 8 MHz 68000), and a hard disk.
 
-**What you need to obtain yourself** (none of it is in this repository):
+**The game files of one Amiga version of Ambermoon.** They are not in this repository. Any of these forms works: the zip as downloaded, the disk images (ADF, IPF, or DMS with `xdms` installed), or the folder `Amberfiles`.
 
-- the original *Ambermoon* game files, i.e. the `Amberfiles` folder of an existing Amiga version (tested: German version 1.20; the English version is not tested yet)
-- Thalion's historical source code from [Jurie Horneman's repository](https://github.com/jhorneman/ambermoon); it is only read during the build
-- optionally Big Alec's YM music, the file `big_alec/ambermon.snd` from the [SNDH archive](https://sndh.atari.org/?ID=5364) (see below)
+| version | from | state |
+|---|---|---|
+| 1.20 German | Thalion's code, Pyrdacor's files | tested on hardware |
+| 1.01 German, 1.07 English | Thalion's disks | tested in Hatari, on hardware in part |
+| 1.21 German, English, French | Pyrdacor | tested in Hatari, on hardware in part |
+| 1.21 Polish, Czech | Pyrdacor | not yet (their intro is a different program) |
 
-**To build:**
+"In part": several of these five versions on a Falcon and an ST, saving and loading included.
 
-- Linux (tested so far; macOS and Windows/WSL not yet)
-- `vasmm68k_mot` and `vlink` (68000 assembler and linker)
-- `a56` (DSP56001 assembler, for the Falcon's music mixer)
-- Python 3
-- an `objdump` for m68k
+**To build:** Linux x86-64 (tested; macOS and Windows/WSL not yet), Python 3 and an m68k `objdump`. On Debian/Ubuntu:
+
+```bash
+sudo apt install python3 binutils-m68k-linux-gnu
+```
+
+**Fetched by the build itself** (network needed once, kept in `ambermoon_gamedata/`, so the next build needs none):
+
+- Thalion's source code, the tested commit of [Jurie Horneman's repository](https://github.com/jhorneman/ambermoon). It is only read, never changed.
+- `vasmm68k_mot` 1.9a and `vlink` 0.17a, the assembler and linker by Volker Barthelmann and Frank Wille, if they are in neither `ambermoon_gamedata/bin/` nor `PATH`: about 32 MB, the vbcc package [vbcc_linux_x64.tar.gz](http://www.ibaug.de/vbcc/vbcc_linux_x64.tar.gz). The two programs are checked against their SHA-256 and kept, the rest is thrown away. vasm 2.0f does not build this project yet. On another system, build them from their sources: [docs/developer/building.md](docs/developer/building.md).
+
+**Optional:**
+
+- `xdms`, for game files as DMS images (`sudo apt install xdms`).
+- Pillow, only for the ST palette check page (`sudo apt install python3-pil`). Without it the build warns and the game is complete.
+- Big Alec's YM music, to download by hand: `ambermon.snd` from the [SNDH archive](https://sndh.atari.org/?ID=5364) (the entry *Big Alec: Ambermoon*, file `big_alec/ambermon.snd`), into `ambermoon_gamedata/`. Without it the YM stays silent, and the ST has no music.
+- `a56`, only if you change the Falcon's music mixer (`sudo apt install a56`). Without it the build takes the assembled mixer from the repository.
 
 ### Building
 
+1. Put the game files (zip, disk images or folder) into a folder `ambermoon_gamedata/` next to the repository:
+
+   ```text
+   ambermoon_gamedata/ambermoone.zip      the game files
+   ambermoon_gamedata/ambermon.snd        optional, Big Alec's YM music
+   ambermoon-atari/                       this repository
+   ```
+
+2. Build:
+
+   ```bash
+   cd ambermoon-atari
+   sh tools/build_all.sh
+   ```
+
+   If `ambermoon_gamedata/` holds more than one version, or the game files lie elsewhere, name them:
+
+   ```bash
+   sh tools/build_all.sh ambermoone.zip
+   ```
+
+   `build_falcon.sh` and `build_st.sh` instead of `build_all.sh` build for one machine.
+
+   The build shows one line per step and ends with the build's name:
+
+   ```text
+   Done in 0:53. No warnings. YM music on; diagnostic switches: none (release build).
+   Built: Ambermoon Atari 0.8 (6c5aae5) for Ambermoon v1.07 26-3-1994 / English
+   ```
+
+   The rest of the output goes into `build/build.log` (`VERBOSE=1` shows all of it). If something is missing or fails, the build names the step and shows the last lines of the log.
+
+To name the places for good, set variables or write them into `build.cfg` (template `build.cfg.example`):
+
 ```bash
-export AMBER_DATEN=/path/to/ambermoon        # the directory that contains Amberfiles/
-export AMBER_URCODE=/path/to/ambermoon/src   # Thalion's source code
-export AMBER_YMSNDH=/path/to/ambermon.snd    # optional: Big Alec's YM music
-sh tools/build_all.sh       # both machines; build_falcon.sh or build_st.sh for one
+export AMBER_DATEN=/path/to/ambermoone.zip   # or the disk images, or the folder above Amberfiles/
+export AMBER_URCODE=/path/to/ambermoon/src   # Thalion's source, if you have it elsewhere
+export AMBER_YMSNDH=/path/to/ambermon.snd    # Big Alec's YM music
+export AMBER_DOWNLOAD=NO                     # never download anything
 ```
 
-Instead of the `export` lines, the paths can go into a file `build.cfg` (template `build.cfg.example`), or the three things go into a folder `ambermoon_gamedata/` next to the repository, under the names in the template; `python3 tools/paths.py` shows what the build finds.
+For measuring and checking the port itself, `TESTBUILDS=1 sh tools/build_all.sh` also builds the test versions of the intros and the extro.
 
-The build reads the game files and Thalion's source code from there, assembles everything and puts the result into `ATARI/`, one folder for the Falcon and the ST. It shows one line per step; everything else goes into `build/build.log` (`VERBOSE=1` shows all of it). If something is missing or fails, it names the step and shows the last lines of the log. Step by step, for Linux, macOS and Windows (WSL): [docs/developer/building.md](docs/developer/building.md).
+`python3 tools/paths.py` shows what the build finds. Step by step, for Linux, macOS and Windows (WSL): [docs/developer/building.md](docs/developer/building.md).
 
 ### Installation
 
@@ -155,9 +202,20 @@ AMBFILES\        game files, programs and saved games, shared by both
 
 The same folder runs on both machines, and a saved game from one continues on the other.
 
+**A build fits only the game files it was built from.** Always copy the whole `ATARI/` of one build. `AMBFILES\BUILD.TXT` names the build and its game files.
+
 ### Starting
 
 Run `AMBER.TOS` on either machine; it finds out which one it runs on. It leads through the fantasy intro, the intro with its start menu, the game and, once the game is finished, the extro.
+
+The game shows its build at the start:
+
+```text
+Ambermoon Atari 0.8 (6c5aae5)
+for Ambermoon v1.07 26-3-1994 / English
+```
+
+If `AMBFILES\` holds the game files of another version, it says which version it was built for and which it found, and ends after a key, instead of showing wrong texts.
 
 ### Choosing the music
 
@@ -174,15 +232,16 @@ The ST always plays the YM music; there only `MUSIC=OFF` counts.
 
 ### Known limitations
 
-State: 2026-10-30. This list is updated before the release.
+State: 2026-11-02.
 
 - **ST, 3D on 8 MHz is slow.** Thalion's 3D code runs unchanged; a real gain would mean replacing parts of it with our own. That would break the first principle of this project (see "Goals of the project") and is deliberately not decided yet.
 - **YM music: 18 pieces instead of 32.** Big Alec's YM version covers 18 of Thalion's pieces; with YM, the other places stay silent, intro and extro too.
 - **ST: the intro's start menu** does not yet highlight the entry under the pointer.
 - **ST: the "drugged" effect** shows no colours; only the mouse pointer shakes.
-- **ST: the palettes are not fine-tuned yet**; the build writes a check page for it.
+- **ST: the palettes are not fine-tuned yet**, for example the tactic field in combat is too bright; the build writes a check page for it.
 - **Falcon: not at full speed yet.** The 2D maps are meant to need at most 4 screen refreshes (VBLs) per picture drawn; scrolling text is slow; moving the mouse costs frames in 3D.
-- **Not tested yet:** a whole game through to the end; save games exchanged with the Amiga version; parts of combat (spells, flight, the death of a party member); the English game data; the smallest memory it runs with (4 MB on a real Falcon).
+- **Speed work is measured, not guessed.** Both machines were profiled in Hatari and the Falcon's picture times checked with a frame counter on the real machine, so we know where the time goes and which points to work on. Examples: on the ST, about 80 % of a 3D picture is Thalion's own code, so our layer alone can win 10–15 % at most; on the Falcon, floor and ceiling take about 4 of 9 screen refreshes (VBLs) per 3D picture. Some of these points wait for a decision, because they would replace Thalion's code.
+- **Not tested yet:** a whole game through to the end; save games exchanged with the Amiga version; parts of combat (spells, flight, the death of a party member); the smallest memory it runs with (4 MB on a real Falcon).
 - **Some names are still German.** Many file, routine and variable names in our code and tools, and some notes, are German; they are becoming English step by step.
 
 ### Possible improvements
@@ -315,6 +374,7 @@ Not finished yet are in particular:
 
 - the highlighting in the intro's start menu
 - further performance optimisations
+- fine-tuning of the palettes, for example the tactic field in combat
 - fine-tuning of individual hardware-specific routines
 
 Performance on an 8 MHz ST without a blitter remains one of the biggest technical challenges.

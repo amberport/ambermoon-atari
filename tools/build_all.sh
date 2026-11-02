@@ -3,11 +3,14 @@
 # (tools/build_st.sh) into the shared folder ATARI/ (tools/build_common.sh).
 #
 #   sh tools/build_all.sh
+#   sh tools/build_all.sh ambermoone.zip                   these game files
 #   VASM_EXTRA="-DZEIGERTAKT=1" sh tools/build_all.sh      diagnostic switch
+#   TESTBUILDS=1 sh tools/build_all.sh                     with the test builds
 #
 # Sources are checked and the extracts from the original files written once,
-# for both; a56 must be there because of the Falcon.
+# for both.
 set -e
+GAME_FILES_ARG=$1; CALLED_FROM=$PWD
 cd "$(dirname "$0")/.."
 . tools/build_common.sh
 

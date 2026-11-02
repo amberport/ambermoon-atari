@@ -36,12 +36,16 @@ folder you name, never into the repository.
 | Tool | What for | Call |
 |---|---|---|
 | `paths.py` | where Thalion's source, the game files, the YM file, the TOS image and `objdump` lie: environment variable, then `build.cfg`, then `ambermoon_gamedata/` next to the repository. Every other tool imports it | `python3 tools/paths.py` shows each key, `found`/`missing` and where from; `--sh` gives shell assignments |
-| `build_all.sh` | the one build, both machines into `ATARI/` | `sh tools/build_all.sh` |
-| `build_falcon.sh`, `build_st.sh` | one machine each | `sh tools/build_falcon.sh` (needs `a56`), `sh tools/build_st.sh` |
+| `build_all.sh` | the one build, both machines into `ATARI/` | `sh tools/build_all.sh [GAME_FILES]`; `TESTBUILDS=1` adds the test builds |
+| `build_falcon.sh`, `build_st.sh` | one machine each | `sh tools/build_falcon.sh [GAME_FILES]`, `sh tools/build_st.sh [GAME_FILES]` |
 | `build_common.sh` | the shared part: sources, extracts, delivery, source checks, and the output (one line per step, the rest into `build/build.log`, `VERBOSE=1` shows all). Sourced by the two, not run | — |
+| `game_files.py`, `adf_read.py`, `ipf_to_adf.py` | the game files in what `AMBER_DATEN` or the command line names: a folder, a zip, disk images (DMS through `xdms`), into `build/game_files/`; `adf_read.py` reads an ADF, `ipf_to_adf.py` turns an IPF into one | called by `build_common.sh`; `python3 tools/adf_read.py IMAGE.adf` lists the files, `python3 tools/ipf_to_adf.py IN.ipf OUT.adf` |
+| `fetch_source.py` | Thalion's source when it is missing: a clone or zip in `ambermoon_gamedata/`, else the tested commit from GitHub; checked by SHA-256. `AMBER_DOWNLOAD=NO` forbids the download | called by `build_common.sh` |
+| `fetch_vbcc.py` | vasm 1.9a and vlink 0.17a when they are missing, out of the vbcc package into `ambermoon_gamedata/bin/`, Linux x86-64 only; checked by SHA-256. `AMBER_DOWNLOAD=NO` forbids the download | called by `build_common.sh` |
+| `build_name.py` | the build's name from `VERSION`, the commit and the version lines of `Text.amb` | writes `build/build_name.i` and `build/BUILD.TXT`; called by `build_common.sh` |
 | `build_engine.sh` | the engine from its two units: export lists, vasm, vlink | `sh tools/build_engine.sh ZIEL.TOS [OBJEKTORDNER]`; called by the builds |
-| `musik_dsp.sh`, `dsp_lod.py` | the DSP mixer `musik/MUSIK_DSP.A56` with `a56`, and its output turned into the image `Dsp_ExecBoot` loads (at most 512 words, P memory only) | called by `build_engine.sh` and `amiga_bauen.sh` |
-| `fantasy_bauen.sh` | the fantasy intro alone, into `build/` | `sh tools/fantasy_bauen.sh` |
+| `musik_dsp.sh`, `dsp_lod.py` | the DSP mixer `musik/MUSIK_DSP.A56` with `a56`, and its output turned into the image `Dsp_ExecBoot` loads (at most 512 words, P memory only). The result must equal `musik/musik_dsp.dsp`; without `a56` the build takes that file | called by `build_engine.sh` and `amiga_bauen.sh` |
+| `fantasy_bauen.sh` | the fantasy intro alone, into `build/`; with `TESTBUILDS=1` also its test builds | `sh tools/fantasy_bauen.sh` |
 | `amiga_bauen.sh` | intro or extro alone, into `build/` | `sh tools/amiga_bauen.sh intro\|extro` |
 | `einheiten_verbinden.py` | the export lists between `engine.s` and `spiel.s`; stops on a name in both units or in neither (finding 181) | called by `build_engine.sh` |
 | `doku_listen.py` | appendices A–C of this documentation | every Falcon build writes them to `build/doku/`; `--docs` writes them here, on `main` only |
@@ -56,17 +60,22 @@ Thalion's source does not contain the library, its data, the intro and
 extro programs or the music player; they exist only as translated Amiga
 programs in the game files. These tools take out what the build needs,
 each piece at a place they check, and write it to `build/`. None of it
-is read at run time, and none of it is committed. If a check fails, the
-tool stops the build: another version or language of the game would
-otherwise build into something wrong. Each deviation from the two goals
-behind them is in `docs/17-deviations.md`.
+is read at run time, and none of it is committed. The places in their
+tables are those of German 1.20; for 1.01, 1.07 and 1.21 they are moved
+first (chapter 9). If a check fails, the tool stops the build: a version
+the tables do not know would otherwise build into something wrong. Each
+deviation from the two goals behind them is in `docs/17-deviations.md`.
 
 | Tool | Takes | From | Writes |
 |---|---|---|---|
 | `am2cpu_auszug.py` | the library's data: main palette, window tiles, status bar, font … (table `STUECKE`) | `AM2_CPU` | `build/am2cpu_daten.i` |
 | `am2cpu_code.py` | Thalion's pure memory routines: the 3D rasterisers, `Fade_colour`, `Lob_core` …, disassembled with `objdump` and checked (named relocations only, no jump out, no hardware address, 68000 only) | `AM2_CPU` | `build/am2cpu_code.i` |
 | `am2cpu_lesen.py` | the reader under both: hunks, relocations, disassembly, the names (`NAMEN`); also by hand, group 3 | `AM2_CPU` | — |
-| `textmarken.py` | where each of the library's texts lies in `Text.amb` (D5) | `Text.amb`, German 1.20 | `build/textmarken.i` |
+| `textmarken.py` | where each of the library's texts lies in `Text.amb` (D5) | `Text.amb` of any of the versions | `build/textmarken.i` |
+| `thalion_prepare.py` | Thalion's disks (1.01, 1.07) laid out as 1.2x: `Text.amb`, `Objects.amb`, `Button_graphics` made from `AM2_CPU`, the other files they lack copied (D7). For 1.2x it does nothing | `AM2_CPU`, `Initial/` | `build/thalion/Amberfiles` |
+| `am2cpu_places.py` | the 1.20 places of `AM2_CPU` in a 1.2x file; for 1.20 every shift is 0. A module of the two extracts above | `AM2_CPU` | — |
+| `am2cpu_old.py`, `am2cpu_old_maps.py` | Thalion's 1.0x `AM2_CPU` read as a virtual 1.21 file; the maps are numbers only | `AM2_CPU` | — |
+| `amiga_places.py`, `amiga_places_maps.py` | the 1.20 places of intro, extro and fantasy intro in another version (chapter 10); the maps are numbers only | the three programs | — |
 | `intro_auszug.py` | the texts of the start menu (D4) | `Ambermoon_intro` | `build/intro_daten.i` |
 | `ym_auszug.py` | Big Alec's YM player and pieces, Timer B bound back to Timer D, checked by SHA-256 against the block tested on the hardware | `ambermon.snd` (`AMBER_YMSNDH`) | `build/MUSIK_YM.BIN` |
 | `amiga_programm.py` | intro and extro: hunks, K1 (hardware operands), K2 (`BLTSIZE` → trap), K3 (our hooks); every place is in `PROGRAMME` | `Ambermoon_intro`, `Ambermoon_extro` | `build/<name>_hunks.i` |
@@ -78,6 +87,11 @@ behind them is in `docs/17-deviations.md`.
 
 Chapter 9 says how to add a new piece from `AM2_CPU`; appendix C lists
 all of them with their places. Chapter 10 explains K1, K2 and K3.
+
+Three developer tools stand outside the build. `am2cpu_old_generate.py`
+and `amiga_places_generate.py` write the maps for a new version of the
+data. `amiga_names_convert.py` turns the old form `Intro_h5+$12148` into
+`Intro_h5_12148`, any number of times; with `--check` it is a source check.
 
 ## 3. Reading the game data on the host
 
@@ -139,9 +153,9 @@ here only what they are for.
 
 | Tool | What for |
 |---|---|
-| `st_palettes.py` | the ST palettes: Thalion's 32 colours on 16 registers, recomputed like `St_bauen` in `ST_LIB.S`. `build` writes `STPAL.DAT` with the hand corrections from `st_palettes.txt` (deviation D1; called by `build_st.sh`); `sheet` writes ST's own review page `build/st_palettes/index.html` (to be replaced by the palette editor below); `ramp`, `screen`, `measure` compare with and without the ramp protection |
+| `st_palettes.py` | the ST palettes: Thalion's 32 colours on 16 registers, recomputed like `St_bauen` in `ST_LIB.S`. `build` writes `STPAL.DAT` with the hand corrections from `st_palettes.txt` (deviation D1; called by `build_st.sh`), and ST's review page unless `--no-sheet` says not to, which `build_st.sh` does without Pillow; `sheet` writes ST's own review page `build/st_palettes/index.html` (to be replaced by the palette editor below); `ramp`, `screen`, `measure` compare with and without the ramp protection |
 | `st_palettes.txt` | the hand corrections and the method per palette, read by `st_palettes.py build` |
-| `palette_editor/palette_sheet.py` | the palette editor (session Docs): a page `build/palette_editor/index.html` that shows each palette as Thalion has it and as STE and ST show it with each method (`unweighted`, the default, and `weighted 1`, `weighted 3`), each method described, beside pictures from the game. It preselects the method `st_palettes.txt` names; "Open st_palettes.txt" reads a newer file without a new build; it gives the method lines and the whole file to download. Imports `st_palettes.py` for all it shows, so the computation exists once. Call `python3 tools/palette_editor/palette_sheet.py [NAME …] [--file FILE]`; needs the extract `build/am2cpu_daten.i` of a build and Pillow. Contains Thalion's graphics: stays in `build/` |
+| `palette_editor/palette_sheet.py` | the palette editor (session Docs; needs Pillow, so `build_st.sh` calls it only when Pillow is there): a page `build/palette_editor/index.html` that shows each palette as Thalion has it and as STE and ST show it with each method (`unweighted`, the default, and `weighted 1`, `weighted 3`), each method described, beside pictures from the game. It preselects the method `st_palettes.txt` names; "Open st_palettes.txt" reads a newer file without a new build; it gives the method lines and the whole file to download. Imports `st_palettes.py` for all it shows, so the computation exists once. Call `python3 tools/palette_editor/palette_sheet.py [NAME …] [--file FILE]`; needs the extract `build/am2cpu_daten.i` of a build and Pillow. Contains Thalion's graphics: stays in `build/` |
 | `farbreduktion.py` | the first study of 32 to 16 colours (`messen`, `bild`); `st_palettes.py` still imports it |
 | `fantasy_st_build.sh`, `fantasy_st_data.py` | the ST fantasy intro `FANTSYST.TOS`: Thalion's unchanged `FAIRY.S`, graphics in ST format; called by `build_st.sh` |
 | `intro_st_build.sh`, `intro_st_program.py` | the ST intro `INTROST.TOS` with its own K3 hooks; called by `build_st.sh` |

@@ -26,6 +26,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import amiga_programm as ap             # noqa: E402
+import amiga_places                       # noqa: E402
 
 OUT = os.path.join(ap.BUILD, "st_extro")
 
@@ -65,12 +66,13 @@ def main():
     code_n = next(n for n, a in kind.items() if a == "CODE")
     try:
         d = open(os.path.join(ap.AMBERFILES, p["datei"]), "rb").read()
-        hunks = ap.gepackt_lesen(d)
+        hunks = ap.read_program(d, p)
+        p = amiga_places.for_version("extro", d, hunks, p)   # other versions
         count = ap.aufbau_pruefen(p, hunks)
         k1 = ap.k1_stellen(p, hunks[code_n]["daten"], hunks[code_n]["rel"])
         code = ap.k2_ersetzen(p, hunks[code_n]["daten"], hunks[code_n]["rel"], k1)
         code, code_rel, k1 = ap.k3_einsetzen(p, code, hunks[code_n]["rel"], k1)
-    except ap.Fehler as e:
+    except (ap.Fehler, amiga_places.PlacesError) as e:
         sys.exit(f"extro_st_program: {p['datei']}: {e}")
 
     os.makedirs(OUT, exist_ok=True)
@@ -102,6 +104,10 @@ def main():
         for n in sorted(kind):
             if kind[n] == "BSS":
                 f.write(f"\tcnop\t0,4\n{prefix}{n}:\n\tds.b\t{hunks[n]['groesse']}\n")
+        try:
+            amiga_places.write_names(f, p)
+        except amiga_places.PlacesError as e:
+            sys.exit(f"extro_st_program: {e}")
     print(f"  {p['datei']}: {count} relocations, K1 at {len(k1)} places, "
           f"K2 at {len(p['k2'])}, K3 at {len(HOOKS)} -> build/st_extro/extro_hunks.i")
 

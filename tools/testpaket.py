@@ -22,7 +22,7 @@ table order instead.  A test that asks for the normal build names main's
 ATARI in a folder line, so that it appears in TESTS.TXT.  A whole build
 without AMBER.TOS or AMBFILES/ stops the run.  Of the programs in a whole
 build only the game's go along (SPIEL_TOS); the measuring and diagnostic
-builds the Falcon build also delivers (FEEDIAG.TOS, INTROMES.TOS ...) stay
+builds a Falcon build with TESTBUILDS=1 also delivers (INTROMES.TOS ...) stay
 out unless a file line names them (user, 2026-10-21).  A file lands in
 AMBFILES\\ under Name (8.3).  A test number in the tables of two worktrees,
 or one target name from two sources, stops the run.

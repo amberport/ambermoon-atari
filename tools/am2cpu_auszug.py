@@ -289,7 +289,8 @@ MELDUNG_EINZEL = [
 # Marke setzt textmarken.py; hier wird nur die Routine gegengeprueft.
 MAGIC_TXT_CODE = (8, 0x168, bytes.fromhex(
     "2479000080d470004a1a66fc52000c00000663f423ca00008100"))
-MAGIC_TXT_STELLE = 0x5AC8        # INVENTOR.S ItemView2: "lea Magic_txt,a0"
+MAGIC_TXT_STELLE = 0x5AC8
+VIRTUAL = None                  # set in main(): version of a Thalion 1.0x AM2_CPU        # INVENTOR.S ItemView2: "lea Magic_txt,a0"
 
 
 def meldungen(hunks):
@@ -307,7 +308,8 @@ def meldungen(hunks):
             raise SystemExit("am2cpu_auszug: Meldung -- 0:$%X zeigt nicht auf $%X"
                              % (stelle, erwartet))
     h, o, code = MAGIC_TXT_CODE
-    if hunks[h][o:o + len(code)] != code:
+    # Hunk 8 is 1.2x's own start code; Thalion's 1.0x has none (am2cpu_old.py).
+    if not VIRTUAL and hunks[h][o:o + len(code)] != code:
         raise SystemExit("am2cpu_auszug: Magic_txt -- Startroutine in Hunk 8 passt nicht")
     z = ["", "; Meldungen -- Textlisten aus Hunk 4 ($%X-$%X), Plaetze nach der"
          % (MELDUNG_LISTEN[0][1], MELDUNG_ENDE),
@@ -439,8 +441,16 @@ def main():
     p.add_argument("--out", default="build/am2cpu_daten.i")
     a = p.parse_args()
 
-    hunks = {h["index"]: h["data"] for h in read_hunks(
-        open(os.path.join(a.amberfiles, "AM2_CPU"), "rb").read())}
+    # Thalion's 1.0x is read as a virtual 1.21 (am2cpu_old.py); then the
+    # 1.20 places in hunk 0 are moved to this AM2_CPU (am2cpu_places.py).
+    import am2cpu_old, am2cpu_places
+    cpu_hunks = am2cpu_old.read_am2cpu(os.path.join(a.amberfiles, "AM2_CPU"),
+                            lambda t: print("    " + t))
+    hunks = dict(enumerate(h["daten"] for h in cpu_hunks))
+    global VIRTUAL
+    VIRTUAL = cpu_hunks[0].get("virtual")
+    for line in am2cpu_places.adapt_extract(sys.modules[__name__], cpu_hunks):
+        print("    places: " + line)
 
     z = ["; build/am2cpu_daten.i -- erzeugt von tools/am2cpu_auszug.py aus AM2_CPU.",
          "; Nicht von Hand aendern, nicht ins Repository (Spieldaten).",

@@ -31,6 +31,10 @@ ltx_geladen:	ds.b	1
 ; before every text; it holds across lines, as in AM2_CPU (9:$A1AD).
 Rune_flag:	ds.b	1
 	even
+; The version lines of the Text.amb loaded, without control bytes, for
+; the message of Check_game_files (MAIN.S); empty when none was found.
+Found_version:	ds.b	80
+	even
 	SECTION	Program,code
 
 ; ***************************************************************************
@@ -44,6 +48,9 @@ Rune_flag:	ds.b	1
 ; ist ein leerer Text (Find_small_text findet Nullen, Do_prompt zaehlt 0
 ; Texte).  Einmal; auch ein Fehlschlag wird nicht wiederholt.  Alle
 ; Register bleiben.
+;
+; Whatever its length, the file's version lines go to Found_version
+; (Find_version), so that Check_game_files can name the version found.
 ; ***************************************************************************
 Lade_texte:
 	movem.l	d0-d3/a0-a1,-(sp)
@@ -56,12 +63,14 @@ Lade_texte:
 	beq.b	ltx_out
 	move.w	d0,d3			; d3 = Handle
 	jsr	Get_memory_length	; genau die entpackte Groesse
-	cmp.l	#TEXT_LAENGE,d0
-	bne.b	ltx_frei
+	move.l	d0,d2			; d2 = length
 	moveq	#0,d0
 	move.w	d3,d0
 	jsr	Block_adresse
 	move.l	d0,a0
+	bsr	Find_version		; for Check_game_files, any length
+	cmp.l	#TEXT_LAENGE,d2
+	bne.b	ltx_frei
 	lea	Textdaten,a1
 	move.w	#TEXT_LAENGE-1,d1
 ltx_kop:	move.b	(a0)+,(a1)+
@@ -72,6 +81,70 @@ ltx_frei:
 	jsr	Free_memory
 ltx_out:
 	movem.l	(sp)+,d0-d3/a0-a1
+	rts
+
+; ***************************************************************************
+; Find_version -- the version lines of a Text.amb, for the message of
+; Check_game_files when the game files are not the build's.  Thalion's
+; Version_string1 and Version_string2 are the last two texts of the file
+; (1.01 to 1.21, every language), behind them only zero bytes.  Without
+; the build's offsets (another version has another length) they are found
+; from the end: skip the zeros, take the last two texts.  Copied to
+; Found_version as "line1 line2", without control bytes (1.21 starts
+; line 1 with 5 or 6), at most 79 characters.  A file that does not end
+; in a zero byte, or holds fewer than two texts, leaves it empty.
+;   IN : a0 = the file, d2.l = its length.  All registers are preserved.
+; ***************************************************************************
+Find_version:
+	movem.l	d0-d1/a0-a4,-(sp)
+	tst.l	d2
+	beq.b	.out
+	tst.b	-1(a0,d2.l)		; the last text must end in the file
+	bne.b	.out
+	lea	(a0,d2.l),a1		; behind the file
+.zeros:
+	cmp.l	a0,a1			; the zero bytes at the end
+	bls.b	.out
+	tst.b	-(a1)
+	beq.b	.zeros
+.line2:	cmp.l	a0,a1			; back over line 2 to its zero byte
+	bls.b	.out
+	tst.b	-(a1)
+	bne.b	.line2
+	lea	1(a1),a3		; a3 = line 2, a1 = the zero ending line 1
+	move.l	a1,a2
+.line1:	cmp.l	a0,a2			; back to the start of line 1
+	bls.b	.copy
+	tst.b	-1(a2)
+	beq.b	.copy
+	subq.l	#1,a2
+	bra.b	.line1
+.copy:
+	lea	Found_version,a4
+	moveq	#79,d1			; room left
+	move.l	a2,a0
+	bsr.b	.copy_line
+	tst.w	d1
+	beq.b	.finish
+	move.b	#32,(a4)+
+	subq.w	#1,d1
+	move.l	a3,a0
+	bsr.b	.copy_line
+.finish:
+	clr.b	(a4)
+.out:	movem.l	(sp)+,d0-d1/a0-a4
+	rts
+; copy the text at a0 to a4 without control bytes, while d1 > 0
+.copy_line:	tst.w	d1
+	beq.b	.copy_end
+	move.b	(a0)+,d0
+	beq.b	.copy_end
+	cmp.b	#32,d0
+	blo.b	.copy_line
+	move.b	d0,(a4)+
+	subq.w	#1,d1
+	bra.b	.copy_line
+.copy_end:
 	rts
 
 ; ***************************************************************************

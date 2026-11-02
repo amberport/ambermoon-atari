@@ -66,8 +66,8 @@ Text_begin:
 .f:	clr.b	(a0)+
 	dbf	d0,.f
 	movem.l	(sp)+,d0/a0
-	lea	Extro_h6+$320,a1	; lea 6:$320,a1
-	jmp	Extro_h1+$426
+	lea	Extro_h6_320,a1	; lea 6:$320,a1
+	jmp	Extro_h1_426
 
 ; ***************************************************************************
 ; Text_row -- K3 at $534: Thalion's writer starts at mask row 256 (the
@@ -76,7 +76,7 @@ Text_begin:
 Text_row:
 	move.l	Ring_top,a1
 	lea	MASK_WRITE*MASK_ROW(a1),a1
-	jmp	Extro_h1+$53A
+	jmp	Extro_h1_53A
 
 ; ***************************************************************************
 ; Step_wait -- K3 at $43A, instead of Thalion's bsr $F54, tst.w $3E, bne,
@@ -90,17 +90,17 @@ STEP_VBL	equ	4		; VBL a step (VASM_EXTRA="-DSTEP_VBL=n")
 Step_wait:
 	move.l	d1,-(sp)
 	moveq	#STEP_VBL,d1
-	tst.w	Extro_h5+H5_FAST
+	tst.w	H5_FAST
 	beq.b	.t
 	moveq	#STEP_VBL-1,d1		; the closing text one less
 .t:	add.l	Step_last,d1
-.w:	move.l	Extro_h5+H5_COUNT,d0
+.w:	move.l	H5_COUNT,d0
 	cmp.l	d1,d0
 	bmi.b	.w
 	move.l	d0,Step_last
 	move.l	(sp)+,d1
-	jsr	Extro_h1+$F62		; Thalion's pause (right button)
-	jmp	Extro_h1+$44A
+	jsr	Extro_h1_F62		; Thalion's pause (right button)
+	jmp	Extro_h1_44A
 
 ; ***************************************************************************
 ; Text_scroll -- K3 at $450, instead of Thalion's $450-$524 (the five
@@ -204,7 +204,7 @@ Text_scroll:
 	sf	Mixing
 	endc
 	movem.l	(sp)+,d0-d7/a0-a6
-	jmp	Extro_h1+$526
+	jmp	Extro_h1_526
 
 ; Ring_up -- the mask a row up: Ring_top a row on (back to the start when
 ; the window would leave the ring, with the rows' Row_text), then row 277

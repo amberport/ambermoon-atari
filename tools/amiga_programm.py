@@ -60,6 +60,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ambtool import read_hunks          # noqa: E402
 from imploder_exe import entpacke       # noqa: E402
+import amiga_places                       # noqa: E402
 import paths  # noqa: E402
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,6 +83,10 @@ PROGRAMME = {
         hunks={0: ("CODE", 20668), 1: ("DC", 1372), 2: ("BIN", 97904),
                3: ("BIN", 261208), 4: ("BIN", 132640), 5: ("BSS", 74288),
                6: ("BSS", 148844)},
+        # Hunk 1 holds the menu texts: its size is the language's (German
+        # 1372, English 1300; 1.07 and 1.21 alike).  Hunk 0 then differs
+        # only in six pointer values into it, none at a K site.
+        sprache={1},
         relok=648,
         dff=39,             # 15 x lea $DFF000,a6 und 24 absolute Operanden
         bfe=7,
@@ -231,14 +236,39 @@ def gepackt_lesen(d):
             for n in inhalt}
 
 
+def read_program(d, p):
+    """Hunks numbered as in p["hunks"].  Thalion's programs are imploded,
+    their hunks counted from 1 (hunk 0 is the decruncher).  A plain file
+    whose hunks have the table's kinds is taken as the same program with
+    hunk 0 first (Pyrdacor's French 1.21 extro) and counted from the
+    table's first number."""
+    if p["gepackt"]:
+        try:
+            roh = hunks_lesen(d)
+        except (Fehler, struct.error):
+            roh = None
+        erwartet = [{"CODE": "CODE", "DC": "DATA", "BIN": "DATA", "BSS": "BSS"}[a]
+                    for _, (a, _) in sorted(p["hunks"].items())]
+        if roh and [h["art"] for _, h in sorted(roh.items())] == erwartet:
+            erster = min(p["hunks"])
+            for h in roh.values():          # relocation targets too
+                h["rel"] = {o: z + erster for o, z in h["rel"].items()}
+            return {n + erster: h for n, h in roh.items()}
+        return gepackt_lesen(d)
+    return hunks_lesen(d)
+
+
 def aufbau_pruefen(p, hunks):
-    ist = {n: h["groesse"] for n, h in hunks.items()}
-    soll = {n: g for n, (_, g) in p["hunks"].items()}
+    frei = p.get("sprache", set())
+    ist = {n: h["groesse"] for n, h in hunks.items() if n not in frei}
+    soll = {n: g for n, (_, g) in p["hunks"].items() if n not in frei}
+    if set(hunks) != set(p["hunks"]):
+        raise Fehler(f"another layout than 1.20: hunks {sorted(hunks)}")
     if ist != soll:
         raise Fehler(f"anderer Aufbau als 1.20: {ist}")
     for n, (art, _) in p["hunks"].items():
         h = hunks[n]
-        if not p["gepackt"]:
+        if h["art"] is not None:       # plain hunks know their kind
             erwartet = {"CODE": "CODE", "DC": "DATA", "BIN": "DATA", "BSS": "BSS"}[art]
             if h["art"] != erwartet:
                 raise Fehler(f"Hunk {n} ist {h['art']}, erwartet {erwartet}")
@@ -368,12 +398,14 @@ def main():
     code_n = next(n for n, a in art.items() if a == "CODE")
     try:
         d = open(os.path.join(AMBERFILES, p["datei"]), "rb").read()
-        hunks = gepackt_lesen(d) if p["gepackt"] else hunks_lesen(d)
+        hunks = read_program(d, p)
+        # other versions (1.01, 1.07, 1.21): the 1.20 places moved
+        p = amiga_places.for_version(name, d, hunks, p)
         anzahl = aufbau_pruefen(p, hunks)
         k1 = k1_stellen(p, hunks[code_n]["daten"], hunks[code_n]["rel"])
         code = k2_ersetzen(p, hunks[code_n]["daten"], hunks[code_n]["rel"], k1)
         code, code_rel, k1 = k3_einsetzen(p, code, hunks[code_n]["rel"], k1)
-    except Fehler as e:
+    except (Fehler, amiga_places.PlacesError) as e:
         print(f"amiga_programm {name}: {p['datei']}: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -404,7 +436,11 @@ def main():
         for n in sorted(art):
             if art[n] == "BSS":
                 f.write(f"\tcnop\t0,4\n{marke}{n}:\n\tds.b\t{hunks[n]['groesse']}\n")
-    print(f"  {p['datei']}: {anzahl} Relokationen, K1 an {len(k1)} Stellen "
+        try:
+            names = amiga_places.write_names(f, p)
+        except amiga_places.PlacesError as e:
+            sys.exit(f"amiga_programm {name}: {e}")
+    print(f"  {p['datei']} ({p['places'].version}, {names} named places): {anzahl} Relokationen, K1 an {len(k1)} Stellen "
           f"({p['dff']} $DFFxxx, {p['bfe']} $BFE001, {len(p['exec'])} ExecBase), "
           f"K2 an {len(p['k2'])} Stellen, K3 an {len(p.get('k3', {}))} "
           f"-> build/{name}_hunks.i")

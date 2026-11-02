@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ambtool import read_hunks          # noqa: E402
 from imploder_exe import entpacke       # noqa: E402
 import paths  # noqa: E402
+import amiga_places  # noqa: E402
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(WURZEL, "build")
@@ -167,15 +168,49 @@ def gleiche_wirkung(p, b):
     return b == lang[op] | (groesse << 6) | reg
 
 
+# Thalion's 1.01 lacks the two nops before the rte of level3 that FAIRY.S
+# (and 1.20) have (a wait after clearing INTREQ).  We build FAIRY.S as it
+# is, with them; only the comparison skips them, and only in a version the
+# map of tools/amiga_places.py names (not in 1.20).
+NOP_RTE = bytes.fromhex("4e714e714e73")
+SKIP_NOPS = False       # main() sets it for a mapped version
+
+
+def skipped_nops(probe, p_von, p_bis, h1, bin_anf):
+    """-> sorted probe offsets (relative to the piece) of nop,nop that the
+    file lacks before its rte."""
+    aus = []
+    k = 0
+    while SKIP_NOPS and k < p_bis - p_von:
+        k = probe.find(NOP_RTE, p_von + k, p_bis)
+        if k < 0:
+            break
+        k -= p_von
+        bo = bin_anf + k - 4 * len(aus)
+        if h1[bo:bo + 2] == NOP_RTE[4:] and h1[bo:bo + 2] != NOP_RTE[:2]:
+            aus.append(k)
+        k += 2
+    return aus
+
+
 def vergleichen(probe, marken, h1, rel1):
     """Stücke vergleichen; gibt {Name: (Hunk, Versatz)} zurück."""
     adressen = {}
     geduldet = 0
-    for anf, ende, bin_anf in FAIRY_STUECKE:
+    stuecke = [(a, e, b, skipped_nops(probe, marken[a], marken[e], h1, b))
+               for a, e, b in FAIRY_STUECKE]
+
+    def in_binary(b2, aus2, rel):
+        """piece offset in FAIRY.S -> offset in the file"""
+        return b2 + rel - 4 * sum(1 for k in aus2 if k < rel)
+    for anf, ende, bin_anf, aus in stuecke:
         p_von, p_bis = marken[anf], marken[ende]
         i = 0
         while i < p_bis - p_von:
-            bo = bin_anf + i
+            if i in aus:
+                i += 4
+                continue
+            bo = in_binary(bin_anf, aus, i)
             po = p_von + i
             if bo in rel1:
                 zielhunk, ziel = rel1[bo]
@@ -190,9 +225,9 @@ def vergleichen(probe, marken, h1, rel1):
                 else:
                     # Marke in FAIRY.S selbst: muss im selben Stück landen
                     ok = False
-                    for a2, e2, b2 in FAIRY_STUECKE:
+                    for a2, e2, b2, aus2 in stuecke:
                         if marken[a2] <= pw < marken[e2]:
-                            ok = zielhunk == 1 and ziel == b2 + pw - marken[a2]
+                            ok = zielhunk == 1 and ziel == in_binary(b2, aus2, pw - marken[a2])
                     if not ok:
                         raise Fehler(f"Hunk 1 ${bo:x}: interne Marke ${pw:x} zeigt "
                                      f"nach H{zielhunk}:${ziel:x}")
@@ -200,22 +235,28 @@ def vergleichen(probe, marken, h1, rel1):
                 continue
             if probe[po] != h1[bo]:
                 # Bcc/BSR mit 16-Bit-Weite über die Stückgrenze: das Ziel
-                # muss dasselbe sein, die Weite ist es nicht.
-                if i % 2 == 0 and i >= 2:
+                # muss dasselbe sein, die Weite ist es nicht.  The
+                # displacement may differ in its low byte only (1.01), so
+                # the word is taken from its even start.
+                ug = i % 2
+                if i - ug >= 2:
+                    po, bo = po - ug, bo - ug
                     op_p = struct.unpack_from(">H", probe, po - 2)[0]
                     op_b = struct.unpack_from(">H", h1, bo - 2)[0]
                     if op_p == op_b and op_p & 0xF0FF == 0x6000:
+                        i -= ug
                         ziel_p = po + struct.unpack_from(">h", probe, po)[0]
                         ziel_b = bo + struct.unpack_from(">h", h1, bo)[0]
                         erwartet = None
-                        for a2, e2, b2 in FAIRY_STUECKE:
+                        for a2, e2, b2, aus2 in stuecke:
                             if marken[a2] <= ziel_p < marken[e2]:
-                                erwartet = b2 + ziel_p - marken[a2]
+                                erwartet = in_binary(b2, aus2, ziel_p - marken[a2])
                         if erwartet != ziel_b:
                             raise Fehler(f"Hunk 1 ${bo - 2:x}: Sprung nach ${ziel_b:x}, "
                                          f"FAIRY.S erwartet {erwartet}")
                         i += 2
                         continue
+                    po, bo = po + ug, bo + ug
                 if i % 2 == 0 and gleiche_wirkung(
                         struct.unpack_from(">H", probe, po)[0],
                         struct.unpack_from(">H", h1, bo)[0]):
@@ -283,8 +324,25 @@ def name_zu(hunk, ziel, namen):
 
 def main():
     datei = os.path.join(AMBERFILES, "Fantasy_intro")
-    hunks = read_hunks(open(datei, "rb").read())
+    d = open(datei, "rb").read()
+    hunks = read_hunks(d)
     inhalt, relok = entpacke(hunks)
+    # Other versions (1.01): the 1.20 places of the tables here are moved
+    # by the map of tools/amiga_places.py; a range must stay one piece.
+    places = amiga_places.places_of("fantasy", d, {n: {"groesse": len(inhalt[n])} for n in inhalt},
+                           amiga_places.OTHER_PROGRAMS["fantasy"])
+    global HUNK3_GROESSE, SKIP_NOPS
+    SKIP_NOPS = places.place_map is not None
+    FAIRY_STUECKE[:] = [(a, b, places.place(1, o, a)) for a, b, o in FAIRY_STUECKE]
+    neu = {(h, places.place(h, o, n)): n for (h, o), n in UNSERE_NAMEN.items()}
+    UNSERE_NAMEN.clear()
+    UNSERE_NAMEN.update(neu)
+    HUNK1_STUECKE[:] = [(n, a) + places.piece_range(1, von, bis, n) + (b,)
+                        for n, a, von, bis, b in HUNK1_STUECKE]
+    if places.place_map:
+        HUNK3_GROESSE = len(inhalt[3])
+    elif len(inhalt[3]) != HUNK3_GROESSE:
+        raise Fehler("Hunk 3: %d Byte, erwartet %d" % (len(inhalt[3]), HUNK3_GROESSE))
     h1 = inhalt[1]
     rel1 = {o: (n, struct.unpack_from(">I", h1, o)[0]) for o, n in relok[1]}
     if relok[2] or relok[3] or relok[4]:
@@ -350,5 +408,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Fehler as e:
+    except (Fehler, amiga_places.PlacesError) as e:
         sys.exit(f"fantasy_auszug.py: {e}")

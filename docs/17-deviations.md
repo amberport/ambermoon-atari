@@ -30,6 +30,7 @@ markers of D2, D4 and D5 in the 2D session's files stand on `main`
 | D4 | 1, 2 | Our own start menu for `ENGINE.TOS` started alone; its four texts from `Ambermoon_intro` at build time | both | user, 2026-09-28 ("plain, for now") | `tools/intro_auszug.py`, `HULL/STARTMENUE.S` |
 | D5 | 2 | Positions of the library's texts inside `Text.amb` fixed at build time | both | finding 250 | `tools/textmarken.py`, `HULL/WORDS_SUP.S` |
 | D6 | 1, 2 | YM music from Big Alec's SNDH file (`big_alec/ambermon.snd`, until 2026-10-27 the "Ambermoon Music Demo" disk), extracted at build time; Big Alec's player instead of Thalion's | ST, Falcon with `YM` | user, 2026-09-29 (docs/11 7.1) | open (music session) |
+| D7 | 2 | Game versions 1.01 and 1.07: `Text.amb`, `Objects.amb`, `Button_graphics` made from `AM2_CPU` at build time | both | user, 2026-11-02 | `tools/thalion_prepare.py` |
 
 Not deviations, for completeness: the 8.3 names of the game files (the
 contents stay as they are), the save-game folders `SAVE.nn` (copies of the
@@ -196,11 +197,13 @@ over at build time and bent:
 - *K2*: every write to BLTSIZE becomes `trap #8`; the blit runs in
   software (`amiga/AMIGA_BLIT.S`).
 - *K3* (decision of 2026-10-04): at a bottleneck one of Thalion's
-  instructions becomes `jmp` into our routine. Today seven places: the
-  intro's zoom (`intro/INTRO_ZOOM.S`), the picture switch, clearing before
-  the zoom and the end of Thalion's VBL (`intro/INTRO_SUP.S`); the copy
-  into both screens and the picture switch twice (`extro/EXTRO_SUP.S`).
-  Table in docs/developer/10.
+  instructions becomes `jmp` into our routine. On the Falcon (main
+  f9f3b8f) 29 places in the intro (zoom, picture switch, logo, clouds,
+  menu, the writers of the target screens) and 3 in the extro (the copy
+  into both screens, the picture switch twice); `amiga_programm.py`
+  holds them in its table and prints the count ("K3 an 29", "K3 an 3").
+  The full table is in docs/developer/10. The ST builds have their own
+  (below).
 - *Rewritten*: Thalion's main sequence of the fantasy intro (hunk 1
   $110-$2B0, tied to copper, CIA and DMA) is `Fee_ablauf` in
   `fantasy/FEE_SUP.S`, in Thalion's order and with Thalion's values.
@@ -477,3 +480,21 @@ YM like the ST.
 **Going back.** Without the SNDH file the build goes on and the YM stays
 silent; the Falcon then plays Thalion's songs from `Music.amb` through the
 mixer (DSP or CPU), the ST has no music.
+
+## D7: text, items and buttons of Thalion's disks (goal 2)
+
+**What.** Thalion's 1.01 and 1.07 keep the texts, the item table and the
+button graphics inside `AM2_CPU`; 1.2x has them as `Text.amb`, `Objects.amb`,
+`Button_graphics`. For 1.0x the build makes these three files from `AM2_CPU`
+(and copies `Dict.amb`, `Monster_char.amb` and the save games from `Initial/`
+under the 1.2x names) and delivers them; the engine reads them as for 1.2x.
+
+**Why.** One engine for all versions, no second way of loading.
+
+**Decided.** User, 2026-11-02: "das leitziel bezog sich vor allem auf die
+verfügbaren sourcen, die es bei am2_cpu nicht gibt".
+
+**Where.** `tools/thalion_prepare.py`, `tools/build_common.sh`.
+
+**Going back.** Read them from `AM2_CPU` at run time; the places are those of
+`tools/am2cpu_old.py`.

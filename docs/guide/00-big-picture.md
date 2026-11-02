@@ -16,7 +16,9 @@ with development documents
 **40 assembler files, 50 723 lines**, for the Devpac-style assemblers of
 the time. It is probably not complete and does not match the shipped
 game in every detail. Our reference is the shipped game: the German
-version 1.20, its game files and its `AM2_CPU`.
+version 1.20, its game files and its `AM2_CPU`. The build also reads
+1.01, 1.07 and 1.21, by moving the places of 1.20 to where they lie there;
+all offsets in this guide are those of 1.20.
 
 What the release does **not** contain:
 

@@ -47,6 +47,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import amiga_programm as ap             # noqa: E402
+import amiga_places                       # noqa: E402
 import fantasy_st_data as fsd           # noqa: E402
 
 OUT = os.path.join(ap.BUILD, "st_extro")
@@ -58,11 +59,11 @@ LISTS = (0x40, 0x6C, 0x98)  # hunk 2: the three ends' lists {text, picture}
 ENTRY = 28                  # St_pictures: Thalion's picture, A, X, 16 reps
 
 
-def pictures(h2, h2rel):
+def pictures(h2, h2rel, places):
     """Hunk-3 offsets of the pictures the three lists name, in order."""
     out = []
     for base in LISTS:
-        o = base
+        o = places.place(2, base, "picture list")
         while o in h2rel:
             if h2rel.get(o + 4) != 3:
                 raise ap.Fehler(f"hunk 2 ${o + 4:x}: no picture in hunk 3")
@@ -169,10 +170,11 @@ def main():
     p = ap.PROGRAMME["extro"]
     try:
         d = open(os.path.join(ap.AMBERFILES, p["datei"]), "rb").read()
-        hunks = ap.gepackt_lesen(d)
+        hunks = ap.read_program(d, p)
+        p = amiga_places.for_version("extro", d, hunks, p)    # other versions
         ap.aufbau_pruefen(p, hunks)
-        offsets = pictures(hunks[2]["daten"], hunks[2]["rel"])
-    except ap.Fehler as e:
+        offsets = pictures(hunks[2]["daten"], hunks[2]["rel"], p["places"])
+    except (ap.Fehler, amiga_places.PlacesError) as e:
         sys.exit(f"extro_st_data: {p['datei']}: {e}")
     h3 = hunks[3]["daten"]
 

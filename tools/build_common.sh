@@ -66,12 +66,19 @@ warn() {
 	if [ -n "$STEP_NAME" ]; then STEP_WARN="$STEP_WARN$*
 "; else printf '  %s! %s%s\n' "$C_WARN" "$*" "$C_OFF" >&3; fi
 }
+# hint TEXT -- worth knowing, nothing wrong: under the step, not counted
+hint() {
+	echo "HINT: $*"
+	STEP_HINT="$STEP_HINT$*
+"
+}
 note() { STEP_NOTE=$*; }
 step() {
 	step_done
 	STEP_NAME=$1
 	STEP_NOTE=
 	STEP_WARN=
+	STEP_HINT=
 	STEP_T0=$(date +%s)
 	printf '\n==== %s ====\n' "$1"
 	[ -n "$VERBOSE" ] || printf '  %-28s ' "$1" >&3
@@ -82,6 +89,11 @@ step_done() {
 	[ -z "$VERBOSE" ] || printf '  %-28s ' "$STEP_NAME" >&3
 	[ "$_s" -gt 0 ] || _s="<1"
 	printf '%s✓%s %3s s   %s\n' "$C_OK" "$C_OFF" "$_s" "$STEP_NOTE" >&3
+	if [ -n "$STEP_HINT" ]; then
+		printf '%s' "$STEP_HINT" | while IFS= read -r _w; do
+			printf '    - %s\n' "$_w" >&3
+		done
+	fi
 	if [ -n "$STEP_WARN" ]; then
 		printf '%s' "$STEP_WARN" | while IFS= read -r _w; do
 			printf '    %s! %s%s\n' "$C_WARN" "$_w" "$C_OFF" >&3
@@ -137,6 +149,7 @@ summary() {
 	fi
 	say ""
 	say "${C_OK}Done${C_OFF} in $((_s / 60)):$(printf '%02d' $((_s % 60))). $_w. YM music $YM_MUSIC; diagnostic switches: $DIAGNOSE."
+	[ ! -f build/build_name.txt ] || say "Built: $(cat build/build_name.txt)"
 	say "Full log: $LOG"
 }
 
@@ -149,8 +162,118 @@ zeile() { printf '  %-20s %-9s %-15s %s\n' "$1" "$2" "($3)" "$4"; }
 # environment variable, then build.cfg, then the folder ambermoon_gamedata/
 # next to the repository; X_SOURCE says which.
 PFADE=$(python3 tools/paths.py --sh) || exit 1; eval "$PFADE"
+mkdir -p build
+# vasm, vlink and a56 from ambermoon_gamedata/ first (user, 2026-11-01):
+# its bin/, then the unpacked vbcc package (vbcc/bin/), then PATH.  So
+# everything from outside can lie in one place.  Exported, so the scripts
+# the build starts find the same.
+for _d in "$GAMEDATA/vbcc/bin" "$GAMEDATA/bin"; do
+	[ -d "$_d" ] || continue
+	case ":$PATH:" in
+		*":$_d:"*) ;;
+		*) PATH="$_d:$PATH" ;;
+	esac
+done
+export PATH
+# A path on the command line (sh tools/build_all.sh ambermoone.zip) names the
+# game files and wins over AMBER_DATEN: relative to where the build was called,
+# else to ambermoon_gamedata/.  GAME_FILES_ARG comes from the build scripts;
+# the builds started after this one take the path from the environment.  First
+# of all, so that a wrong name stops before anything is downloaded.
+if [ -n "$GAME_FILES_ARG" ]; then
+	case "$GAME_FILES_ARG" in
+		-*)
+			say "Usage: sh $0 [GAME_FILES]   a zip, disk images or a folder (README, Quickstart)"
+			exit 2 ;;
+		/*) DATEN=$GAME_FILES_ARG ;;
+		*)
+			if [ -e "$CALLED_FROM/$GAME_FILES_ARG" ]; then
+				DATEN=$CALLED_FROM/$GAME_FILES_ARG
+			else
+				DATEN=$GAMEDATA/$GAME_FILES_ARG
+			fi ;;
+	esac
+	if [ ! -e "$DATEN" ]; then
+		say "Game files not found: $GAME_FILES_ARG (looked in $CALLED_FROM and $GAMEDATA)"
+		exit 1
+	fi
+	DATEN_SOURCE="command line"
+fi
+# tool_where NAME: "where path" of a tool, or nothing
+tool_where() {
+	_p=$(command -v "$1") || return 1
+	case "$_p" in
+		"$GAMEDATA"/*) echo "gamedata $_p" ;;
+		*) echo "PATH $_p" ;;
+	esac
+}
+# Thalion's source missing at its default place (nothing set): fetch it
+# (tools/fetch_source.py: a clone or zip in ambermoon_gamedata/, else the tested
+# commit from GitHub; AMBER_DOWNLOAD=NO forbids the download).  If that
+# fails, prepare stops at "Sources and switches" with the message.  The
+# builds started after this one take the path from the environment.
+URCODE_FETCHED=
+if [ ! -f "$URCODE/GAME_OFF.S" ] && [ "$URCODE_SOURCE" = default ]; then
+	say "  Thalion's source is missing: fetching it (tools/fetch_source.py)"
+	if _h=$(python3 tools/fetch_source.py --target "$URCODE" --gamedata "$GAMEDATA" \
+		--download "${DOWNLOAD:-yes}"); then
+		URCODE=$(printf '%s\n' "$_h" | sed -n 1p)
+		URCODE_FETCHED=$(printf '%s\n' "$_h" | sed -n 2p)
+		AMBER_URCODE=$URCODE
+		export AMBER_URCODE
+	fi
+fi
+# The game files: AMBER_DATEN may also be a zip, disk images (ADF, DMS) or
+# the Amberfiles folder itself; unset and missing, ambermoon_gamedata/ is
+# searched for one set (tools/game_files.py, into build/game_files/).
+DATEN_KIND=folder
+GAME_FILES_FAILED=
+if _d=$(python3 tools/game_files.py --data "$DATEN" --source "$DATEN_SOURCE" \
+	--gamedata "$GAMEDATA" --out build/game_files); then
+	DATEN=$(printf '%s\n' "$_d" | sed -n 1p)
+	DATEN_KIND=$(printf '%s\n' "$_d" | sed -n 2p)
+	AMBER_DATEN=$DATEN
+	export AMBER_DATEN
+	case "$DATEN_KIND" in folder*) ;; *) say "  Game files: $DATEN_KIND" ;; esac
+else
+	GAME_FILES_FAILED=1
+fi
+# vasm or vlink nowhere, and the game files are there: the two programs from
+# the vbcc package, into ambermoon_gamedata/bin/ (tools/fetch_vbcc.py;
+# AMBER_DOWNLOAD=NO forbids the download).  If that fails, prepare stops at
+# "Sources and switches".
+if [ -z "$GAME_FILES_FAILED" ] && { ! command -v vasmm68k_mot >/dev/null || ! command -v vlink >/dev/null; }; then
+	say "  vasm or vlink is missing: fetching them (tools/fetch_vbcc.py, about 32 MB)"
+	if python3 tools/fetch_vbcc.py --gamedata "$GAMEDATA" --download "${DOWNLOAD:-yes}"; then
+		PATH="$GAMEDATA/bin:$PATH"
+	fi
+fi
 AMBERFILES=$DATEN/Amberfiles
-if [ -f "$YMSNDH" ]; then YM_MUSIC=on; else YM_MUSIC=off; fi
+# Thalion's disks (1.01, 1.07): the files of 1.2x that they lack (Text.amb,
+# Objects.amb, Button_graphics, Dict.amb, Monster_char.amb, Saves, Save.xx)
+# are made at build time into build/thalion/ (tools/thalion_prepare.py,
+# Thalion's files stay as they are); every tool after this reads that
+# folder.  For 1.2x the tool does nothing.
+THALION_DATA=
+if [ -f "$AMBERFILES/AM2_CPU" ]; then
+	mkdir -p build
+	THALION_DATA=$(python3 tools/thalion_prepare.py --amberfiles "$AMBERFILES" \
+		--out build/thalion) || exit 1
+	if [ -n "$THALION_DATA" ]; then
+		DATEN=$THALION_DATA
+		DATEN_SOURCE="$DATEN_SOURCE, laid out as 1.2x"
+		AMBERFILES=$DATEN/Amberfiles
+		AMBER_DATEN=$DATEN
+		export AMBER_DATEN
+	fi
+fi
+if [ -f "$YMSNDH" ]; then
+	YM_MUSIC=on
+	DELIVERED_DATA="game files, save games, YM music, AMBER.INF"
+else
+	YM_MUSIC=off
+	DELIVERED_DATA="game files, save games, AMBER.INF"
+fi
 if [ -n "$VASM_EXTRA" ]; then
 	DIAGNOSE="$VASM_EXTRA"
 else
@@ -171,18 +294,26 @@ prepare() {
 	# Required sources stop the build; the YM SNDH is optional.
 	if [ -f "$URCODE/GAME_OFF.S" ]; then
 		zeile "Thalion's source" found "$URCODE_SOURCE" "$URCODE"
+		[ -z "$URCODE_FETCHED" ] || zeile "" "" "fetch_source.py" "$URCODE_FETCHED"
+		case "$URCODE_FETCHED" in *NOT*) warn "Thalion's source is not the tested state ($URCODE)" ;; esac
 	else
 		zeile "Thalion's source" MISSING "$URCODE_SOURCE" "$URCODE/GAME_OFF.S" >&2
 		echo "Set AMBER_URCODE: as a variable, in build.cfg (template" >&2
-		echo "build.cfg.example), or put it at that path." >&2
+		echo "build.cfg.example), or put it at that path; unset, the build fetches" >&2
+		echo "it (tools/fetch_source.py, the lines above say why that failed)." >&2
 		exit 1
 	fi
-	if [ -f "$AMBERFILES/AM2_CPU" ]; then
+	if [ -n "$GAME_FILES_FAILED" ]; then
+		# game_files.py said why, on the lines above; the path here would mislead.
+		zeile "Game files" "NOT FOUND" "$DATEN_SOURCE" "see the lines above" >&2
+		exit 1
+	elif [ -f "$AMBERFILES/AM2_CPU" ]; then
 		zeile "Game files" found "$DATEN_SOURCE" "$AMBERFILES"
+		case "$DATEN_KIND" in folder*) ;; *) zeile "" "" "game_files.py" "$DATEN_KIND" ;; esac
 	else
 		zeile "Game files" MISSING "$DATEN_SOURCE" "$AMBERFILES/AM2_CPU" >&2
-		echo "Set AMBER_DATEN, the directory above Amberfiles/: as a variable," >&2
-		echo "in build.cfg (template build.cfg.example), or put it at that path." >&2
+		echo "Name them: sh tools/build_all.sh FILE, or AMBER_DATEN as a variable" >&2
+		echo "or in build.cfg (template build.cfg.example)." >&2
 		exit 1
 	fi
 	# Set but missing is more likely a typo than intent: stop.
@@ -203,21 +334,43 @@ prepare() {
 		*) WOHER=PATH ;;
 	esac
 	zeile "m68k objdump" found "$WOHER" "$GEFUNDEN"
-	# a56 for the DSP mixer, Falcon only (build_engine.sh checks it again).
-	if [ "$1" != st ]; then
-		if command -v a56 >/dev/null; then
-			zeile "a56 (DSP mixer)" found PATH "$(command -v a56)"
+	# vasm and vlink: ambermoon_gamedata/bin, vbcc/bin, then PATH (above).
+	for _w in vasmm68k_mot vlink; do
+		if _q=$(tool_where $_w); then
+			zeile "$_w" found "${_q%% *}" "${_q#* }"
 		else
-			zeile "a56 (DSP mixer)" MISSING PATH "sudo apt install a56" >&2
+			zeile "$_w" MISSING PATH "vasm 1.9a / vlink 0.17a: README, Quickstart" >&2
+			echo "Put them into $GAMEDATA/bin/ (or unpack the vbcc package there), or into PATH." >&2
 			exit 1
+		fi
+	done
+	# Tested with 1.9a.  2.0f does not get through the cross-check of opt t-
+	# in build_engine.sh; say so before that stop.
+	printf '\tnop\n' > build/vasm_version.s
+	_v=$(vasmm68k_mot -Fbin -o /dev/null build/vasm_version.s 2>&1 | sed -n 's/^vasm \([^ ]*\) (c).*/\1/p')
+	[ "$_v" = 1.9a ] || warn "vasm ${_v:-of unknown version}: the build is tested with 1.9a, 2.0f does not build it yet"
+	# a56 for the DSP mixer, Falcon only; without it the assembled image in
+	# the repository (tools/musik_dsp.sh).
+	if [ "$1" != st ]; then
+		if _q=$(tool_where a56); then
+			zeile "a56 (DSP mixer)" found "${_q%% *}" "${_q#* }"
+		else
+			zeile "a56 (DSP mixer)" "not there" PATH "takes the assembled musik/musik_dsp.dsp"
 		fi
 	fi
 	zeile "Diagnostic switches" "" VASM_EXTRA "$DIAGNOSE"
-	_found="Thalion's source, game files, objdump"
-	[ "$1" = st ] || _found="$_found, a56"
+	zeile "Test builds" "" TESTBUILDS "${TESTBUILDS:-no}"
+	# The build's name and the game files' version (VERSION, Text.amb):
+	# -> build/build_name.i (engine), build/BUILD.TXT (delivered).
+	BUILD_NAME=$(python3 tools/build_name.py --amberfiles "$AMBERFILES") || exit 1
+	printf '%s\n' "$BUILD_NAME" > build/build_name.txt
+	zeile "Build" "" VERSION "$BUILD_NAME"
+	_found="Thalion's source, game files, vasm, vlink, objdump"
+	[ "$1" = st ] || ! tool_where a56 > /dev/null || _found="$_found, a56"
 	[ "$YM_MUSIC" = off ] || _found="$_found, YM SNDH"
 	note "$_found"
-	[ "$YM_MUSIC" = on ] || warn "no YM SNDH: the YM stays silent (AMBER_YMSNDH, docs/13)"
+	[ "$YM_MUSIC" = on ] || hint "no ambermon.snd (optional, README): the YM stays silent, the ST has no music"
+	[ -z "$TESTBUILDS" ] || hint "with the test builds (TESTBUILDS)"
 	[ -z "$VASM_EXTRA" ] || warn "diagnostic switches: $VASM_EXTRA (not a release build)"
 
 	step "Library data from AM2_CPU"
@@ -402,6 +555,9 @@ deliver_data() {
 	# new game (Chared_Mod, finding 261).
 	cp "$AMBERFILES/Saves" build/SAVES
 	deliver build/SAVES "$DATA"
+	# Which build, for which game files (tools/build_name.py); for bug
+	# reports, and the same line ENGINE.TOS shows at the start.
+	deliver build/BUILD.TXT "$DATA"
 
 	echo "-- YM music"
 	# Big Alec's YM version (docs/13 6), for the ST and with MUSIC=YM in
@@ -482,5 +638,11 @@ source_checks() {
 	python3 tools/register_pruefen.py
 	python3 tools/vars_pruefen.py
 	python3 tools/platzhalter_pruefen.py
-	note "TOS calls, registers, variables, placeholders"
+	# Places of Thalion's intro/extro only as <label><hunk>_<hex>: the old
+	# form <label><hunk>+$hex would keep the 1.20 offset in every other
+	# version (1.01, 1.07, 1.21) without an error (tools/amiga_places.py).
+	python3 tools/amiga_names_convert.py --check > /dev/null || {
+		python3 tools/amiga_names_convert.py --check
+		echo "STOP: run python3 tools/amiga_names_convert.py" >&2; exit 1; }
+	note "TOS calls, registers, variables, placeholders, intro/extro places"
 }

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Build the fantasy intro for the Falcon: build/FANTASY.TOS, with the test
-# builds FEEMESS.TOS and FEECHECK.TOS (docs/11-Intro-Extro.md).
+# Build the fantasy intro for the Falcon: build/FANTASY.TOS; with TESTBUILDS=1
+# also the test builds FEEMESS.TOS and FEECHECK.TOS (docs/11-Intro-Extro.md).
 #
 #   1. fantasy_auszug.py         Fantasy_intro unpacked, names and constants
 #                                checked against Thalion's FAIRY.S,
@@ -45,5 +45,7 @@ bauen FANTASY ""
 # Test builds: FEEMESS counts the frames done just in time or late
 # (FEE_MESSEN); FEECHECK runs Thalion's make_funkel2 and make_magic against
 # ours every frame (CHECK_STARS, CHECK_DEFER).  Both write NAME.TXT.
-bauen FEEMESS "-DFEE_MESSEN"
-bauen FEECHECK "-DCHECK_STARS=1 -DCHECK_DEFER=1"
+if [ -n "$TESTBUILDS" ]; then
+	bauen FEEMESS "-DFEE_MESSEN"
+	bauen FEECHECK "-DCHECK_STARS=1 -DCHECK_DEFER=1"
+fi

@@ -62,8 +62,8 @@ ST_SCREEN	equ	ST_LINES*ST_LINE
 ST_SCREENS	equ	3		; in turn (EXTRO_ST.S)
 
 ; The variables of Thalion's flow (hunk 5)
-H5_COUNT	equ	$04		; .l VBL counter (Thalion's VBL)
-H5_FAST		equ	$3E		; .w the closing text: one VBL a step
+H5_COUNT	equ	Extro_h5_4		; .l VBL counter (Thalion's VBL)
+H5_FAST		equ	Extro_h5_3E		; .w the closing text: one VBL a step
 THALION_VBL	equ	$F26		; Thalion's level-3 handler
 
 ; ---------------------------------------------------------------------------

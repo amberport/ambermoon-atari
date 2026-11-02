@@ -487,8 +487,8 @@ Extro_after_copy:
 .out:	movem.l	(sp)+,d0-d7/a0-a6
 	move.l	(sp),a4			; Thalion's move.l (sp),a4
 	addq.l	#2,a4			; addq.l #2,a4
-	jsr	Extro_h1+$5B2		; bsr $5B2 (fade in)
-	jmp	Extro_h1+$2F4
+	jsr	Extro_h1_5B2		; bsr $5B2 (fade in)
+	jmp	Extro_h1_2F4
 
 ; Screen_copy -- a0 = picture in ST format, a1 = ST screen (ST_SCREEN
 ; bytes).  Changes d0-d7/a2-a6.
@@ -508,16 +508,16 @@ Screen_copy:
 ; covers.
 ; ***************************************************************************
 Extro_switch_1:
-	jsr	Extro_h1+$EBC		; bsr $EBC
+	jsr	Extro_h1_EBC		; bsr $EBC
 	bsr	Base_set
-	jsr	Extro_h1+$F54		; bsr $F54 (wait for the VBL)
-	jmp	Extro_h1+$1F0
+	jsr	Extro_h1_F54		; bsr $F54 (wait for the VBL)
+	jmp	Extro_h1_1F0
 
 Extro_switch_2:
-	jsr	Extro_h1+$EBC		; bsr $EBC
+	jsr	Extro_h1_EBC		; bsr $EBC
 	bsr	Base_set
-	tst.w	Extro_h5+H5_FAST	; tst.w $3E (hunk 5); the flags hold at $5A0
-	jmp	Extro_h1+$5A0
+	tst.w	H5_FAST	; tst.w $3E (hunk 5); the flags hold at $5A0
+	jmp	Extro_h1_5A0
 
 ; Base_set -- the ST screen drawn last (Drawn; at $1E8 the first) from the
 ; next frame on.  All registers stay.

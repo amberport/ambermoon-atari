@@ -209,8 +209,14 @@ AUSGABE_KOPF = """\
 """
 
 
+# Generated names keep the 1.20 offset, because our library names them so
+# (COMBAT_SUP.S: zm_xtab equ Am2cpu_9_0E95C).  am2cpu_places.py sets the
+# shift per hunk when the AM2_CPU is not 1.20 (hunk 9 of 1.21: +2).
+NAME_SHIFT = {}
+
+
 def marke(h, v):
-    return "Am2cpu_%d_%05X" % (h, v)
+    return "Am2cpu_%d_%05X" % (h, v - NAME_SHIFT.get(h, 0))
 
 
 def dis(daten, von, bis, arch):
@@ -219,7 +225,8 @@ def dis(daten, von, bis, arch):
         f.write(daten)
         f.flush()
         aus = subprocess.run(
-            [objdump(), "-D", "-b", "binary", "-m", arch,
+            # -z: objdump otherwise leaves out runs of zero bytes ("...")
+            [objdump(), "-D", "-z", "-b", "binary", "-m", arch,
              "--start-address=0x%x" % von, "--stop-address=0x%x" % bis, f.name],
             capture_output=True, text=True, check=True).stdout
     zeilen = []
@@ -268,7 +275,22 @@ def main():
     p.add_argument("--datei", default=os.path.join(amberfiles(), "AM2_CPU"))
     p.add_argument("--out", default="build/am2cpu_code.i")
     a = p.parse_args()
-    hunks = lies_hunks(a.datei)
+    # Thalion's 1.0x is read as a virtual 1.21 (am2cpu_old.py); then the
+    # 1.20 places are moved to this AM2_CPU (am2cpu_places.py), for 1.20
+    # itself the shift is zero.
+    import am2cpu_old, am2cpu_auszug, am2cpu_places
+    hunks = am2cpu_old.read_am2cpu(a.datei, lambda t: print("    " + t))
+    if hunks[0].get("virtual"):
+        # Thalion's put_dpoly fills the edge list itself, inline at the
+        # place where 1.2x jumps to 11:$019E/$01B4; hunk 11 is 1.2x's.
+        STUECKE[:] = [s for s in STUECKE if s[1] != 11]
+    for line in am2cpu_places.adapt_pieces(sys.modules[__name__], am2cpu_auszug, hunks):
+        print("    places: " + line)
+    if hunks[0].get("virtual"):
+        for name, h, von, bis, _, _ in STUECKE:
+            for a, b in am2cpu_old.gaps(hunks, h, von, bis):
+                raise Fehler("piece %s: %d:$%05X..$%05X does not come from Thalion's AM2_CPU "
+                       "(am2cpu_old_maps.py)" % (name or "%d:$%X" % (h, von), h, a, b))
 
     def im_stueck(h, v):
         for s in STUECKE:

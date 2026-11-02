@@ -39,10 +39,10 @@ CW_WOLKE	equ	16*CW_SCHIEBUNG
 ;   Changes d0-d7/a0-a3.
 ; ***************************************************************************
 Clouds_prepare:
-	lea	Intro_h4+$1BF88,a0
+	lea	Intro_h4_1BF88,a0
 	lea	Clouds_left,a1
 	bsr.b	Cloud_shift
-	lea	Intro_h4+$1E288,a0
+	lea	Intro_h4_1E288,a0
 	lea	Clouds_right,a1
 
 ; Cloud_shift -- a0 = Thalion's cloud, a1 = its table (CW_WOLKE bytes).
@@ -98,44 +98,44 @@ Cloud_shift:
 ; ***************************************************************************
 ; Clouds_draw -- K3 at $E3A, where Thalion's four cloud blits begin (up to
 ; $EB2): the four clouds into the target of the drawing screen
-; (Intro_h5+$18), in Thalion's order.  The buffer lines are no longer
+; (Intro_h5_18), in Thalion's order.  The buffer lines are no longer
 ; valid then; Clouds_column, which Thalion calls twice just before in the
 ; same frame ($E2E, $E36), has marked all of them.  Outside the table
 ; Thalion's way.
 ; Thalion uses no register from here on; a6 = Amiga_register as Thalion's
-; blits leave it.  Covered: lea Intro_h4+$1BF88,a0.
+; blits leave it.  Covered: lea Intro_h4_1BF88,a0.
 ; ***************************************************************************
 Clouds_draw:
 	movem.l	d0-d7/a0-a5,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Schirm_suchen
 	beq.b	.thalion
 	bsr	Ziel_frei		; stale lines: Clouds_column, just before
-	move.w	Intro_h5+$12140,d0	; x of the left cloud
+	move.w	Intro_h5_12140,d0	; x of the left cloud
 	moveq	#0,d1
 	lea	Clouds_left,a0
 	bsr.b	Cloud_put
-	move.w	Intro_h5+$12140,d0
+	move.w	Intro_h5_12140,d0
 	move.w	#CW_ZEILEN,d1
 	lea	Clouds_left,a0
 	bsr.b	Cloud_put
 	move.w	#208,d0			; the right one
-	sub.w	Intro_h5+$12140,d0
+	sub.w	Intro_h5_12140,d0
 	moveq	#0,d1
 	lea	Clouds_right,a0
 	bsr.b	Cloud_put
 	move.w	#208,d0
-	sub.w	Intro_h5+$12140,d0
+	sub.w	Intro_h5_12140,d0
 	move.w	#CW_ZEILEN,d1
 	lea	Clouds_right,a0
 	bsr.b	Cloud_put
 	movem.l	(sp)+,d0-d7/a0-a5
 	lea	Amiga_register,a6
-	jmp	Intro_h0+$EB2
+	jmp	Intro_h0_EB2
 .thalion:
 	movem.l	(sp)+,d0-d7/a0-a5
-	lea	Intro_h4+$1BF88,a0
-	jmp	Intro_h0+$E40
+	lea	Intro_h4_1BF88,a0
+	jmp	Intro_h0_E40
 
 ; Cloud_put -- one cloud: d0.w = x (may lie left of or beyond the screen),
 ; d1.w = y, a0 = its table, a5 = the screen.

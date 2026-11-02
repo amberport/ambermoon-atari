@@ -19,6 +19,7 @@ helps.
 | | Chapter | Read it for |
 |---|---|---|
 | 1 | [Getting started](01-getting-started.md) | what you need, how to build, where things are |
+| | [Building it yourself](building.md) | what the build looks for and where, the tools, other systems, when it stops |
 | 2 | [Architecture](02-architecture.md) | the layers, the two goals, the two targets |
 | 3 | [Entry points and flow](03-entry-points.md) | `start`, the main loop, the VBL, the program chain, the emergency exit |
 | 4 | [The interface](04-interface.md) | names as contracts, two translation units, `vorspann.i` |

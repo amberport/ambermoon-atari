@@ -5,6 +5,7 @@
 # a56, for under ZIEL_ST the DSP mixer drops out.
 #
 #   sh tools/build_st.sh
+#   sh tools/build_st.sh ambermoone.zip    these game files
 #
 # **One source tree for both.**  What is repaired in the Falcon build comes
 # along here; tools/build_all.sh builds both, so whoever breaks the ST build
@@ -14,6 +15,7 @@
 # intro and the extro from tools/intro_st_build.sh and tools/extro_st_build.sh
 # (INTROST.TOS, EXTROST.TOS).
 set -e
+GAME_FILES_ARG=$1; CALLED_FROM=$PWD
 cd "$(dirname "$0")/.."
 . tools/build_common.sh
 
@@ -40,16 +42,23 @@ note "ENGINEST.TOS $(( $(wc -c < build/st/ENGINEST.TOS) / 1024 )) KB, 68000, -DZ
 # here, from Palettes.amb and AM2_CPU, with the hand corrections in
 # tools/st_palettes.txt; ENGINEST.TOS loads STPAL.DAT once at start.
 step "ST palettes"
-python3 tools/st_palettes.py build -o build/st/STPAL.DAT
-python3 tools/palette_editor/palette_sheet.py
-note "STPAL.DAT, sheet build/palette_editor/index.html"
+# The check page needs Pillow, the game does not.
+if python3 -c 'import PIL' 2>/dev/null; then
+	python3 tools/st_palettes.py build -o build/st/STPAL.DAT
+	python3 tools/palette_editor/palette_sheet.py
+	note "STPAL.DAT, sheet build/palette_editor/index.html"
+else
+	python3 tools/st_palettes.py build --no-sheet -o build/st/STPAL.DAT
+	warn "no Pillow (python3-pil): no palette check page, the game is complete"
+	note "STPAL.DAT"
+fi
 
 step "Game files and delivery"
 clean_output st
 deliver_data
 deliver build/st/ENGINEST.TOS "$DATA"
 deliver build/st/STPAL.DAT "$DATA"
-note "game files, save games, YM music, AMBER.INF"
+note "$DELIVERED_DATA"
 
 step "Fantasy intro"
 # Thalion's FAIRY.S unchanged, graphics in ST format at build time

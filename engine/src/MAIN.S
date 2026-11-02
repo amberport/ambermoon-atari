@@ -68,6 +68,13 @@ start:
 	move.w	#Cconws,-(sp)
 	Gemdos
 	addq.l	#6,sp
+	; Which build, for which game files (tools/build_name.py, VERSION),
+	; two lines: "Ambermoon Atari 0.8 (65202f9)" and
+	; "for Ambermoon v1.07 26-3-1994 / English".
+	pea	Build_line
+	move.w	#Cconws,-(sp)
+	Gemdos
+	addq.l	#6,sp
 	; The load address as well (2026-10-02): with the PC of a crash
 	; (debugger, savestate) and the symbol map it leads to the routine.
 	; start ist der erste Befehl des Programms.
@@ -106,6 +113,7 @@ start:
 	jsr	Lade_texte		; Text.amb -> Textdaten (Prompts, Namen, Vorlagen)
 	jsr	Lade_keymap		; Keymap -> Tastenbelegung fuer Read_key
 	jsr	D3_einrichten		; CPU_68020_plus (D3_SUP.S)
+	bsr	Check_game_files		; game files of the version built for? else back
 
 	; Selbsttest des Laufzeit-Entpackers (Leitziel 2).  Nur mit
 	; -DENTPACKPRUEF=1 uebersetzt; schreibt LAYOUT.BIN zum Vergleich.
@@ -267,6 +275,71 @@ Einstellungen_lesen:
 	addq.l	#6,sp
 	movem.l	(sp)+,d0-d2/a0-a2
 	rts
+
+; ***************************************************************************
+; Check_game_files -- are the game files the ones this program was built for?
+; The engine takes places and library data from the game files at build
+; time (am2cpu_daten.i, textmarken.i); with the files of another version it
+; would show wrong texts or crash.  Compared are Thalion's two version lines
+; in the Text.amb just loaded (Version_string1/2, build/textmarken.i) with
+; those of the build (Build_version1/2, build/build_name.i).  Lade_texte
+; takes nothing of another length; then Textdaten stays zero, and the lines
+; differ as well.  On a difference: a message on the text screen (the
+; screen is not open yet) with both versions, a key, back to the desktop.
+; The version found is Found_version, which Lade_texte takes from the
+; end of any Text.amb (WORDS_SUP.S); empty when there is none.
+;   Returns only when they match; all registers are preserved.
+; ***************************************************************************
+Check_game_files:
+	movem.l	a0-a1,-(sp)
+	lea	Version_string1,a0
+	lea	Build_version1,a1
+	bsr.b	.equal
+	bne.b	.wrong
+	lea	Version_string2,a0
+	lea	Build_version2,a1
+	bsr.b	.equal
+	bne.b	.wrong
+	movem.l	(sp)+,a0-a1
+	rts
+; Z set when the strings at a0 and a1 are equal up to their zero byte
+.equal:
+	cmpm.b	(a0)+,(a1)+
+	bne.b	.done
+	tst.b	-1(a0)
+	bne.b	.equal
+.done:	rts
+.wrong:
+	pea	m_wrong1
+	move.w	#Cconws,-(sp)
+	Gemdos
+	addq.l	#6,sp
+	pea	Build_display
+	move.w	#Cconws,-(sp)
+	Gemdos
+	addq.l	#6,sp
+	pea	m_wrong2
+	move.w	#Cconws,-(sp)
+	Gemdos
+	addq.l	#6,sp
+	pea	Found_version
+	tst.b	Found_version
+	bne.b	.found
+	addq.l	#4,sp
+	pea	m_unknown
+.found:
+	move.w	#Cconws,-(sp)
+	Gemdos
+	addq.l	#6,sp
+	pea	m_wrong3
+	move.w	#Cconws,-(sp)
+	Gemdos
+	addq.l	#6,sp
+	move.w	#Cconin,-(sp)
+	Gemdos
+	addq.l	#2,sp
+	lea	stacktop,sp		; out of this routine (a5 is still vars)
+	bra	quit
 
 ; ***************************************************************************
 ; Exit_program -- back to the desktop in order.  Never returns.
@@ -444,7 +517,9 @@ Speicher_voll:
 
 ; ***************************************************************************
 	even
-m_hello: MACHINE_NAME			; per machine in vorspann.i
+; ESC v: TOS wraps long lines (the ST's 40 columns cut them otherwise)
+m_hello: dc.b	27,"v"
+	MACHINE_NAME			; per machine in vorspann.i
 	dc.b	13,10,0
 m_ziffern: dc.b	"0123456789ABCDEF"
 m_done:	dc.b	"Fertig.",13,10,0
@@ -457,6 +532,15 @@ m_noobj: dc.b	"OBJECTS.AMB fehlt -- kein Gewicht/keine Typpruefung.",13,10,0
 m_adresse:	dc.b	"Ladeadresse $"
 m_adresse_zahl:	dc.b	"00000000",13,10,0
 m_amber_inf:	dc.b	"AMBER.INF",0
+; at most 38 characters a line, for the ST's 40 columns
+m_wrong1:	dc.b	13,10,"The game files in AMBFILES\\ are not",13,10
+		dc.b	"the ones this program was built for.",13,10
+		dc.b	13,10,"Built for:",13,10,"  ",0
+m_wrong2:	dc.b	13,10,"Found:",13,10,"  ",0
+m_unknown:	dc.b	"no version (TEXT.AMB missing)",0
+m_wrong3:	dc.b	13,10,13,10,"Build again from these game files,",13,10
+		dc.b	"or copy the whole ATARI\\ folder of",13,10
+		dc.b	"one build.  A key ends.",13,10,0
 	even
 
 	SECTION	Fast_BSS,bss

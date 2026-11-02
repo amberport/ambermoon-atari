@@ -29,12 +29,19 @@ Keys and defaults:
     AMBER_OBJDUMP  m68k objdump; no default, am2cpu_lesen.objdump() searches
     AMBER_FALCON   the test Falcon's address for uIPtool (testpaket.py
                    falcon); no default, an address, not a path
+    AMBER_DOWNLOAD NO forbids the build to fetch a missing Thalion's source
+                   (tools/fetch_source.py) or vasm and vlink
+                   (tools/fetch_vbcc.py); default YES, a word, not a path
+
+AMBER_DATEN may also name a zip, disk images or the Amberfiles folder
+itself (tools/game_files.py finds the game files in it).
 
 In Python: ``import paths`` (the tools run from tools/), then
 ``paths.value(KEY)``, ``paths.source(KEY)``, ``paths.amberfiles()``,
 ``paths.urcode()``.  In the shell: ``eval "$(python3 tools/paths.py --sh)"``
-sets DATEN, URCODE, YMSNDH, TOS, OBJDUMP, FALCON_IP and with _SOURCE behind each name
-where it came from (the variable's name, build.cfg or default).
+sets DATEN, URCODE, YMSNDH, TOS, OBJDUMP, FALCON_IP, DOWNLOAD and with _SOURCE behind
+each name where it came from (the variable's name, build.cfg or default),
+and GAMEDATA, the folder ambermoon_gamedata/ (it need not exist).
 
 Usage:  paths.py            show the values and where they come from
         paths.py --sh       the same as shell assignments
@@ -55,9 +62,10 @@ KEYS = {
     "AMBER_TOS": ("TOS", "TOS404.IMG"),
     "AMBER_OBJDUMP": ("OBJDUMP", None),
     "AMBER_FALCON": ("FALCON_IP", None),
+    "AMBER_DOWNLOAD": ("DOWNLOAD", None),
 }
 # values that are not paths: taken from build.cfg as they stand
-NOT_PATHS = {"AMBER_FALCON"}
+NOT_PATHS = {"AMBER_FALCON", "AMBER_DOWNLOAD"}
 
 
 def _upwards():
@@ -118,6 +126,8 @@ def lookup(key):
     """(value, source): source is the variable's name, the build.cfg path
     or "default"; value is "" when there is none (AMBER_OBJDUMP)."""
     if os.environ.get(key):
+        if key in NOT_PATHS:
+            return os.environ[key], key
         return os.path.expanduser(os.environ[key]), key
     if key in _CFG:
         return _CFG[key], _CFG_FILE
@@ -136,6 +146,11 @@ def source(key):
     return CFG if s == _CFG_FILE else s
 
 
+def gamedata():
+    """The folder ambermoon_gamedata/ next to the repository (perhaps missing)."""
+    return _find_folder()
+
+
 def urcode():
     return value("AMBER_URCODE")
 
@@ -150,6 +165,7 @@ def main():
             v, s = lookup(key)
             print("%s=%s" % (name, shlex.quote(v)))
             print("%s_SOURCE=%s" % (name, shlex.quote(source(key))))
+        print("GAMEDATA=%s" % shlex.quote(gamedata()))
         return
     if sys.argv[1:]:
         sys.exit(__doc__.split("Usage:")[1])

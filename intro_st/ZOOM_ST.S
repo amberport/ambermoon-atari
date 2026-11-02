@@ -50,7 +50,7 @@
 ; one's call number in Zoom_first_error, the calls in Zoom_calls).
 ; ***************************************************************************
 
-ZM_BASE		equ	$11CF0		; Thalion's zoom variables in hunk 5:
+ZM_BASE		equ	Intro_h5_11CF0		; Thalion's zoom variables in hunk 5:
 ZM_X		equ	0		; destination x, clipped
 ZM_Y		equ	2		; destination y, clipped
 ZM_SWIDTH	equ	4		; source width
@@ -63,7 +63,7 @@ ZM_MASK		equ	$1C		; <> 0: colour 0 leaves the screen
 ZM_SOURCE	equ	$1E		; source picture, four planes a row
 ZM_COLTAB	equ	$22		; ($11D12) column steps, from the right
 ZM_ROWTAB	equ	$2A2		; ($11F92) row steps
-ZM_SCREEN	equ	$18		; in hunk 5: Thalion's drawing screen
+ZM_SCREEN	equ	Intro_h5_18		; in hunk 5: Thalion's drawing screen
 ZM_LINE		equ	160		; bytes a screen row: four planes of 40
 ZM_PLANE	equ	40
 ZM_MAXGROUPS	equ	21		; groups a row: (15 + 320 + 15) / 16
@@ -79,7 +79,7 @@ ZS_SIZE		equ	12
 ZL_SIZE		equ	10		; Zoom_line a group: 4 plane words, mask
 
 ; ***************************************************************************
-; Zoom_st -- K3 at $1C98 (replaces move.w Intro_h5+$11CF8,d0).  Ends with
+; Zoom_st -- K3 at $1C98 (replaces move.w Intro_h5_11CF8,d0).  Ends with
 ; rts for Thalion's rts at $205E.
 ; ***************************************************************************
 Zoom_st:
@@ -87,7 +87,7 @@ Zoom_st:
 	bra	Zoom_check
 Zoom_ours:
 	endc
-	lea	Intro_h5+ZM_BASE,a6
+	lea	ZM_BASE,a6
 	tst.w	ZM_ROWS(a6)
 	ble	.out
 	tst.w	ZM_COLS(a6)
@@ -97,7 +97,7 @@ Zoom_ours:
 	; the screen in the target format (TARGET_ST.S): the target is written,
 	; the buffer rows no longer hold
 	clr.l	Zoom_screen
-	move.l	Intro_h5+ZM_SCREEN,d0
+	move.l	ZM_SCREEN,d0
 	bsr	Screen_find
 	beq.b	.amiga
 	cmp.w	#4,SC_PLANES(a5)
@@ -110,7 +110,7 @@ Zoom_ours:
 	beq	.out
 	bsr	Zoom_columns		; Zoom_map, Zoom_masks, d5 = groups
 	; first destination group, first screen row (160 bytes a row both ways)
-	move.l	Intro_h5+ZM_SCREEN,a1
+	move.l	ZM_SCREEN,a1
 	move.l	Zoom_screen,d1
 	beq.b	.place
 	move.l	d1,a1
@@ -183,7 +183,7 @@ Zoom_fold:
 	move.b	(a0),-(sp)		; keep the byte under the pad
 	clr.b	(a0)
 	moveq	#0,d4
-	move.w	Intro_h5+ZM_BASE+ZM_MASK,d6
+	move.w	ZM_BASE+ZM_MASK,d6
 	move.w	Zoom_groups,d3
 	subq.w	#1,d3
 .group:	moveq	#0,d0
@@ -471,10 +471,10 @@ Zoom_check_target:
 	bsr	Check_rows
 	st	Blit_no_redirect
 	pea	.back
-	move.w	Intro_h5+$11CF8,d0	; the replaced instruction, then $1C9E
-	jmp	Intro_h0+$1C9E
+	move.w	Intro_h5_11CF8,d0	; the replaced instruction, then $1C9E
+	jmp	Intro_h0_1C9E
 .back:	sf	Blit_no_redirect
-	lea	Intro_h5+ZM_BASE,a6
+	lea	ZM_BASE,a6
 	rts
 	endc
 
@@ -485,33 +485,33 @@ Zoom_check_target:
 ; whose rts comes back here.
 ; ***************************************************************************
 Zoom_check:
-	move.l	Intro_h5+ZM_SCREEN,d0	; a target screen: not here
+	move.l	ZM_SCREEN,d0	; a target screen: not here
 	bsr	Screen_find
 	bne	Zoom_ours
 	addq.l	#1,Zoom_calls
 	bsr	Zoom_rows_range		; d0 = offset, d1 = bytes
 	ble	.only
-	move.l	Intro_h5+ZM_SCREEN,a0
+	move.l	ZM_SCREEN,a0
 	add.l	d0,a0
 	lea	Zoom_before,a1
 	bsr	Zoom_copy
 	pea	.thalion_back
-	move.w	Intro_h5+$11CF8,d0
-	jmp	Intro_h0+$1C9E
+	move.w	Intro_h5_11CF8,d0
+	jmp	Intro_h0_1C9E
 .thalion_back:
 	bsr	Zoom_rows_range
-	move.l	Intro_h5+ZM_SCREEN,a0
+	move.l	ZM_SCREEN,a0
 	add.l	d0,a0
 	lea	Zoom_thalion,a1
 	bsr	Zoom_copy
 	bsr	Zoom_rows_range		; screen back as before
 	lea	Zoom_before,a0
-	move.l	Intro_h5+ZM_SCREEN,a1
+	move.l	ZM_SCREEN,a1
 	add.l	d0,a1
 	bsr	Zoom_copy
 	bsr	Zoom_ours
 	bsr	Zoom_rows_range
-	move.l	Intro_h5+ZM_SCREEN,a0
+	move.l	ZM_SCREEN,a0
 	add.l	d0,a0
 	lea	Zoom_thalion,a1
 	lsr.l	#1,d1
@@ -526,7 +526,7 @@ Zoom_check:
 	bne.b	.out
 	move.l	Zoom_calls,Zoom_first_error
 	; keep the case: Thalion's variables and tables, both results
-	lea	Intro_h5+ZM_BASE,a0
+	lea	ZM_BASE,a0
 	lea	Zoom_err_vars,a1
 	move.l	#ZM_ROWTAB+2*256,d1
 	bsr	Zoom_copy
@@ -534,7 +534,7 @@ Zoom_check:
 	lea	Zoom_thalion,a0
 	lea	Zoom_err_thalion,a1
 	bsr	Zoom_copy
-	move.l	Intro_h5+ZM_SCREEN,a0
+	move.l	ZM_SCREEN,a0
 	add.l	d0,a0
 	lea	Zoom_err_ours,a1
 	bsr	Zoom_copy
@@ -545,10 +545,10 @@ Zoom_check:
 ; d1 = bytes of all destination rows (0 or less: no rows).
 Zoom_rows_range:
 	moveq	#0,d0
-	move.w	Intro_h5+ZM_BASE+ZM_Y,d0
+	move.w	ZM_BASE+ZM_Y,d0
 	mulu	#ZM_LINE,d0
 	moveq	#0,d1
-	move.w	Intro_h5+ZM_BASE+ZM_ROWS,d1
+	move.w	ZM_BASE+ZM_ROWS,d1
 	cmp.w	#ZM_CHECK_ROWS,d1
 	bls.b	.r
 	move.w	#ZM_CHECK_ROWS,d1

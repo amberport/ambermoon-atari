@@ -216,6 +216,7 @@
 ; schreibt tools/textmarken.py beim Bau.
 	INCLUDE	"textmarken.i"
 	INCLUDE	"intro_daten.i"		; Startmenue aus Ambermoon_intro (intro_auszug.py)
+	INCLUDE	"build_name.i"		; the build's name and its game files' version (build_name.py)
 	SECTION	Program,code
 	INCLUDE	"am2cpu_code.i"		; Thalions Rasterer, beim Bau (docs/02 A7); DEVIATION (goals 1 and 2), docs/17-deviations.md D2
 	INCLUDE	"src/HULL/D3_SUP.S"	; 3D: Schirm, Weichen

@@ -49,7 +49,7 @@ start:
 	bne.b	.kein_falcon
 	bsr	Amiga_einrichten
 	bne.b	.kein_falcon
-	lea	Extro_h5+$38,a0		; Thalion's "music on" ($222, $34C)
+	lea	Extro_h5_38,a0		; Thalion's "music on" ($222, $34C)
 	bsr	Musik_mischen
 	; Thalions Programm, wie der Amiga-Lader es ruft: a0 = Uebergabesatz,
 	; zurueck d0 = 0 (docs/11, 5.2)
@@ -86,8 +86,8 @@ Extro_nach_kopie:
 	bsr	Alle_bringen		; alle Register bleiben
 	move.l	(sp),a4			; Thalions move.l (sp),a4
 	addq.l	#2,a4			; addq.l #2,a4
-	jsr	Extro_h1+$5B2		; bsr $5B2
-	jmp	Extro_h1+$2F4
+	jsr	Extro_h1_5B2		; bsr $5B2
+	jmp	Extro_h1_2F4
 
 ; ***************************************************************************
 ; Extro_umschalten_1/2 -- K3 an $1E8 und $596: Thalions bsr $EBC (neue
@@ -95,16 +95,16 @@ Extro_nach_kopie:
 ; Danach der Befehl, dessen erstes Wort der jmp ueberdeckt.
 ; ***************************************************************************
 Extro_umschalten_1:
-	jsr	Extro_h1+$EBC		; bsr $EBC
+	jsr	Extro_h1_EBC		; bsr $EBC
 	bsr	Anzeige_sofort
-	jsr	Extro_h1+$F54		; bsr $F54 (auf den VBL warten)
-	jmp	Extro_h1+$1F0
+	jsr	Extro_h1_F54		; bsr $F54 (auf den VBL warten)
+	jmp	Extro_h1_1F0
 
 Extro_umschalten_2:
-	jsr	Extro_h1+$EBC		; bsr $EBC
+	jsr	Extro_h1_EBC		; bsr $EBC
 	bsr	Anzeige_sofort
-	tst.w	Extro_h5+$3E		; tst.w $3E (Hunk 5); die Flags gelten bei $5A0
-	jmp	Extro_h1+$5A0
+	tst.w	Extro_h5_3E		; tst.w $3E (Hunk 5); die Flags gelten bei $5A0
+	jmp	Extro_h1_5A0
 
 	include	"AMIGA_RAHMEN.S"
 
@@ -121,8 +121,8 @@ Uebergabe:
 ; Thalions Schirme (docs/11 5.3, 7.8): 6:$2E90 und 51200 Byte dahinter,
 ; 320 x 256 x 5, Ebenen zeilenweise
 Schirm_tabelle:
-	SCHIRM	Extro_h6+$2E90,256,5
-	SCHIRM	Extro_h6+$2E90+51200,256,5
+	SCHIRM	Extro_h6_2E90,256,5
+	SCHIRM	Extro_h6_2E90+51200,256,5
 	dc.l	0
 	include	"amiga_rahmen_daten.i"
 	include	"extro_musik.i"	; build: tools/musik_k1.py

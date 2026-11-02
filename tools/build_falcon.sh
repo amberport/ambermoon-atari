@@ -4,13 +4,20 @@
 # tools/build_st.sh, both together tools/build_all.sh.
 #
 #   sh tools/build_falcon.sh
+#   sh tools/build_falcon.sh ambermoone.zip                 these game files
 #   VASM_EXTRA="-DZEIGERTAKT=1" sh tools/build_falcon.sh    diagnostic switch
+#   TESTBUILDS=1 sh tools/build_falcon.sh                   with the test builds
+#
+# The test builds (measuring, checking and diagnosis versions of the intros
+# and the extro, FREQ.TOS) only with TESTBUILDS=1: a player has no use for
+# them.
 #
 # Why everything at once: there was an error that cost half an evening -- a
 # scene file got a new entry, the two other maps were not rebuilt, and on
 # the machine the party stood in a broken kitchen.  New entries shift the
 # tile numbers, and then everything has to come about together.
 set -e
+GAME_FILES_ARG=$1; CALLED_FROM=$PWD
 cd "$(dirname "$0")/.."
 . tools/build_common.sh
 
@@ -69,59 +76,71 @@ step "Game files and delivery"
 clean_output falcon
 deliver_data
 deliver engine/ENGINE.TOS "$DATA"
-note "game files, save games, YM music, AMBER.INF"
+note "$DELIVERED_DATA"
 
 step "Fantasy intro"
 # Thalion's FAIRY.S unchanged, data at build time from Fantasy_intro
 # (docs/11-Intro-Extro.md).
 sh tools/fantasy_bauen.sh
 deliver build/FANTASY.TOS "$DATA"
-deliver build/FEEMESS.TOS "$DATA"
-deliver build/FEECHECK.TOS "$DATA"
-note "FANTASY.TOS + 2 test builds"
+note "FANTASY.TOS"
+if [ -n "$TESTBUILDS" ]; then
+	deliver build/FEEMESS.TOS "$DATA"
+	deliver build/FEECHECK.TOS "$DATA"
+	note "FANTASY.TOS + 2 test builds"
+fi
 
 step "Intro"
 # Thalion's Ambermoon_intro, taken over at build time (docs/11-Intro-Extro.md, 4).
 sh tools/amiga_bauen.sh intro
 deliver build/INTRO.TOS "$DATA"
-# Measuring version (AMIGA_MESSEN): where the time goes, file INTROMES.MES;
-# check version (BLIT_PRUEF): fast blits against exact ones; ZOOM_PRUEF:
-# every zoom on Thalion's way and on ours (intro/INTRO_ZOOM.S), compared.
-sh tools/amiga_bauen.sh intro INTROMES "-DAMIGA_MESSEN"
-sh tools/amiga_bauen.sh intro INTROPRF "-DAMIGA_MESSEN -DBLIT_PRUEF -DZOOM_PRUEF"
-# Diagnosis for the hardware (INTRDIAG): ends by itself after 60 seconds
-# and returns to the desktop, writes INTRDIAG.MES and .TXT; STRAHL counts
-# how often we write into lines the Videl is showing.
-sh tools/amiga_bauen.sh intro INTRDIAG "-DAMIGA_MESSEN -DMESS_ENDE=60 -DSTRAHL"
-deliver build/INTROMES.TOS "$DATA"
-deliver build/INTRDIAG.TOS "$DATA"
-deliver build/INTROPRF.TOS "$DATA"
-note "INTRO.TOS + 3 test builds"
+note "INTRO.TOS"
+if [ -n "$TESTBUILDS" ]; then
+	# Measuring version (AMIGA_MESSEN): where the time goes, file INTROMES.MES;
+	# check version (BLIT_PRUEF): fast blits against exact ones; ZOOM_PRUEF:
+	# every zoom on Thalion's way and on ours (intro/INTRO_ZOOM.S), compared.
+	sh tools/amiga_bauen.sh intro INTROMES "-DAMIGA_MESSEN"
+	sh tools/amiga_bauen.sh intro INTROPRF "-DAMIGA_MESSEN -DBLIT_PRUEF -DZOOM_PRUEF"
+	# Diagnosis for the hardware (INTRDIAG): ends by itself after 60 seconds
+	# and returns to the desktop, writes INTRDIAG.MES and .TXT; STRAHL counts
+	# how often we write into lines the Videl is showing.
+	sh tools/amiga_bauen.sh intro INTRDIAG "-DAMIGA_MESSEN -DMESS_ENDE=60 -DSTRAHL"
+	deliver build/INTROMES.TOS "$DATA"
+	deliver build/INTRDIAG.TOS "$DATA"
+	deliver build/INTROPRF.TOS "$DATA"
+	note "INTRO.TOS + 3 test builds"
+fi
 
 step "Extro"
 # Thalion's Ambermoon_extro, likewise (docs/11-Intro-Extro.md, 5).
 sh tools/amiga_bauen.sh extro
 deliver build/EXTRO.TOS "$DATA"
-# Diagnosis for the hardware (EXTRDIAG, like INTRDIAG): measurement and
-# STRAHL, ends after 60 seconds, writes EXTRDIAG.MES and .TXT.  The whole
-# extro is too long for one measurement (user, T12).
-sh tools/amiga_bauen.sh extro EXTRDIAG "-DAMIGA_MESSEN -DMESS_ENDE=60 -DSTRAHL"
-# Check version (BLIT_PRUEF): every blit directly and through the buffer,
-# compared.  Almost a still picture, hence the end after 120 measuring
-# seconds; EXTROPRF.TXT names the differences.
-sh tools/amiga_bauen.sh extro EXTROPRF "-DAMIGA_MESSEN -DBLIT_PRUEF -DMESS_ENDE=120"
-deliver build/EXTRDIAG.TOS "$DATA"
-deliver build/EXTROPRF.TOS "$DATA"
-note "EXTRO.TOS + 2 test builds"
+note "EXTRO.TOS"
+if [ -n "$TESTBUILDS" ]; then
+	# Diagnosis for the hardware (EXTRDIAG, like INTRDIAG): measurement and
+	# STRAHL, ends after 60 seconds, writes EXTRDIAG.MES and .TXT.  The whole
+	# extro is too long for one measurement (user, T12).
+	sh tools/amiga_bauen.sh extro EXTRDIAG "-DAMIGA_MESSEN -DMESS_ENDE=60 -DSTRAHL"
+	# Check version (BLIT_PRUEF): every blit directly and through the buffer,
+	# compared.  Almost a still picture, hence the end after 120 measuring
+	# seconds; EXTROPRF.TXT names the differences.
+	sh tools/amiga_bauen.sh extro EXTROPRF "-DAMIGA_MESSEN -DBLIT_PRUEF -DMESS_ENDE=120"
+	deliver build/EXTRDIAG.TOS "$DATA"
+	deliver build/EXTROPRF.TOS "$DATA"
+	note "EXTRO.TOS + 2 test builds"
+fi
 
 step "Loader and tools"
 build_loader
-# FREQ.TOS measures the frame rate (50/60 Hz) for the measuring files; 68000.
-vasmm68k_mot -m68000 -Fvobj -quiet -o build/freq.o lader/freq.s
-vlink -b ataritos -s -N Freq_code .text -N Freq_daten .data \
-	-N Freq_bss .bss -o build/FREQ.TOS build/freq.o
-deliver build/FREQ.TOS "$DATA"
-note "AMBER.TOS, FREQ.TOS"
+note "AMBER.TOS"
+if [ -n "$TESTBUILDS" ]; then
+	# FREQ.TOS measures the frame rate (50/60 Hz) for the measuring files; 68000.
+	vasmm68k_mot -m68000 -Fvobj -quiet -o build/freq.o lader/freq.s
+	vlink -b ataritos -s -N Freq_code .text -N Freq_daten .data \
+		-N Freq_bss .bss -o build/FREQ.TOS build/freq.o
+	deliver build/FREQ.TOS "$DATA"
+	note "AMBER.TOS, FREQ.TOS"
+fi
 
 source_checks
 # These two read the XDEF lists of the Falcon build in build/.

@@ -67,7 +67,8 @@ frame size than `FAIRY.S` and our layer expect.
 
 1. `tools/fantasy_auszug.py` unpacks `Fantasy_intro`, assembles `FAIRY.S`
    and compares it with the binary (equal apart from 21 short-form
-   instructions and 4 branch widths, *11 §3.2*). From the relocations it
+   instructions and 4 branch widths, *11 §3.2*; in another version of
+   the game through the map below). From the relocations it
    learns where the 27 names `FAIRY.S` uses but does not define lie
    (graphics in hunk 2, variables in hunk 3) and writes them out with
    the constants. Hunk 2 goes in as `incbin`. Thalion's fade, screen swap
@@ -88,22 +89,70 @@ frame size than `FAIRY.S` and our layer expect.
 ### Without source: `tools/amiga_programm.py`
 
 `python3 tools/amiga_programm.py intro|extro` reads the file from
-`Amberfiles/` (the extro is unpacked first by `tools/imploder_exe.py`),
-splits it into hunks and writes:
+`Amberfiles/` (`read_program`: an imploded extro is unpacked first by
+`tools/imploder_exe.py`), splits it into hunks and writes:
 
 - `build/<name>_hunks.i`: the code hunk and the data hunks with
   relocations as `dc.w`, every relocation as `dc.l <Label>N+offset`; the
   BSS hunks as `ds.b`. The labels are `Intro_h0` … `Intro_h6`,
   `Extro_h1` … `Extro_h6` (the extro starts at hunk 1, as the Imploder
-  numbers them). Our code addresses Thalion's variables as
-  `Intro_h5+$12148`, with the offsets from *11 §4* and *§5*.
+  numbers them). Then one `equ` for each place name our sources use
+  (below).
 - `build/<name>_hN.bin`: data hunks without relocations, for `incbin`.
 - `K2_tabelle`: the blitter starts (below).
 
 The table `PROGRAMME` in the tool holds, per program, the hunk layout,
-the number of relocations and every rebound place. If any of them
-differs, it is another version of the file, and the build stops. Hunks
-and disassemblies never enter the repository.
+the number of relocations and every rebound place, all as in German 1.20.
+Hunks and disassemblies never enter the repository.
+
+### Other versions of the game: `tools/amiga_places.py`
+
+Versions 1.01, 1.07 and 1.21 have the same programs with insertions and
+deletions. All places in our tables and sources stay those of **1.20**;
+`amiga_places.py` moves them to the file the build reads.
+
+**The names.** Our sources write a place of Thalion's program as
+`<label><hunk>_<hex>`, with the 1.20 offset: `Intro_h5_12148` for Thalion's
+variable at hunk 5 `$12148` (offsets from *11 §4* and *§5*), `Extro_h1_EBC`.
+The hunks file gets one `equ` per name it finds in `intro/`, `extro/`,
+`intro_st/`, `extro_st/` and `amiga/`, with the offset of the version it
+reads. A bare hunk label (`jsr Intro_h0`) stays: those are hunk bounds. A
+new place is written the same way; if it has no counterpart in another
+version, that version's build stops and names it. `amiga_names_convert.py`
+converts the old form `Intro_h5+$12148`; with `--check` it is a source
+check, because the old form would keep the 1.20 offset in every other
+version without an error.
+
+**The map.** `tools/amiga_places_maps.py` holds, per program file by its
+SHA-1, the ranges of each hunk and where they lie in that file, numbers
+only; `tools/amiga_places_generate.py` makes it. It serves the K1, K2 and K3
+tables of `amiga_programm.py`, the ST's hooks in `intro_st_program.py` and
+`extro_st_program.py`, the picture lists of `extro_st_data.py` and the
+tables of `fantasy_auszug.py`. A file the map does not know must have the
+hunk sizes of 1.20 and is then checked as before; anything else stops the
+build.
+
+**What is proved on the file.** The counts of relocations, `$DFFxxx`,
+`$BFE001` and the ExecBase sites come from the map. The six bytes of a K3
+site must be 1.20's, except branch displacements and relocated longwords
+whose targets the map moves alike.
+
+**Two known code differences:**
+
+- **English extro, 1.20 `$596`:** behind `bsr $EBC`, Thalion checks the
+  joystick fire button (`btst #7,$BFE001` and `beq.s`, 10 bytes). Our CIA-A
+  only ever clears bit 6, so the branch is never taken. The K3 hook skips
+  these bytes, which are checked byte for byte (`INSERTIONS` in
+  `amiga_places.py`).
+- **Fantasy intro 1.01:** the two `nop` before the `rte` of `level3`, which
+  `FAIRY.S` and 1.20 have, are missing in 1.01. We build `FAIRY.S` as it is;
+  only the comparison skips them, and only for a mapped version
+  (`fantasy_auszug.py`).
+
+French 1.21's extro is not imploded: six plain hunks, the code of Thalion's
+1.01 extro with French texts. `read_program` reads both forms. Polish and
+Czech 1.21 have another intro program (10 hunks); it is no case for the map,
+and the build stops there.
 
 The three kinds of rebinding:
 
@@ -119,7 +168,8 @@ K1 needs only the operands, not the 224 `a6` accesses.
 
 K3 checks the six original bytes and refuses to cover a K1, K2 or
 relocation site. Our routine performs the covered instruction itself
-before it returns into Thalion's path. The K3 sites today:
+before it returns into Thalion's path. The K3 sites today, with their 1.20
+offsets:
 
 | Program | Place | Routine | Why |
 |---|---|---|---|
@@ -255,7 +305,7 @@ lines evenly at top and bottom.
 Converting every frame is the main cost. A program can therefore name
 Thalion screens that the Videl shows directly: `Schirm_tabelle` with the
 macro `SCHIRM` (address, lines, planes). The extro names its two screens
-for the whole run (`Extro_h6+$2E90`, 256 lines, 5 planes). The intro
+for the whole run (`Extro_h6_2E90`, 256 lines, 5 planes). The intro
 changes the table per scene with `Schirme_wechseln` (a0 = table or 0):
 
 | Scene | Thalion's screens | Table from |
@@ -428,17 +478,19 @@ looks for a pattern with a tight loop:
 | `Bl_schnell_d8` | `$D8`, C?B:A, unshifted | the extro's scroll text |
 | `Bl_schnell_fc`, `_fe` | OR of two or three sources, shifted | the intro's space scene |
 | `Bl_schnell_f0`, `_00` | copy, clear | all |
-| `Bl_ziel_d8`, `_ca`, `_f0`, `_allg` | the same into a target screen (above) | extro text; intro logo stages, clouds, menu text |
+| `Bl_ziel_d8`, `_ca`, `_f0`, `_allg` | the same into a target screen (above) | extro text; intro logo stages, menu text |
 
 **What runs today.** The path is chosen by the registers, not by the
 program. Counted in Hatari (Falcon Tempo, 2026-10-30, `INTRO.TOS` alone
 from the desktop to the menu, no click): of 3025 blits 3008 went into a
 target (`Bl_ziel_ca` 2584, `Bl_ziel_f0` 412, `Bl_ziel_allg` 12), 15 to
 `Amiga_blit_genau`, 2 to `Bl_schnell_00`. None of the other fast paths
-was reached; Thalion's `$CA` blit at hunk 0 `$14D0`, for instance, now
-goes to `Bl_ziel_ca`. The extro was not counted (read from the code: no
-`$CA` blit). Whether the unreached paths go is open (`docs/05b`, open
-points).
+was reached. Which call site gives which of these blits was not measured;
+the last column of the table comes from reading the code. The four cloud
+blits no longer count here: `Clouds_draw` replaces them (K3 at `$E3A`,
+above). The extro was not counted; no `$xFCA` word in its hunks, which does
+not rule out a computed value. Whether the unreached paths go is open
+(`docs/05b`, open points).
 
 `BLIT_PRUEF` runs every fast blit through the exact path as well and
 counts differences (`Bl_abweichung`); with it the fast paths are
@@ -501,7 +553,7 @@ part), `+16` (stop) and from its VBL at `+24` (the beat).
 3. `Musik_mischen` starts the music session's mixer (`musik/MISCHER.S`,
    chapter 8) with a parameter block: the shadow block, the beat
    (`+24` of the player) and Thalion's "music on" word (intro
-   `Intro_h5+$12148`, extro `Extro_h5+$38`). The mixer calls the beat
+   `Intro_h5_12148`, extro `Extro_h5_38`). The mixer calls the beat
    once per 1/50 s of sound, so `+24` in our table is empty.
 4. `MUSIC=` in `AMBER.INF` (`shared/SETTINGS.S`, `AMBFILES\` first):
    `OFF` silent, `CPU` the processor mixes, everything else the DSP.
@@ -527,8 +579,9 @@ memory.
 
 ## Diagnostic builds
 
-`build_falcon.sh` builds them next to the delivered programs into
-`ATARI/AMBFILES/` (for now; they are to move behind a switch).
+`TESTBUILDS=1 sh tools/build_falcon.sh` (or `build_all.sh`) also builds the
+test programs below and delivers them into `ATARI/AMBFILES/`; a normal
+build leaves them out.
 
 | Switch | Effect | Builds |
 |---|---|---|
@@ -541,8 +594,8 @@ memory.
 | `CHECK_STARS`, `CHECK_DEFER` | fantasy intro: Thalion's `make_funkel2` and `make_magic` and ours every frame from the same state; counts the frames whose state or lower band differ | `FEECHECK`, writes `FEECHECK.TXT` |
 | `ABSTURZTEST` | an `illegal` after 250 VBL, to test the emergency exit | `FEEABST`, `INTRABST`, `EXTRABST` (built separately) |
 
-`FREQ.TOS` (`lader/freq.s`) measures the machine's frame rate: Thalion's
-timing is in VBLs.
+`FREQ.TOS` (`lader/freq.s`), also a test build, measures the machine's
+frame rate: Thalion's timing is in VBLs.
 
 ## The ST
 
@@ -601,4 +654,5 @@ What the ST changes and what looks different from the Amiga is listed in
 | `tools/fantasy_st_data.py --falcon` | the fantasy intro's graphics in Falcon format (the ST's tool) |
 | `tools/imploder_exe.py` | Imploder unpacker |
 | `tools/musik_k1.py` | the music files' hardware operands |
-| `tools/fantasy_bauen.sh`, `amiga_bauen.sh` | single builds into `build/`; `fantasy_bauen.sh` also builds `FEEMESS.TOS` and `FEECHECK.TOS` |
+| `tools/fantasy_bauen.sh`, `amiga_bauen.sh` | single builds into `build/`; `fantasy_bauen.sh` with `TESTBUILDS=1` also builds `FEEMESS.TOS` and `FEECHECK.TOS` |
+| `tools/amiga_places.py`, `amiga_places_maps.py`, `amiga_places_generate.py`, `amiga_names_convert.py` | the 1.20 places in other versions: moving them, the map, making the map, the names |

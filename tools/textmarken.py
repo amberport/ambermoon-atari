@@ -166,9 +166,8 @@ def zerlegen(d):
     # Teil 1
     langworte, anzahl = wort(d, 0), wort(d, 2)
     basis = 4 + 2 * anzahl
-    if basis + 4 * langworte != PROMPT_OFF:
-        fehler("Teil 1 endet bei $%X, nicht bei $%X" %
-               (basis + 4 * langworte, PROMPT_OFF))
+    # the end of part 1 comes from the file (1.20 German: $5D8)
+    PROMPT_OFF = basis + 4 * langworte
     if anzahl != TEIL1_ANZAHL or anzahl != MELDUNG_TABELLE[2]:
         fehler("Teil 1: %d Einzeltexte, erwartet %d" % (anzahl, TEIL1_ANZAHL))
     versaetze = [wort(d, 4 + 2 * i) for i in range(anzahl)]
@@ -182,6 +181,15 @@ def zerlegen(d):
     o = PROMPT_OFF + 2 + 2 * anzahl
     o += sum(wort(d, PROMPT_OFF + 2 + 2 * i) for i in range(anzahl))
     setze(PROMPT_OFF, "Prompts")
+    # part 3 starts on a word boundary (1.21 en/fr/pl/cz: the
+    # prompts end on an odd offset, one fill byte follows)
+    # Rule found in all six files (1.20 de, 1.21 de/en/fr/pl/cz): the count
+    # word of the first list lies at 2 mod 4, so its texts start on a
+    # longword; zero bytes fill the gap.
+    while (o + 2) % 4:
+        if d[o]:
+            fehler("fill byte behind the prompts at $%X is not zero" % o)
+        o += 1
 
     # Teil 3
     for name in LISTEN:
@@ -200,7 +208,11 @@ def zerlegen(d):
             for _ in range(7):
                 m = d.index(b"\0", m) + 1
             if m >= o + 2 + 4 * n:
-                fehler("Magic_txt liegt nicht in Spell_class_names")
+                # 1.21 fr has no empty eighth text; AM2_CPU's
+                # start routine (hunk 8 $168, the same in 1.21) points behind
+                # the list then.  We do the same and say so.
+                print("  textmarken.py: NOTE Magic_txt lies behind "
+                      "Spell_class_names ($%X), as in AM2_CPU" % m)
             setze(m, "Magic_txt")
         o += 2 + 4 * n
 

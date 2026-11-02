@@ -45,10 +45,10 @@ CL_CLOUD	equ	16*CL_SHIFT
 ;   Changes d0-d7/a0-a4.
 ; ***************************************************************************
 Clouds_prepare:
-	lea	Intro_h4+$1BF88,a0
+	lea	Intro_h4_1BF88,a0
 	lea	Clouds_left,a1
 	bsr.b	Cloud_shift
-	lea	Intro_h4+$1E288,a0
+	lea	Intro_h4_1E288,a0
 	lea	Clouds_right,a1
 
 ; Cloud_shift -- a0 = Thalion's cloud, a1 = its table (CL_CLOUD bytes).
@@ -118,14 +118,14 @@ Cloud_shift:
 ; ***************************************************************************
 ; Clouds_draw -- K3 at $E3A, where Thalion's four cloud blits begin (up to
 ; $EB2): the four clouds into the target of the drawing screen
-; (Intro_h5+$18), in Thalion's order, once the Shifter no longer shows it
+; (Intro_h5_18), in Thalion's order, once the Shifter no longer shows it
 ; (Target_free).  Outside the table Thalion's way.
 ; Thalion uses no register from here on; a6 = Amiga_register as Thalion's
-; blits leave it.  Covered: lea Intro_h4+$1BF88,a0.
+; blits leave it.  Covered: lea Intro_h4_1BF88,a0.
 ; ***************************************************************************
 Clouds_draw:
 	movem.l	d0-d7/a0-a5,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	cmp.w	#4,SC_PLANES(a5)
@@ -134,31 +134,31 @@ Clouds_draw:
 	moveq	#0,d0			; first: the buffer rows do not hold
 	move.w	SC_ROWS(a5),d1
 	bsr	Rows_invalid
-	move.w	Intro_h5+$12140,d0	; x of the left cloud
+	move.w	Intro_h5_12140,d0	; x of the left cloud
 	moveq	#0,d1
 	lea	Clouds_left,a0
 	bsr.b	Cloud_put
-	move.w	Intro_h5+$12140,d0
+	move.w	Intro_h5_12140,d0
 	move.w	#CL_ROWS,d1
 	lea	Clouds_left,a0
 	bsr.b	Cloud_put
 	move.w	#208,d0			; the right one
-	sub.w	Intro_h5+$12140,d0
+	sub.w	Intro_h5_12140,d0
 	moveq	#0,d1
 	lea	Clouds_right,a0
 	bsr.b	Cloud_put
 	move.w	#208,d0
-	sub.w	Intro_h5+$12140,d0
+	sub.w	Intro_h5_12140,d0
 	move.w	#CL_ROWS,d1
 	lea	Clouds_right,a0
 	bsr.b	Cloud_put
 	movem.l	(sp)+,d0-d7/a0-a5
 	lea	Amiga_register,a6
-	jmp	Intro_h0+$EB2
+	jmp	Intro_h0_EB2
 .thalion:
 	movem.l	(sp)+,d0-d7/a0-a5
-	lea	Intro_h4+$1BF88,a0
-	jmp	Intro_h0+$E40
+	lea	Intro_h4_1BF88,a0
+	jmp	Intro_h0_E40
 
 ; Cloud_put -- one cloud: d0.w = x (may lie left of or beyond the screen),
 ; d1.w = y, a0 = its table, a5 = the screen.
@@ -228,7 +228,7 @@ Cloud_put:
 .out:	rts
 
 ; ***************************************************************************
-; Menu_st_convert -- the unpacked menu picture (Intro_h5+$12206, Thalion's
+; Menu_st_convert -- the unpacked menu picture (Intro_h5_12206, Thalion's
 ; format, 4 planes row by row) into Menu_st in ST format, ST_LINES rows,
 ; once per clouds scene (Clouds_column; Clouds_begin clears Menu_st_ready).
 ; Clouds_column then copies whole groups.
@@ -236,7 +236,7 @@ Cloud_put:
 ; ***************************************************************************
 Menu_st_convert:
 	movem.l	d6-d7/a0-a3,-(sp)
-	move.l	Intro_h5+$12206,a0
+	move.l	Intro_h5_12206,a0
 	lea	Menu_st,a1
 	move.w	#ST_LINES-1,d7
 .row:	move.l	a0,a2

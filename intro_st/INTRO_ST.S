@@ -521,7 +521,7 @@ Vbl:
 	bsr	Dump_key		; DUMP_ST.S
 	endc
 	movem.l	(sp)+,d0-d7/a0-a1
-	cmp.l	#Intro_h0+THALION_VBL,VEK_LEVEL3.w
+	cmp.l	#THALION_VBL,VEK_LEVEL3.w
 	beq.b	.thalion		; display at the end of Thalion's VBL
 	movem.l	d0-d7/a0-a6,-(sp)
 	bsr	Display_update
@@ -530,27 +530,27 @@ Vbl:
 	move.l	VEK_LEVEL3.w,-(sp)
 	rts
 
-THALION_VBL	equ	$2522		; Thalion's level-3 handler
+THALION_VBL	equ	Intro_h0_2522		; Thalion's level-3 handler
 
 ; ***************************************************************************
 ; Vbl_end_hook -- K3 at $2824, the end of Thalion's VBL, where all its paths
 ; meet.  Thalion saved all registers; after the display the replaced
-; tst.w Intro_h5+$12148, then back into Thalion's VBL.
+; tst.w Intro_h5_12148, then back into Thalion's VBL.
 ; ***************************************************************************
 Vbl_end_hook:
 	bsr	Display_update
-	tst.w	Intro_h5+$12148
-	jmp	Intro_h0+$282A
+	tst.w	Intro_h5_12148
+	jmp	Intro_h0_282A
 
 ; ***************************************************************************
 ; Intro_switch -- K3 at Thalion's $24BE, the end of $2452 (new copper list,
-; 14 callers): the covered move.l d0,Intro_h5+8 and the next instruction
+; 14 callers): the covered move.l d0,Intro_h5_8 and the next instruction
 ; ($24C4, move.l d0,COP1LC, a K1 site), then the new list shown from the
 ; next frame on where it shows a target screen (Display_switch).  Its rts
 ; stands for Thalion's rts at $24CA.  As the Falcon's Intro_umschalten.
 ; ***************************************************************************
 Intro_switch:
-	move.l	d0,Intro_h5+8
+	move.l	d0,Intro_h5_8
 	move.l	d0,Amiga_register+AR_COP1LC
 	bra	Display_switch
 
@@ -593,8 +593,8 @@ Space_begin:
 	bsr	Screens_switch
 	move.l	(sp)+,a0
 	moveq	#20,d7
-	jsr	Intro_h0+$1250		; its flags hold at $4FC
-	jmp	Intro_h0+$4FC
+	jsr	Intro_h0_1250		; its flags hold at $4FC
+	jmp	Intro_h0_4FC
 
 ; Meteor_begin -- K3 at $AD4: the meteor scene shows 200 rows; its table
 ; ends there, so the lines below are black.  The picture is held first:
@@ -611,7 +611,7 @@ Meteor_begin:
 	move.l	(sp)+,a0
 	move.w	#200,d0
 	moveq	#4,d1
-	jmp	Intro_h0+$ADA
+	jmp	Intro_h0_ADA
 
 ; Clouds_begin -- K3 at $D00, where every way to the clouds and the menu
 ; passes (also the click): hold the picture, then the clouds' screens 6:$C0
@@ -627,14 +627,14 @@ Clouds_begin:
 	move.l	(sp)+,a0
 	move.w	#256,d0
 	moveq	#4,d1
-	jmp	Intro_h0+$D06
+	jmp	Intro_h0_D06
 
 ; Stars_convert -- Thalion's star list (count, then per star the distance
 ; to the last one in bytes and the word for plane 0) into Target_stars: per
 ; star the offset in the target screen and the word.
 Stars_convert:
 	movem.l	d0-d3/d7/a0-a1,-(sp)
-	lea	Intro_h5+$3B0,a0
+	lea	Intro_h5_3B0,a0
 	lea	Target_stars,a1
 	move.w	(a0)+,d7
 	cmp.w	#STARS_MAX,d7
@@ -668,10 +668,10 @@ Stars_convert:
 	rts
 
 ; Stars_set -- K3 at $1A42, Thalion's star picture: the words into the
-; target.  Covered: movea.l Intro_h5+$18,a1.
+; target.  Covered: movea.l Intro_h5_18,a1.
 Stars_set:
 	movem.l	d0-d2/a5,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	ifd	CHECK_TARGET
@@ -680,10 +680,10 @@ Stars_set:
 	bsr	Check_rows
 	st	Blit_no_redirect
 	pea	.back
-	move.l	Intro_h5+$18,a1
-	jmp	Intro_h0+$1A48
+	move.l	Intro_h5_18,a1
+	jmp	Intro_h0_1A48
 .back:	sf	Blit_no_redirect
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_find
 	endc
 	move.l	SC_TARGET(a5),a1
@@ -706,17 +706,17 @@ Stars_set:
 	rts
 .thalion:
 	movem.l	(sp)+,d0-d2/a5
-	move.l	Intro_h5+$18,a1
-	jmp	Intro_h0+$1A48
+	move.l	Intro_h5_18,a1
+	jmp	Intro_h0_1A48
 
 ; Space_clear -- K3 at $294E in Thalion's $2940 (clear rows 0-199 of the
-; screen Intro_h5+$18 as four planes of 160 bytes; also used for the logo
+; screen Intro_h5_18 as four planes of 160 bytes; also used for the logo
 ; stages, $14E6, now on Logo_scratch): the target.  a6 is Amiga_register
-; (Thalion's lea at $2940).  Covered: move.l Intro_h5+$18,$54(a6) (the
+; (Thalion's lea at $2940).  Covered: move.l Intro_h5_18,$54(a6) (the
 ; first 6 of 8 bytes).
 Space_clear:
 	movem.l	d0-d2/a5,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	cmp.w	#4,SC_PLANES(a5)
@@ -728,8 +728,8 @@ Space_clear:
 	st	Blit_no_redirect
 	movem.l	d0-d7/a0-a6,-(sp)
 	pea	.back
-	move.l	Intro_h5+$18,$54(a6)
-	jmp	Intro_h0+$2956
+	move.l	Intro_h5_18,$54(a6)
+	jmp	Intro_h0_2956
 .back:	movem.l	(sp)+,d0-d7/a0-a6
 	sf	Blit_no_redirect
 	endc
@@ -743,26 +743,26 @@ Space_clear:
 	rts
 .thalion:
 	movem.l	(sp)+,d0-d2/a5
-	move.l	Intro_h5+$18,$54(a6)
-	jmp	Intro_h0+$2956
+	move.l	Intro_h5_18,$54(a6)
+	jmp	Intro_h0_2956
 
 ; City_space / City_meteor -- K3 at $776 and $B40: Thalion copies the city
-; picture (a0) into the screen Intro_h5+$18.  Covered: movea.l
-; Intro_h5+$18,a1.
+; picture (a0) into the screen Intro_h5_18.  Covered: movea.l
+; Intro_h5_18,a1.
 City_space:
 	bsr.b	City_target
 	beq.b	.thalion
-	jmp	Intro_h0+$796
+	jmp	Intro_h0_796
 .thalion:
-	move.l	Intro_h5+$18,a1
-	jmp	Intro_h0+$77C
+	move.l	Intro_h5_18,a1
+	jmp	Intro_h0_77C
 City_meteor:
 	bsr.b	City_target
 	beq.b	.thalion
-	jmp	Intro_h0+$B72
+	jmp	Intro_h0_B72
 .thalion:
-	move.l	Intro_h5+$18,a1
-	jmp	Intro_h0+$B46
+	move.l	Intro_h5_18,a1
+	jmp	Intro_h0_B46
 
 ; City_target -- the city picture a0 (128 rows, per row four planes of 20
 ; bytes) into the target at Thalion's place +5770 (row 36, word 5).  Z set:
@@ -782,7 +782,7 @@ CITY_ROW	macro			; one row: 4 planes of 10 words
 
 City_target:
 	move.l	a5,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_find
 	beq	.out
 	addq.w	#1,Target_busy		; rows written, not yet invalid
@@ -804,52 +804,52 @@ City_target:
 ; picture, once a city.  Covered: bsr $2ADA, the first word of bsr $240E.
 City_text:
 	move.l	d0,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	addq.w	#1,Target_busy
 	bsr	Screen_before
 	move.l	(sp)+,d0
-	jsr	Intro_h0+$2ADA
-	move.l	Intro_h5+$18,d0
+	jsr	Intro_h0_2ADA
+	move.l	Intro_h5_18,d0
 	bsr	Screen_after
 	subq.w	#1,Target_busy
-	jsr	Intro_h0+$240E
-	jmp	Intro_h0+$7C2
+	jsr	Intro_h0_240E
+	jmp	Intro_h0_7C2
 
 ; Picture_fetch -- K3 at $6EE: Thalion takes a piece of the screen back as
 ; mask and planes ($15A6); it reads the buffer.  Covered: bsr $15A6;
 ; move.w #-1,(a1)+.
 Picture_fetch:
 	move.l	d0,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_before
 	move.l	(sp)+,d0
-	jsr	Intro_h0+$15A6
+	jsr	Intro_h0_15A6
 	move.w	#-1,(a1)+
-	jmp	Intro_h0+$6F6
+	jmp	Intro_h0_6F6
 
 ; Twinlake_before / Twinlake_after -- K3 at $994 and $A36: between them
 ; Thalion copies Twinlake's picture into both screens, clears the rows
 ; below and writes the text, all with the CPU.  Covered at $994: movea.l
-; Intro_h5+$12206,a0; at $A36: bsr $165E, the first word of bsr $240E.
+; Intro_h5_12206,a0; at $A36: bsr $165E, the first word of bsr $240E.
 Twinlake_before:
 	bsr	All_ensure
 	addq.w	#1,Target_busy
-	move.l	Intro_h5+$12206,a0
-	jmp	Intro_h0+$99A
+	move.l	Intro_h5_12206,a0
+	jmp	Intro_h0_99A
 Twinlake_after:
 	bsr	All_bring
 	subq.w	#1,Target_busy
-	jsr	Intro_h0+$165E
-	jsr	Intro_h0+$240E
-	jmp	Intro_h0+$A3E
+	jsr	Intro_h0_165E
+	jsr	Intro_h0_240E
+	jmp	Intro_h0_A3E
 
 ; Anim_eor -- K3 at $169C in Thalion's $165E: the unpacked frame (5:$12206)
-; EOR into the screen Intro_h5+$18, rows 7-183, bytes 4-35 of each plane.
+; EOR into the screen Intro_h5_18, rows 7-183, bytes 4-35 of each plane.
 ; Per row a mask of 32 bits, one per byte; a set bit takes four bytes, one
-; per plane.  Covered: movea.l Intro_h5+$12206,a0.
+; per plane.  Covered: movea.l Intro_h5_12206,a0.
 Anim_eor:
 	move.l	a5,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_find
 	beq	.thalion
 	ifd	CHECK_TARGET
@@ -858,13 +858,13 @@ Anim_eor:
 	bsr	Check_rows
 	st	Blit_no_redirect
 	pea	.back
-	move.l	Intro_h5+$12206,a0
-	jmp	Intro_h0+$16A2
+	move.l	Intro_h5_12206,a0
+	jmp	Intro_h0_16A2
 .back:	sf	Blit_no_redirect
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_find
 	endc
-	move.l	Intro_h5+$12206,a0
+	move.l	Intro_h5_12206,a0
 	move.l	SC_TARGET(a5),a1
 	add.l	#7*ST_LINE+2*8,a1
 	move.w	#177-1,d7
@@ -909,20 +909,20 @@ Anim_eor:
 	rts
 .thalion:
 	move.l	(sp)+,a5
-	move.l	Intro_h5+$12206,a0
-	jmp	Intro_h0+$16A2
+	move.l	Intro_h5_12206,a0
+	jmp	Intro_h0_16A2
 
 ; Copy_shown_hidden -- K3 at $12C0: Thalion copies rows 7-183, bytes 4-35
 ; of each plane, from the shown screen into the hidden one (blit $1306).
 ; Both in the table: target to target, planes 0-3, 128 bytes a row.
-; Covered: movea.l Intro_h5+$20,a0.
+; Covered: movea.l Intro_h5_20,a0.
 Copy_shown_hidden:
 	move.l	a5,-(sp)
-	move.l	Intro_h5+$20,d0
+	move.l	Intro_h5_20,d0
 	bsr	Screen_find
 	beq	.thalion
 	move.l	a5,a4			; the shown one
-	move.l	Intro_h5+$1C,d0
+	move.l	Intro_h5_1C,d0
 	bsr	Screen_find
 	beq	.thalion
 	ifd	CHECK_TARGET
@@ -935,8 +935,8 @@ Copy_shown_hidden:
 	st	Blit_no_redirect
 	movem.l	a4-a5,-(sp)
 	pea	.back
-	move.l	Intro_h5+$20,a0
-	jmp	Intro_h0+$12C6
+	move.l	Intro_h5_20,a0
+	jmp	Intro_h0_12C6
 .back:	movem.l	(sp)+,a4-a5
 	sf	Blit_no_redirect
 	endc
@@ -973,8 +973,8 @@ Copy_shown_hidden:
 	rts
 .thalion:
 	move.l	(sp)+,a5
-	move.l	Intro_h5+$20,a0
-	jmp	Intro_h0+$12C6
+	move.l	Intro_h5_20,a0
+	jmp	Intro_h0_12C6
 
 ; ***************************************************************************
 ; The logo phase, the clouds and the menu in the target format (E30, docs/11
@@ -1003,17 +1003,17 @@ Logo_begin:
 	lea	Screens_logo,a0
 	bsr	Screens_switch
 	movem.l	(sp)+,d0/a0
-	jmp	Intro_h0+$1E6
+	jmp	Intro_h0_1E6
 
 ; Logo_clear -- K3 at $21E: Thalion clears both screens with the CPU; we
-; clear both targets.  Covered: movea.l Intro_h5+$1C,a0.
+; clear both targets.  Covered: movea.l Intro_h5_1C,a0.
 Logo_clear:
 	move.l	a5,-(sp)
-	move.l	Intro_h5+$1C,d0
+	move.l	Intro_h5_1C,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	move.l	a5,a4
-	move.l	Intro_h5+$20,d0
+	move.l	Intro_h5_20,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	bsr	Shown_enter
@@ -1027,11 +1027,11 @@ Logo_clear:
 	move.l	(sp)+,a5
 	moveq	#0,d0			; as Thalion's loop leaves them
 	moveq	#-1,d7
-	jmp	Intro_h0+$23C
+	jmp	Intro_h0_23C
 .thalion:
 	move.l	(sp)+,a5
-	move.l	Intro_h5+$1C,a0
-	jmp	Intro_h0+$224
+	move.l	Intro_h5_1C,a0
+	jmp	Intro_h0_224
 
 ; Zoom_clear -- K3 at $137E, the whole routine (before each logo zoom,
 ; $131A, and after the last, $3A0): Thalion fills planes 0-3 of both
@@ -1042,19 +1042,19 @@ Logo_clear:
 ; its stars take 13 and the logo keeps all its colours; THALION's uses
 ; all 16, register 1 on 8 pixels only (docs/05c, docs/17 D3).  Registers
 ; as free as in Thalion's routine (d0-d7/a0-a4).  Covered: movea.l
-; Intro_h5+$1C,a0.
+; Intro_h5_1C,a0.
 Zoom_clear:
 	moveq	#1,d0
-	cmp.l	#Intro_h1+$40,Intro_h5+$121C2
+	cmp.l	#Intro_h1_40,Intro_h5_121C2
 	bne.b	.reg
 	moveq	#13,d0
 .reg:	move.w	d0,Overlay_register
 	move.l	a5,-(sp)
-	move.l	Intro_h5+$1C,d0
+	move.l	Intro_h5_1C,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	move.l	a5,a4
-	move.l	Intro_h5+$20,d0
+	move.l	Intro_h5_20,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	bsr	Shown_enter
@@ -1074,8 +1074,8 @@ Zoom_clear:
 	bra	Stars_redraw
 .thalion:
 	move.l	(sp)+,a5
-	move.l	Intro_h5+$1C,a0
-	jmp	Intro_h0+$1384
+	move.l	Intro_h5_1C,a0
+	jmp	Intro_h0_1384
 
 ; Logo_stages -- K3 at $14E6, the start of Thalion's precomputation of the
 ; logo stages: Thalion clears the drawing screen ($2940), zooms the logo
@@ -1083,14 +1083,14 @@ Zoom_clear:
 ; bytes, a scratch use of the hidden screen.  We give it a scratch screen
 ; of its own (Logo_scratch), so the hidden screen stays a five-plane
 ; target (the Falcon's finding).  Covered: bsr $2940, the first word of
-; movea.l Intro_h5+$12206,a1.
+; movea.l Intro_h5_12206,a1.
 Logo_stages:
-	move.l	Intro_h5+$18,-(sp)
-	move.l	#Logo_scratch,Intro_h5+$18
-	jsr	Intro_h0+$2940
-	move.l	Intro_h5+$12206,a1
-	jsr	Intro_h0+$14F0		; the rest of Thalion's routine
-	move.l	(sp)+,Intro_h5+$18
+	move.l	Intro_h5_18,-(sp)
+	move.l	#Logo_scratch,Intro_h5_18
+	jsr	Intro_h0_2940
+	move.l	Intro_h5_12206,a1
+	jsr	Intro_h0_14F0		; the rest of Thalion's routine
+	move.l	(sp)+,Intro_h5_18
 	rts
 
 ; Logo_stars -- K3 at $2646 in Thalion's VBL, while the stars run (5:$2A):
@@ -1104,14 +1104,14 @@ Logo_stages:
 ; planes 0-3 are 0 (behind the logo it stays hidden, as on the Amiga) and
 ; into the screen's list (TARGET_ST.S).  While the main flow writes the
 ; target shown (Shown_busy) the walk only advances.  Thalion saved all
-; registers ($2528).  Covered: move.l Intro_h5+$18,-(sp).
+; registers ($2528).  Covered: move.l Intro_h5_18,-(sp).
 Logo_stars:
-	move.l	Intro_h5+$20,d0
+	move.l	Intro_h5_20,d0
 	bsr	Screen_find
 	beq	.thalion
 	cmp.w	#MODE_STARS,SC_MODE(a5)
 	bne	.thalion
-	lea	Intro_h5+$2C,a4		; Thalion's track pointers
+	lea	Intro_h5_2C,a4		; Thalion's track pointers
 	move.w	#LOGO_STARS-1,d7
 	tst.w	Shown_busy
 	bne	.walk
@@ -1164,7 +1164,7 @@ Logo_stars:
 .next:	dbf	d7,.s
 	move.l	d3,a0
 	move.w	d6,(a0)
-	jmp	Intro_h0+$2664
+	jmp	Intro_h0_2664
 .walk:	move.l	(a4),a0
 	tst.w	(a0)+
 	bpl.b	.w2
@@ -1173,10 +1173,10 @@ Logo_stars:
 .w2:	addq.l	#2,a0
 	move.l	a0,(a4)+
 	dbf	d7,.walk
-	jmp	Intro_h0+$2664
+	jmp	Intro_h0_2664
 .thalion:
-	move.l	Intro_h5+$18,-(sp)
-	jmp	Intro_h0+$264C
+	move.l	Intro_h5_18,-(sp)
+	jmp	Intro_h0_264C
 
 ; Presents_row -- K3 at $310, a row of Thalion's PRESENTS wipe ($2FC-
 ; $324): 40 bytes (a0) into plane 0 of a row of the shown screen (a1).  Into
@@ -1221,18 +1221,18 @@ Presents_row:
 	dbf	d3,.p
 	movem.l	(sp)+,d1-d3/a2-a3/a5
 	move.l	#$FFFF,d0		; as Thalion's dbf leaves it
-	jmp	Intro_h0+$318
+	jmp	Intro_h0_318
 
 ; Logo_end -- K3 at $3C0: the stars stand still ($3B6), and Thalion turns
 ; the shown picture into the space scene's first one with the CPU ($3C0-
 ; $4BC: copy, 5 -> 4 planes, the star list from plane 4).  The stars live
 ; only in the target: the shown screen's rows into its buffer and its stars
 ; into plane 4 there, then hold the picture (no table) until Space_begin
-; ($4F4) brings the space scene's.  Covered: movea.l Intro_h5+$20,a0.
+; ($4F4) brings the space scene's.  Covered: movea.l Intro_h5_20,a0.
 Logo_end:
 	SCENE	2
 	move.l	a5,-(sp)
-	move.l	Intro_h5+$20,d0
+	move.l	Intro_h5_20,d0
 	bsr	Screen_find
 	beq.b	.hold
 	cmp.w	#MODE_STARS,SC_MODE(a5)
@@ -1243,17 +1243,17 @@ Logo_end:
 	bsr	Stars_buffer
 .hold:	bsr	Display_hold
 	move.l	(sp)+,a5
-	move.l	Intro_h5+$20,a0
-	jmp	Intro_h0+$3C6
+	move.l	Intro_h5_20,a0
+	jmp	Intro_h0_3C6
 
 ; Clouds_background -- K3 at $D74 (the click: no clouds): Thalion copies the
 ; unpacked menu picture into both screens with the CPU; then into the
-; targets.  Covered: movea.l Intro_h5+$12206,a0.
+; targets.  Covered: movea.l Intro_h5_12206,a0.
 Clouds_background:
 	bsr	Shown_enter
-	move.l	Intro_h5+$12206,a0
-	move.l	Intro_h5+$1C,a1
-	move.l	Intro_h5+$20,a2
+	move.l	Intro_h5_12206,a0
+	move.l	Intro_h5_1C,a1
+	move.l	Intro_h5_20,a2
 	moveq	#-1,d0
 	move.w	#10240-1,d7
 .k:	move.l	(a0),(a1)+
@@ -1261,17 +1261,17 @@ Clouds_background:
 	dbf	d7,.k
 	bsr	All_bring
 	bsr	Shown_leave
-	jmp	Intro_h0+$D94
+	jmp	Intro_h0_D94
 
 ; Clouds_fill -- K3 at $DA2: Thalion fills both screens with colour 15 with
 ; the CPU; we fill both targets, and Thalion's rows below them in the
-; buffers.  Covered: movea.l Intro_h5+$1C,a1.
+; buffers.  Covered: movea.l Intro_h5_1C,a1.
 Clouds_fill:
-	move.l	Intro_h5+$1C,d0
+	move.l	Intro_h5_1C,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	move.l	a5,a4
-	move.l	Intro_h5+$20,d0
+	move.l	Intro_h5_20,d0
 	bsr	Screen_find
 	beq.b	.thalion
 	bsr	Shown_enter
@@ -1282,7 +1282,7 @@ Clouds_fill:
 	bsr	Shown_leave
 	moveq	#-1,d0			; as Thalion's loop leaves them
 	moveq	#-1,d7
-	jmp	Intro_h0+$DBC
+	jmp	Intro_h0_DBC
 .fill:	moveq	#0,d0
 	move.w	SC_ROWS(a5),d1
 	bsr	Target_fill
@@ -1296,8 +1296,8 @@ Clouds_fill:
 .n:	dbf	d1,.f
 	rts
 .thalion:
-	move.l	Intro_h5+$1C,a1
-	jmp	Intro_h0+$DA8
+	move.l	Intro_h5_1C,a1
+	jmp	Intro_h0_DA8
 
 ; Clouds_column -- K3 at $1270, the whole routine: Thalion reveals the menu
 ; picture column by column, d2 words from word d0 on, all 256 rows and 4
@@ -1308,10 +1308,10 @@ Clouds_fill:
 ; below it from Thalion's picture into the buffer.  All registers are
 ; preserved, a6 = Amiga_register as Thalion leaves it.  The four clouds
 ; after it: Clouds_draw (CLOUDS_ST.S).
-; Covered: movea.l Intro_h5+$12206,a0.
+; Covered: movea.l Intro_h5_12206,a0.
 Clouds_column:
 	movem.l	d0-d7/a0-a5,-(sp)
-	move.l	Intro_h5+$18,d0
+	move.l	Intro_h5_18,d0
 	bsr	Screen_find
 	beq	.thalion
 	cmp.w	#4,SC_PLANES(a5)
@@ -1349,7 +1349,7 @@ Clouds_column:
 	lsl.w	#2,d7
 	subq.w	#1,d7
 	bmi.b	.done
-	move.l	Intro_h5+$12206,a0
+	move.l	Intro_h5_12206,a0
 	move.w	SC_ROWS(a5),d0
 	mulu	#AMIGA_LINE,d0
 	add.l	d0,a0
@@ -1369,28 +1369,28 @@ Clouds_column:
 	rts
 .thalion:
 	movem.l	(sp)+,d0-d7/a0-a5
-	move.l	Intro_h5+$12206,a0
-	jmp	Intro_h0+$1276
+	move.l	Intro_h5_12206,a0
+	jmp	Intro_h0_1276
 
 ; Menu_hold -- K3 at $F4E: the clouds are open, the menu picture is shown.
 ; Thalion now makes the menu's screens with the CPU ($F6C: 4 -> 5 planes
 ; into 6:$C8C0, $FB2: copied into 6:$C0): hold the picture.  Covered:
-; move.l #Intro_h6+$C8C0,d0.
+; move.l #Intro_h6_C8C0,d0.
 Menu_hold:
 	SCENE	6
 	bsr	Display_hold
-	move.l	#Intro_h6+$C8C0,d0
-	jmp	Intro_h0+$F54
+	move.l	#Intro_h6_C8C0,d0
+	jmp	Intro_h0_F54
 
 ; Menu_begin -- K3 at $FB2: Thalion's copy of the shown menu screen into the
 ; other one, then both into the table (6:$C8C0 and 6:$C0, 320 x 256 x 5,
 ; MODE_TEXT, the text in register 1).  From here Thalion's menu draws into
 ; the shown screen: the entries with the CPU (Menu_texts), the highlight
-; by blits.  Covered: movea.l Intro_h5+$20,a0.
+; by blits.  Covered: movea.l Intro_h5_20,a0.
 Menu_begin:
 	SCENE	7
-	move.l	Intro_h5+$20,a0
-	move.l	Intro_h5+$1C,a1
+	move.l	Intro_h5_20,a0
+	move.l	Intro_h5_1C,a1
 	move.w	#12800-1,d7
 .k:	move.l	(a0)+,(a1)+
 	dbf	d7,.k
@@ -1399,18 +1399,18 @@ Menu_begin:
 	lea	Screens_menu,a0
 	bsr	Screens_switch
 	move.l	(sp)+,a0
-	jmp	Intro_h0+$FC8
+	jmp	Intro_h0_FC8
 
 ; Menu_texts -- K3 at $1030: Thalion has written the menu's entries into
 ; plane 4 of the shown screen with the CPU ($FE6-$102C): into the target.
-; Covered: lea Intro_h1+$180,a4.
+; Covered: lea Intro_h1_180,a4.
 Menu_texts:
 	bsr	Shown_enter
-	move.l	Intro_h5+$20,d0
+	move.l	Intro_h5_20,d0
 	bsr	Screen_after
 	bsr	Shown_leave
-	lea	Intro_h1+$180,a4
-	jmp	Intro_h0+$1036
+	lea	Intro_h1_180,a4
+	jmp	Intro_h0_1036
 
 ; ***************************************************************************
 ; Tb_border -- open the lower border (tools/st_rand/untrand.s tb_bottom, T93),
@@ -1627,28 +1627,28 @@ Screen_table:
 	dcb.b	TARGET_MAX*SC_SIZE+4,0
 ; the logo phase: 320 x 200 x 5 ($194-$1BC), plane 4 the stars
 Screens_logo:
-	SCREEN	Intro_h6+$C0,200,5,MODE_STARS
-	SCREEN	Intro_h6+$C0+40000,200,5,MODE_STARS
+	SCREEN	Intro_h6_C0,200,5,MODE_STARS
+	SCREEN	Intro_h6_C0+40000,200,5,MODE_STARS
 	dc.l	0
 ; Thalion's screens of the space scene and Twinlake ($42E): 320 x 236 x 4
 Screens_space:
-	SCREEN	Intro_h6+$C0,236,4,MODE_FOUR
-	SCREEN	Intro_h6+$C0+37760,236,4,MODE_FOUR
+	SCREEN	Intro_h6_C0,236,4,MODE_FOUR
+	SCREEN	Intro_h6_C0+37760,236,4,MODE_FOUR
 	dc.l	0
 ; the same in the meteor scene, which shows 200 rows ($AD4)
 Screens_meteor:
-	SCREEN	Intro_h6+$C0,200,4,MODE_FOUR
-	SCREEN	Intro_h6+$C0+37760,200,4,MODE_FOUR
+	SCREEN	Intro_h6_C0,200,4,MODE_FOUR
+	SCREEN	Intro_h6_C0+37760,200,4,MODE_FOUR
 	dc.l	0
 ; the clouds before the menu: 320 x 256 x 4 ($D06-$D28)
 Screens_clouds:
-	SCREEN	Intro_h6+$C0,256,4,MODE_FOUR
-	SCREEN	Intro_h6+$C0+40960,256,4,MODE_FOUR
+	SCREEN	Intro_h6_C0,256,4,MODE_FOUR
+	SCREEN	Intro_h6_C0+40960,256,4,MODE_FOUR
 	dc.l	0
 ; the menu: 320 x 256 x 5 ($F4E, $F98-$FAE), plane 4 the text
 Screens_menu:
-	SCREEN	Intro_h6+$C0,256,5,MODE_TEXT
-	SCREEN	Intro_h6+$C8C0,256,5,MODE_TEXT
+	SCREEN	Intro_h6_C0,256,5,MODE_TEXT
+	SCREEN	Intro_h6_C8C0,256,5,MODE_TEXT
 	dc.l	0
 Text_no_st:
 	dc.b	"Das Intro (INTROST.TOS) braucht einen ST oder STE",13,10
