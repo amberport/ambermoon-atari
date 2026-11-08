@@ -21,7 +21,7 @@ liegt unter ``build/sa`` und kommt nie ins Repository (Spieldaten).
    es tut.  Die Instrumentsaetze gehen Byte fuer Byte hinueber.
 
 Die Titel kommen aus ``Text.amb`` (``Song_names``, ueber
-``textmarken.zerlegen``), die Nummer ist Thalions (docs/13 3).  Jede
+``text_labels.parse_text_amb``), die Nummer ist Thalions (docs/13 3).  Jede
 Annahme wird geprueft; passt eine nicht, bricht das Werkzeug ab.
 
 Aufruf:  sa_auszug.py [--amberfiles DIR] [--out build/sa] [--roh]
@@ -35,7 +35,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ambtool import unpack          # noqa: E402
-from textmarken import zerlegen     # noqa: E402
+from text_labels import parse_text_amb     # noqa: E402
 import paths  # noqa: E402
 
 ANZAHL = 32
@@ -50,7 +50,7 @@ def fehler(text):
 def titel_lesen(amberfiles):
     art, teile = unpack(open(os.path.join(amberfiles, "Text.amb"), "rb").read())
     d = bytes(teile[0])
-    marken, _ = zerlegen(d)
+    marken, _ = parse_text_amb(d)
     o = [v for v, namen in marken.items() if "Song_names" in namen]
     if len(o) != 1:
         fehler("Song_names in Text.amb nicht gefunden")

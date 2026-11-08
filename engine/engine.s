@@ -208,12 +208,12 @@
 	INCLUDE	"src/HULL/INVENTOR_SUP.S"	; Object_data, Inventory_handle
 ; Die Daten aus AM2_CPU (Hauptpalette, Fensterkacheln, Statusleiste,
 ; Tastenrahmen, Zeichensatz, Mauszeiger ...), beim Bau herausgeholt von
-; tools/am2cpu_auszug.py.  Zur Laufzeit wird AM2_CPU nie gelesen.
+; tools/am2cpu_extract.py.  Zur Laufzeit wird AM2_CPU nie gelesen.
 ; DEVIATION (goals 1 and 2), docs/17-deviations.md D2 (also am2cpu_code.i).
 	INCLUDE	"am2cpu_daten.i"
 ; Thalions Textnamen (Race_names, Age_txt, Age_nr ...) als Marken in
 ; Textdaten, den Lade_texte zur Laufzeit mit Text.amb fuellt; die Versaetze
-; schreibt tools/textmarken.py beim Bau.
+; schreibt tools/text_labels.py beim Bau.
 	INCLUDE	"textmarken.i"
 	INCLUDE	"intro_daten.i"		; Startmenue aus Ambermoon_intro (intro_auszug.py)
 	INCLUDE	"build_name.i"		; the build's name and its game files' version (build_name.py)
@@ -229,6 +229,10 @@
 	INCLUDE	"src/HULL/ST_LIB.S"
 	SECTION	Program,code
 	ENDC
+; The 3D walls behind ST_LIB.S: in front, they pushed ST_LIB.S out of the
+; reach of LIBRARY.S's bsr.
+	INCLUDE	"src/HULL/D3_WALLS.S"	; 3D: the column loop of opaque walls, both machines; DEVIATION (goal 1), docs/17-deviations.md D8, D10
+	SECTION	Program,code
 	INCLUDE	"src/HULL/AM2_CPU_STUBS.S"
 	SECTION	Program,code
 

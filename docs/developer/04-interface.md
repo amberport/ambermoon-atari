@@ -23,7 +23,7 @@ moves from our side to Thalion's, our call has to meet Thalion's contract
 1. **At the call sites.** What Thalion's code sets before the call and
    reads after it. Usually that is enough.
 2. **In `AM2_CPU`**, when the call sites leave it open:
-   `tools/am2cpu_lesen.py dis <Name>` disassembles Thalion's library
+   `tools/am2cpu_read.py dis <Name>` disassembles Thalion's library
    routine. Places are given as *hunk:offset* (`dis 0:C4A2 -n 8`). What
    counts is the CPU version behind `tst.b Blitter_or_CPU`.
 

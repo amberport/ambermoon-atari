@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import amiga_programm as ap                  # noqa: E402
 from am2cpu_old_generate import bss_ranges, align_data  # noqa: E402
 import am2cpu_old                            # noqa: E402
-from am2cpu_lesen import lies_hunks          # noqa: E402
+from am2cpu_read import load_hunks          # noqa: E402
 
 
 class Error(Exception):
@@ -174,7 +174,7 @@ def version(folder):
     old = am2cpu_old.read_old(path, check=True)
     if old:
         return old[1]
-    v = am2cpu_old.version(lies_hunks(path))
+    v = am2cpu_old.version(load_hunks(path))
     if v:
         return v
     # Pyrdacor's 1.21: the version lines of Text.amb

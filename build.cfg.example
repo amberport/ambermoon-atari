@@ -15,7 +15,7 @@
 # The game files of one version (Thalion's 1.01, 1.07, 1.20, Pyrdacor's
 # 1.2x): the directory *above* Amberfiles/, the Amberfiles folder itself,
 # a zip as downloaded, or the disk images (a folder with the ADF, DMS or
-# IPF files, or one of them; DMS needs xdms).  Not set and the default
+# IPF files, or one of them).  Not set and the default
 # missing: the build takes the one set of game files it finds in
 # ambermoon_gamedata/ (tools/game_files.py).  For one build, name them on the
 # command line instead: sh tools/build_all.sh ambermoone.zip

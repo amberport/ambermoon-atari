@@ -7,7 +7,7 @@
 | What | Where it comes from | Key (default below `ambermoon_gamedata/` next to the repository) |
 |---|---|---|
 | Thalion's released 68000 source, its `src/` folder with `GAME_OFF.S`, `HULL/`, `MAP/` … | [jhorneman/ambermoon](https://github.com/jhorneman/ambermoon); if it is missing at its default place, the build fetches it (`tools/fetch_source.py`) | `AMBER_URCODE` (`ambermoon-main-asm/src`) |
-| The game files of one version: 1.01 German, 1.07 English, 1.20 German, 1.21 German, English or French. A folder, a zip or disk images (ADF, IPF, DMS with `xdms`) | your own copy of the game | `AMBER_DATEN`, for a folder the one *above* `Amberfiles/` (`ambermoon_german_1.20_extracted`), or on the command line; unset and missing, the one set in `ambermoon_gamedata/` |
+| The game files of one version: 1.01 German, 1.07 English, 1.20 German, 1.21 German, English or French. A folder, a zip or disk images (ADF, IPF, DMS) | your own copy of the game | `AMBER_DATEN`, for a folder the one *above* `Amberfiles/` (`ambermoon_german_1.20_extracted`), or on the command line; unset and missing, the one set in `ambermoon_gamedata/` |
 | Optional: Big Alec's YM arrangement as an SNDH file (released by PHF/Nokturnal in 2019 as the *Ambermoon Music Demo*, linked into one file by Grazey) | `big_alec/ambermon.snd` from the SNDH archive | `AMBER_YMSNDH` (`ambermon.snd`); if it is set and the file is missing, the build stops |
 | Optional: a TOS image for Hatari | your own | `AMBER_TOS` (`TOS404.IMG`) |
 
@@ -36,15 +36,20 @@ fetched by the build when they are missing (`tools/fetch_vbcc.py`), an
 m68k `objdump` (`AMBER_OBJDUMP`, `PATH`, or the VS Code extension
 `atari-st-dev`), Python 3, a POSIX shell. `a56` (the DSP56001 assembler;
 Debian/Ubuntu package `a56`) only to change the music mixer: without it
-the build takes the assembled `musik/musik_dsp.dsp`. Pillow
-(`python3-pil`) only for the palette check page. Hatari for emulator runs.
+the build takes the assembled `musik/musik_dsp.dsp`. `node` only for the
+ST build's check of the palette editor's page; without it the build warns
+once. Hatari for emulator runs.
 
 **Hardware it runs on:** a Falcon030 (tested with 14 MB, TOS 4.04, RGB and
-VGA; a CT60 in 68030 mode). The ST build targets an STE with 8 MHz and
-4 MB (user, 2026-10-21); it uses the blitter where there is one and keeps
-the CPU path for a plain ST. It also runs on a Mega STE, but nothing is
-laid out for it; 16 MHz and the cache are switched on by hand, not by the
-program. Minimum memory and other TOS versions are not measured yet.
+VGA; a CT60 in 68030 mode). On a CT60 with its own processor (first test
+by the user, release 0.8.5) the game runs, 3D about as fast as on the
+68030; TT-RAM (Alt-RAM) is not used yet. The ST build targets an STE with
+8 MHz and 4 MB (user, 2026-10-21); it uses the blitter where there is one
+and keeps the CPU path for a plain ST. It also runs on a Mega STE, but
+nothing is laid out for it; 16 MHz and the cache are switched on by hand,
+not by the program. At 16 MHz the intro and the fantasy intro switch to
+8 MHz for now (test T111 open; to be looked at again). Minimum memory and
+other TOS versions are not measured yet.
 
 ## Build
 
@@ -96,7 +101,7 @@ lists them.
 
 | File in `AMBFILES\` | Effect |
 |---|---|
-| `AMBER.INF` | the one settings file (`shared/SETTINGS.S`): `MUSIC=OFF`, `DSP` (default, also without the file), `CPU`, `YM`; on the ST only `OFF` counts. `PLAIN_ST=YES` (ST build only): an STE or Mega STE behaves like a plain ST |
+| `AMBER.INF` | the one settings file (`shared/SETTINGS.S`): `MUSIC=OFF`, `DSP` (default, also without the file), `CPU`, `YM`; on the ST only `OFF` counts. `PLAIN_ST=YES` (ST build only): an STE or Mega STE behaves like a plain ST. `COARSE_WALLS=YES` (both machines): opaque 3D walls are drawn in pairs of columns while the view moves, sharp again when it stands (docs/17 D10); `NO` turns it off; no line keeps the built-in value, off unless built with `-DCOARSE_WALLS=1` |
 | `MUSIK_YM.INF` | which of Thalion's song numbers plays which YM song; delivered as a template when none is there |
 
 ## Where things are

@@ -326,8 +326,8 @@ prepare() {
 	else
 		zeile "YM SNDH" missing default "$YMSNDH  -> YM music off, the YM stays silent"
 	fi
-	# m68k objdump for am2cpu_code.py, searched as there (am2cpu_lesen.objdump).
-	GEFUNDEN=$(python3 -c 'import sys; sys.path.insert(0, "tools"); from am2cpu_lesen import objdump; print(objdump())') || exit 1
+	# m68k objdump for am2cpu_code.py, searched as there (am2cpu_read.objdump).
+	GEFUNDEN=$(python3 -c 'import sys; sys.path.insert(0, "tools"); from am2cpu_read import objdump; print(objdump())') || exit 1
 	case "$GEFUNDEN" in
 		"$OBJDUMP") WOHER=$OBJDUMP_SOURCE ;;
 		*/.vscode/*) WOHER=VS-Code ;;
@@ -375,10 +375,10 @@ prepare() {
 
 	step "Library data from AM2_CPU"
 	# At build time, never at run time (user, 2026-09-27): -> build/am2cpu_daten.i
-	python3 tools/am2cpu_auszug.py
+	python3 tools/am2cpu_extract.py
 	# Where Thalion's text names lie in Text.amb (Lade_texte reads the texts
 	# themselves at run time): -> build/textmarken.i
-	python3 tools/textmarken.py
+	python3 tools/text_labels.py
 	# Thalion's 3D rasteriser (CPU versions), likewise at build time (user,
 	# 2026-09-28; docs/02 A7): -> build/am2cpu_code.i
 	python3 tools/am2cpu_code.py
@@ -394,7 +394,7 @@ prepare() {
 	rm -f build/MUSIK_YM.BIN
 	if [ "$YM_MUSIC" = on ]; then
 		step "YM music from the SNDH"
-		python3 tools/ym_auszug.py --sndh "$YMSNDH" --out build/ym > build/ym_auszug.txt
+		python3 tools/ym_extract.py --sndh "$YMSNDH" --out build/ym > build/ym_extract.txt
 		cp build/ym/AMBERYM.BIN build/MUSIK_YM.BIN
 		note "MUSIK_YM.BIN $(( $(wc -c < build/MUSIK_YM.BIN) / 1024 )) KB"
 	fi
@@ -458,86 +458,25 @@ finish_output() {
 # deliver_data -- the game files, the save games and the YM music into
 # ATARI/AMBFILES/.
 deliver_data() {
-	# Unconverted original files, read at run time (goal 2).  Many
-	# Amberfiles have longer names than a FAT file system holds; they are
-	# renamed to 8.3 here.  The other side is the name table in
-	# engine/src/HULL/FILES_SUP.S -- whoever changes something here must
-	# change it there too.
-	for paar in "Layouts.amb:LAYOUTS.AMB" \
-	            "Dict.amb:DICT.AMB" \
-	            "Automap_graphics:AUTOMAPG.DAT" \
-	            "Object_icons:OBJICONS.DAT" \
-	            "Button_graphics:BUTTONGF.DAT" \
-	            "Text.amb:TEXT.AMB" \
-	            "Objects.amb:OBJECTS.AMB" \
-	            "1Map_data.amb:MAPDATA1.AMB" \
-	            "2Map_data.amb:MAPDATA2.AMB" \
-	            "3Map_data.amb:MAPDATA3.AMB" \
-	            "1Map_texts.amb:MAPTEXT1.AMB" \
-	            "2Map_texts.amb:MAPTEXT2.AMB" \
-	            "3Map_texts.amb:MAPTEXT3.AMB" \
-	            "Icon_data.amb:ICONDATA.AMB" \
-	            "Pics_80x80.amb:PICS80.AMB" \
-	            "Event_pix.amb:EVENTPIX.AMB" \
-	            "Palettes.amb:PALETTES.AMB" \
-	            "Music.amb:MUSIC.AMB" \
-	            "NPC_char.amb:NPCCHAR.AMB" \
-	            "Monster_char.amb:MONSTCHR.AMB" \
-	            "Portraits.amb:PORTRAIT.AMB" \
-	            "1Icon_gfx.amb:ICONGFX1.AMB" \
-	            "2Icon_gfx.amb:ICONGFX2.AMB" \
-	            "3Icon_gfx.amb:ICONGFX3.AMB" \
-	            "Travel_gfx.amb:TRAVELGF.AMB" \
-	            "NPC_gfx.amb:NPCGFX.AMB" \
-	            "Object_texts.amb:OBJTEXTS.AMB" \
-	            "Party_texts.amb:PARTYTXT.AMB" \
-	            "NPC_texts.amb:NPCTEXT.AMB" \
-	            "Place_data:PLACEDAT.DAT" \
-	            "Stationary:STATIONR.DAT" \
-	            "Party_gfx.amb:PARTYGFX.AMB" \
-	            "2Lab_data.amb:LABDATA2.AMB" \
-	            "3Lab_data.amb:LABDATA3.AMB" \
-	            "2Wall3D.amb:WALL3D2.AMB" \
-	            "3Wall3D.amb:WALL3D3.AMB" \
-	            "2Object3D.amb:OBJ3D2.AMB" \
-	            "3Object3D.amb:OBJ3D3.AMB" \
-	            "2Overlay3D.amb:OVL3D2.AMB" \
-	            "3Overlay3D.amb:OVL3D3.AMB" \
-	            "Lab_background.amb:LABBACK.AMB" \
-	            "Floors.amb:FLOORS.AMB" \
-	            "Monster_groups.amb:MONSTGRP.AMB" \
-	            "Combat_background.amb:COMBATBG.AMB" \
-	            "Monster_gfx.amb:MONSTGFX.AMB" \
-	            "Combat_graphics:COMBATGF.DAT" \
-	            "Riddlemouth_graphics:RIDDLEGF.DAT" \
-	            "Keymap:KEYMAP" \
-	            "Intro_music:INTROMUS.DAT" \
-	            "Extro_music:EXTROMUS.DAT"; do
-		quelle=${paar%%:*}
-		name=${paar##*:}
+	# Unconverted original files, read at run time (goal 2), renamed to 8.3
+	# here.  The table is tools/game_names.py.
+	python3 tools/game_names.py files > build/game_names_files.txt
+	while read -r quelle name; do
 		if [ ! -f "$AMBERFILES/$quelle" ]; then
 			echo "ERROR: $quelle is missing in $AMBERFILES" >&2
 			exit 1
 		fi
 		cp "$AMBERFILES/$quelle" "build/$name"
 		deliver "build/$name" "$DATA"
-	done
-	# Save games as in the original (AM2_CPU 1.20, finding 251): the five
-	# working files in AMBFILES, SAVE.00 the template "new game", SAVE.01 to
-	# SAVE.10 the slots.  Copies, not the originals: Save_subfile,
-	# Get_saved_game and Put_saved_game (SPIELSTAND.S) write into them.  A
-	# new build thus resets all save games.  The names are the same as in
-	# FILES_SUP.S (dn_tabelle) and SPIELSTAND.S (sp_tabelle).
+	done < build/game_names_files.txt
+	# Save games.  Copies, not the originals: Save_subfile, Get_saved_game
+	# and Put_saved_game (SPIELSTAND.S) write into them.  A new build thus
+	# resets all save games.
 	for platz in 00 01 02 03 04 05 06 07 08 09 10; do
 		mkdir -p "build/SAVE.$platz" "$DATA/SAVE.$platz"
 	done
-	for paar in "Chest_data.amb:CHESTDAT.AMB" \
-	            "Party_data.sav:PARTYDAT.SAV" \
-	            "Party_char.amb:PARTYCHR.AMB" \
-	            "Merchant_data.amb:MERCHANT.AMB" \
-	            "Automap.amb:AUTOMAP.AMB"; do
-		quelle=${paar%%:*}
-		name=${paar##*:}
+	python3 tools/game_names.py saves > build/game_names_saves.txt
+	while read -r quelle name; do
 		for platz in 00 01 02 03 04 05 06 07 08 09 10; do
 			if [ ! -f "$AMBERFILES/Save.$platz/$quelle" ]; then
 				echo "ERROR: Save.$platz/$quelle is missing in $AMBERFILES" >&2
@@ -549,12 +488,7 @@ deliver_data() {
 		# working file: the state "new game"
 		cp "$AMBERFILES/Save.00/$quelle" "build/$name"
 		deliver "build/$name" "$DATA"
-	done
-	# **Saves unchanged as in the original** (user, 2026-09-30): last save
-	# game 0, so Thalion's Init_program puts up the character editor for a
-	# new game (Chared_Mod, finding 261).
-	cp "$AMBERFILES/Saves" build/SAVES
-	deliver build/SAVES "$DATA"
+	done < build/game_names_saves.txt
 	# Which build, for which game files (tools/build_name.py); for bug
 	# reports, and the same line ENGINE.TOS shows at the start.
 	deliver build/BUILD.TXT "$DATA"

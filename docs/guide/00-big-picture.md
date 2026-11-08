@@ -52,7 +52,7 @@ compiled, and the library, in 14 hunks (the Amiga's segments):
 
 The game part of the file we have as source and assemble ourselves. We
 read the file for the library part: its data, and its machine code,
-which `tools/am2cpu_lesen.py` disassembles when a contract is not clear
+which `tools/am2cpu_read.py` disassembles when a contract is not clear
 from Thalion's call sites. Only the build reads `AM2_CPU`; the program
 never does.
 
@@ -213,7 +213,7 @@ held is also in the game files, and goal 2 of the project says to read
 those as they are: the library's 85 texts (messages, names, templates)
 come from `Text.amb`, the item table from `Objects.amb`, the button
 graphics from their own file. The build only computes where in
-`Text.amb` each text lies (`tools/textmarken.py`).
+`Text.amb` each text lies (`tools/text_labels.py`).
 
 **4. The include file, rebuilt.** The 119 constants and 12 macros are in
 `tools/originalcode/vorspann.i`. A constant there means what Thalion

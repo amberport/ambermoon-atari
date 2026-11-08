@@ -54,8 +54,15 @@ Basis_setzen      video base of the shown screen, with screen shaking
 Maus_vbl          Button_state and one mouse event, as AM2_CPU does
 Zeiger_vbl        the pointer follows the mouse in the shown screen
 Thalion's VblQ_handler   timers, Time_2D …
+                  then Timer capped at TIMER_CAP ($1000), docs/17 D11
 Musik_vbl         sound buffer and the player's tick
 ```
+
+The cap is deviation D11, against a bug of the original: Thalion's
+`Make_2D_move` compares the long `Timer` as a word, and after 32768
+frames of standing still on a 2D map (9 to 11 minutes) it took no step
+any more, on the Amiga too. Below $1000 nothing changes; 3D clears and
+clips `Timer` itself.
 
 On the ST, `Raster_vbl` first sets the registers of the first screen area
 and arms Timer B for the next border (`St_raster_vbl`, `ST_LIB.S`).

@@ -5,7 +5,7 @@ Since 2026-11-01.  Untested on 1.20 itself (the shift there must come out
 as zero); checked on 1.21 de/en/fr/pl/cz and on Thalion's 1.01/1.07 laid
 out as 1.21 (am2cpu_old.py).
 
-The tables in am2cpu_auszug.py and am2cpu_code.py give places as they are
+The tables in am2cpu_extract.py and am2cpu_code.py give places as they are
 in AM2_CPU of the German version 1.20.  Pyrdacor's 1.21 (all languages, one
 AM2_CPU) keeps the data hunks as they are, but code in hunk 0 has moved
 (fixes inserted, 1.20: 183100 bytes, 1.21: 183352).
@@ -18,7 +18,7 @@ in the repository: only from the places the tools already know.
    pointer to a mouse pointer record) is searched in the given AM2_CPU:
    same instruction word, same operand, a relocation at the operand.  The
    target lies in a data hunk whose layout has not moved; the check of that
-   stays in am2cpu_auszug.py.
+   stays in am2cpu_extract.py.
 2. **Shift map.**  Each anchor gives one or more possible shifts.  The
    choice with the smallest total change along hunk 0 wins (dynamic
    programming); shifts are piecewise constant.
@@ -44,30 +44,30 @@ class PlacesError(Exception):
 def _reloc_value(hunk, o):
     if o not in hunk["reloc"]:
         return None
-    return struct.unpack(">I", hunk["daten"][o:o + 4])[0]
+    return struct.unpack(">I", hunk["data"][o:o + 4])[0]
 
 
 def anchors_120(A, h6):
     """-> list of (1.20 offset of the operand, instruction word or None,
-    operand value, what).  A = module am2cpu_auszug, h6 = hunk 6 data."""
-    places = {n: off for n, _, off, _, _ in A.STUECKE}
-    for i, n in enumerate(A.ZEIGER):
+    operand value, what).  A = module am2cpu_extract, h6 = hunk 6 data."""
+    places = {n: off for n, _, off, _, _ in A.PIECES}
+    for i, n in enumerate(A.POINTERS):
         if n:
-            places[n] = A.ZEIGER_ANFANG + i * A.ZEIGER_SATZ
+            places[n] = A.POINTER_START + i * A.POINTER_RECORD
     result = []
-    for name, st, instr, where, *plus in A.CODEBELEGE:
+    for name, st, instr, where, *plus in A.CODE_PROOFS:
         result.append((st + 2, instr, places[name] + (plus[0] if plus else 0), name))
-    for m in A.MELDUNG_LISTEN:
+    for m in A.MESSAGE_LISTS:
         if m:
             for st in m[2]:
                 result.append((st, None, m[1], m[0]))
-    h, o, n = A.MELDUNG_TABELLE
+    h, o, n = A.MESSAGE_TABLE
     place = struct.unpack(">%dI" % n, h6[o:o + 4 * n])
-    for name, t, sts, _ in A.MELDUNG_EINZEL:
+    for name, t, sts, _ in A.MESSAGE_SINGLES:
         for st in sts:
             result.append((st, None, place[t], name))
-    result.append((A.MAGIC_TXT_STELLE, None, 0x8100, "Magic_txt"))
-    for hunk, st, name, where in A.VERWEISE:
+    result.append((A.MAGIC_TXT_PLACE, None, 0x8100, "Magic_txt"))
+    for hunk, st, name, where in A.REFERENCES:
         if hunk == 0:
             result.append((st, None, places[name], name))
     return sorted(result)
@@ -75,7 +75,7 @@ def anchors_120(A, h6):
 
 def candidates(h0, anchors):
     """-> list of (offset 1.20, [shifts], what)."""
-    d = h0["daten"]
+    d = h0["data"]
     result = []
     for st, instr, value, what in anchors:
         ks = []
@@ -98,7 +98,7 @@ def place_map(h0, anchors):
     ks = candidates(h0, anchors)
     missing = [(st, what) for st, k, what in ks if not k]
     ks = [(st, k, what) for st, k, what in ks if k]
-    end = len(h0["daten"]) - HUNK0_LENGTH_120
+    end = len(h0["data"]) - HUNK0_LENGTH_120
     ks.append((HUNK0_LENGTH_120, [end], "end of hunk 0"))
     # dynamic programming: smallest total change, ties to the smaller shift
     costs = [{d: (abs(d), None) for d in ks[0][1]}]
@@ -155,7 +155,7 @@ def _fits(hunks, C, h, begin, stop, tables, d, all_pieces, s9):
         if any(tv + d <= o < tb + d for tv, tb in tables):
             return False, "relocation in a table", 0
         zh = hk["reloc"][o]
-        zv = struct.unpack(">I", hk["daten"][o:o + 4])[0]
+        zv = struct.unpack(">I", hk["data"][o:o + 4])[0]
         n += 1
         if zh in (0, 11):
             if not any(sh == zh and sv + sd <= zv < sb + sd
@@ -164,7 +164,7 @@ def _fits(hunks, C, h, begin, stop, tables, d, all_pieces, s9):
             continue
         if zh == 9:
             zv -= s9
-        if (zh, zv) in C.NAMEN:
+        if (zh, zv) in C.NAMES:
             hits += 1
         elif not (bss(zh, zv) or in_data(zh, zv)):
             return False, "target %d:$%05X has no name" % (zh, zv), 0
@@ -184,7 +184,7 @@ def _instructions_fit(hunks, C, h, begin, stop, tables, d):
     key = (h, begin, stop, d)
     if key in _instructions_cache:
         return _instructions_cache[key]
-    data = hunks[h]["daten"]
+    data = hunks[h]["data"]
     parts, o = [], begin + d
     for tv, tb in sorted(tables):
         parts.append((o, tv + d))
@@ -222,7 +222,7 @@ def adapt_pieces(C, A, hunks):
     """Moves the 1.20 places in module C (am2cpu_code) to the given
     AM2_CPU: hunk 0 by the anchor map, hunk 9 (the library's variables) by
     one shift s9 found from the pieces themselves.  -> report lines."""
-    anchors = anchors_120(A, hunks[6]["daten"])
+    anchors = anchors_120(A, hunks[6]["data"])
     choice, missing = place_map(hunks[0], anchors)
     if missing:
         raise PlacesError("anchors not found: %s" % ", ".join(w for _, w in missing))
@@ -275,17 +275,17 @@ def adapt_pieces(C, A, hunks):
             raise PlacesError("%d:$%05X lies between two shifts" % (h, v))
         return ds.pop()
     C.STUECKE[:] = new
-    for tab, end in ((C.EINSPRUENGE, False), (C.FORTSETZUNGEN, True),
+    for tab, end in ((C.EINSPRUENGE, False), (C.EINGRIFFE, False), (C.FORTSETZUNGEN, True),
                       (C.CPU_020, False), (C.AUSGAENGE, False)):
         old = dict(tab)
         tab.clear()
         for (h, v), x in old.items():
             tab[(h, v + shift_at(h, v, end))] = x
     if s9:
-        old = dict(C.NAMEN)
-        C.NAMEN.clear()
+        old = dict(C.NAMES)
+        C.NAMES.clear()
         for (h, v), x in old.items():
-            C.NAMEN[(h, v + s9 if h == 9 else v)] = x
+            C.NAMES[(h, v + s9 if h == 9 else v)] = x
         C.BSS_BLOECKE[:] = [(h, a + s9, b + s9) if h == 9 else (h, a, b)
                             for h, a, b in C.BSS_BLOECKE]
         C.NAME_SHIFT[9] = s9       # Am2cpu_9_* names stay 1.20 offsets
@@ -293,19 +293,19 @@ def adapt_pieces(C, A, hunks):
 
 
 def adapt_extract(A, hunks):
-    """Moves the hunk 0 places in module A (am2cpu_auszug) to the given
+    """Moves the hunk 0 places in module A (am2cpu_extract) to the given
     AM2_CPU; they are the anchors themselves.  -> report lines."""
-    anchors = anchors_120(A, hunks[6]["daten"])
+    anchors = anchors_120(A, hunks[6]["data"])
     choice, missing = place_map(hunks[0], anchors)
     if missing:
         raise PlacesError("anchors not found: %s" % ", ".join(w for _, w in missing))
     d = {st: s for st, s, _, _ in choice}
-    A.CODEBELEGE[:] = [(n, st + d[st + 2], b, w, *p) for n, st, b, w, *p in A.CODEBELEGE]
-    A.MELDUNG_LISTEN[:] = [m and (m[0], m[1], [s + d[s] for s in m[2]], m[3])
-                           for m in A.MELDUNG_LISTEN]
-    A.MELDUNG_EINZEL[:] = [(n, t, [s + d[s] for s in st], w) for n, t, st, w in A.MELDUNG_EINZEL]
-    A.MAGIC_TXT_STELLE += d[A.MAGIC_TXT_STELLE]
-    A.VERWEISE[:] = [(h, st + d[st] if h == 0 else st, n, w) for h, st, n, w in A.VERWEISE]
+    A.CODE_PROOFS[:] = [(n, st + d[st + 2], b, w, *p) for n, st, b, w, *p in A.CODE_PROOFS]
+    A.MESSAGE_LISTS[:] = [m and (m[0], m[1], [s + d[s] for s in m[2]], m[3])
+                           for m in A.MESSAGE_LISTS]
+    A.MESSAGE_SINGLES[:] = [(n, t, [s + d[s] for s in st], w) for n, t, st, w in A.MESSAGE_SINGLES]
+    A.MAGIC_TXT_PLACE += d[A.MAGIC_TXT_PLACE]
+    A.REFERENCES[:] = [(h, st + d[st] if h == 0 else st, n, w) for h, st, n, w in A.REFERENCES]
     return ["hunk 0: %d anchors; %s" % (len(choice) - 1, ", ".join(
         "$%05X..$%05X %+X" % a for a in sections(choice)))]
 

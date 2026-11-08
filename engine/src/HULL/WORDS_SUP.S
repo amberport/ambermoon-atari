@@ -15,7 +15,7 @@
 ; Die Tabellen muessen also *an* den Marken liegen, nicht hinter Zeigern.
 ; Im Original stehen sie in AM2_CPU.  Die Fassung 1.20 traegt sie in
 ; Text.amb, und Lade_texte holt die ganze Datei zur Laufzeit nach Textdaten
-; (Leitziel 2).  Wo darin welcher Name liegt, schreibt tools/textmarken.py
+; (Leitziel 2).  Wo darin welcher Name liegt, schreibt tools/text_labels.py
 ; beim Bau (build/textmarken.i, Aufbau der Datei dort): Age_nr - Age_txt
 ; haengt von der Sprache ab, Thalion rechnet aber mit zwei festen Marken.
 ; ===========================================================================

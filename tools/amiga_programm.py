@@ -59,7 +59,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ambtool import read_hunks          # noqa: E402
-from imploder_exe import entpacke       # noqa: E402
+from imploder_exe import unpack_program       # noqa: E402
 import amiga_places                       # noqa: E402
 import paths  # noqa: E402
 
@@ -230,7 +230,7 @@ def hunks_lesen(d):
 def gepackt_lesen(d):
     """Hunks eines Imploder-Programms, entpackt (imploder_exe.py).  Die Art
     kennt der Kopf dort nicht; sie kommt aus der Tabelle."""
-    inhalt, relok = entpacke(read_hunks(d))
+    inhalt, relok = unpack_program(read_hunks(d))
     return {n: dict(art=None, groesse=len(inhalt[n]), daten=bytes(inhalt[n]),
                     rel={o: z for o, z in relok[n]})
             for n in inhalt}

@@ -8,11 +8,11 @@
 ; Sa_spieler (am2cpu_code.py).  Ohne YM geht jeder Einsprung unveraendert
 ; dorthin, mit YM nehmen ym_* die Aufrufe an.
 ;
-; **The YM block** (MUSIK_YM.BIN, written at build by ym_auszug.py from
+; **The YM block** (MUSIK_YM.BIN, written at build by ym_extract.py from
 ; Big Alec's SNDH file big_alec/ambermon.snd, AMBER_YMSNDH, since
 ; 2026-10-27; before, from the disk of the "Ambermoon Music Demo"; never in
 ; the repository): Big Alec's player and 18 pieces, PC-relative only, runs
-; at any address.  ym_auszug.py binds the SNDH's Timer B back to Timer D
+; at any address.  ym_extract.py binds the SNDH's Timer B back to Timer D
 ; and checks the result: the first 241 630 bytes of the demo's block,
 ; pieces 1-17 the same, piece 18 (untitled, not in musik_ym.inf) shorter.
 ;   +0  start, d0 = piece 1-18.  Saves the vectors of Timer A ($134) and
@@ -35,12 +35,15 @@
 ; **Takt:** _hz_200 (Timer C, 200 Hz), je 4 Schritte einmal +4.  So bleibt
 ; es bei 50 Hz, ob der Schirm mit 50, 60 oder 71 Hz laeuft.
 ;
-; **+4 haelt Timer C an:** Es stellt Timer D, indem es TCDCR ganz
-; ueberschreibt (move.b d1,$FFFFFA1D mit d1 = 0-6, im Block bei $67A und
-; $7B8), und loescht damit die Bits 4-6, Timer C.  Die Demo merkt das nicht,
-; sie ruft +4 aus ihrem VBL.  Bei uns bliebe _hz_200 stehen, der Takt mit
-; ihm, und Timer A/D hielten die letzte Note: ein Pfeifton (Hatari STE,
-; Nutzer 2026-10-10).  ym_takt setzt Timer C nach jedem +4 zurueck.
+; **+4 stops Timer C:** it sets Timer D by overwriting TCDCR whole
+; (move.b d1,$FFFFFA1D with d1 = 0-6, in the block at $67A and $7B8),
+; which clears bits 4-6, Timer C's.  The SNDH writes TBCR there (Timer B,
+; header TC50: it even wants Timer C); the stop comes from our rebinding to
+; Timer D (tools/ym_extract.py), as in the demo, which calls +4 from its VBL
+; and does not notice.  Here _hz_200 would stand still, the tick with it,
+; and Timer A/D would hold the last note: a whistle (Hatari STE, user
+; 2026-10-10).  ym_takt sets Timer C back after each +4.  Timer C stays
+; on (docs/05c E42).
 ;
 ; **Which piece:** MUSIK_YM.INF next to the game files, plain text, one
 ; line "Thalion's number  YM piece" each, ";" starts a comment.  Numbers

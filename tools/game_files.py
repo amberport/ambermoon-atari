@@ -18,8 +18,9 @@ ambermoon_gamedata/ is searched for exactly one such thing.
 Nothing is ever written next to the user's files: zips are unpacked and
 disks read into build/game_files/, once per content (the folder name holds a
 hash of the input; a second build reuses it).  Disk images are read by
-tools/adf_read.py; DMS needs the program xdms (Linux: apt install xdms), IPF
-goes through tools/ipf_to_adf.py and must give every sector.
+tools/adf_read.py; DMS goes through tools/dms_to_adf.py (xdms only for the
+methods it does not read), IPF through tools/ipf_to_adf.py and must give
+every sector.
 The files of all disks go into one Amberfiles/, as Thalion's installer
 puts them: everything on top of each disk and its folders Initial/,
 Save.xx/, except the Workbench folders (C, Devs, L, S, ...) and icons
@@ -43,6 +44,7 @@ import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import adf_read                         # noqa: E402
+import dms_to_adf                       # noqa: E402
 import ipf_to_adf                       # noqa: E402
 
 IMAGES = (".adf", ".dms", ".ipf")
@@ -74,10 +76,10 @@ def images_in(folder):
 
 
 def kind_of(folder):
-    """What a folder is: "daten" (has Amberfiles/AM2_CPU), "amberfiles"
+    """What a folder is: "above" (has Amberfiles/AM2_CPU), "amberfiles"
     (has AM2_CPU), "disks" (has disk images) or None."""
     if os.path.isfile(os.path.join(folder, "Amberfiles", "AM2_CPU")):
-        return "daten"
+        return "above"
     if os.path.isfile(os.path.join(folder, "AM2_CPU")):
         return "amberfiles"
     return "disks" if images_in(folder) else None
@@ -145,8 +147,8 @@ def zip_is_game(path):
 
 
 def adf_of(image, target):
-    """-> path of an ADF for this image (DMS through xdms, IPF through
-    tools/ipf_to_adf.py)."""
+    """-> path of an ADF for this image (DMS through tools/dms_to_adf.py, or
+    xdms for a method it does not read; IPF through tools/ipf_to_adf.py)."""
     if image.lower().endswith(".adf"):
         return image
     adf = os.path.join(target, os.path.splitext(os.path.basename(image))[0] + ".adf")
@@ -156,9 +158,15 @@ def adf_of(image, target):
             raise Error("%s: %d of 1760 sectors read, %d bad; not a standard AmigaDOS "
                         "disk" % (image, n, len(bad)))
         return adf
-    if not shutil.which("xdms"):
-        raise Error("%s is a DMS image: the build needs the program xdms to read it "
-                     "(Linux: sudo apt install xdms), or give the ADF files" % image)
+    try:
+        dms_to_adf.convert(image, adf)
+        return adf
+    except dms_to_adf.Unsupported as e:
+        if not shutil.which("xdms"):
+            raise Error("%s; reading it needs the program xdms (Linux: sudo apt "
+                        "install xdms), or give the ADF files" % e)
+    except dms_to_adf.Error as e:
+        raise Error(str(e))
     r = subprocess.run(["xdms", "-q", "u", image, "+" + adf],
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if r.returncode or not os.path.isfile(adf):
@@ -247,11 +255,11 @@ def resolve(path, out, origin=None):
         raise Error("%s holds no game files: no Amberfiles/ with AM2_CPU, "
                      "no ADF, DMS or IPF images" % path)
     if len(found) > 1:
-        raise Error("%s holds more than one set of game files:\n  %s\nName one of them: "
-                     "sh tools/build_all.sh PATH (or AMBER_DATEN, variable or build.cfg)"
-                     % (path, "\n  ".join(f for _, f in found)))
+        raise Error("%s holds more than one set of game files:\n  %s\nName one of them "
+                     "(the build: sh tools/build_all.sh PATH, or AMBER_DATEN, variable or "
+                     "build.cfg)" % (path, "\n  ".join(f for _, f in found)))
     kind, folder = found[0]
-    if kind == "daten":
+    if kind == "above":
         return folder, "%s, folder %s" % (name, os.path.relpath(folder, path)) \
             if origin else "folder %s" % folder
     if kind == "amberfiles":

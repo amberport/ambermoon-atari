@@ -7,7 +7,7 @@ start menu, taken from Ambermoon_intro at build time.
 Das Startmenue (WEITERSPIELEN, NEUE QUEST STARTEN, INTRO, QUIT) steht im
 Original nicht in AM2_CPU, sondern im eigenen Programm Ambermoon_intro.  Sein
 Quelltext ist nicht freigegeben.  Die Texte holt dieses Werkzeug beim Bau
-heraus (wie am2cpu_auszug.py, Nutzer 2026-09-27: Amiga-Programme werden zur
+heraus (wie am2cpu_extract.py, Nutzer 2026-09-27: Amiga-Programme werden zur
 Laufzeit nie gelesen) und schreibt build/intro_daten.i; engine.s bindet es
 ein, HULL/STARTMENUE.S zeichnet daraus.
 

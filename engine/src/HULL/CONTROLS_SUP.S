@@ -28,7 +28,7 @@
 ;                  FALCON_OFF.S.
 ;
 ;   Button_up/down liegt in **keiner** Spieldatei, nur im Amiga-Programm
-;                  (AM2_CPU, Hunk 3 ab 0x2860).  tools/am2cpu_auszug.py
+;                  (AM2_CPU, Hunk 3 ab 0x2860).  tools/am2cpu_extract.py
 ;                  holt es beim Bau heraus (build/am2cpu_daten.i); zur
 ;                  Laufzeit wird AM2_CPU nie gelesen.
 ;

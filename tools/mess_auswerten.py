@@ -8,7 +8,7 @@ hat: je 64 Byte ab `start` ein Fach, dazu je Sekunde die drei Arten Blits,
 Anzeige, sonst.  Die Linkkarte der Messfassung (build/INTROMES.map) nennt
 die Routinen; Thalions Programm hat dort nur einen Namen je Hunk, darum
 erscheint es als Intro_h0+Versatz (der Versatz passt zu
-`am2cpu_lesen.py`-artigen Disassemblierungen des Hunks).
+`am2cpu_read.py`-artigen Disassemblierungen des Hunks).
 
 Mit BLIT_STATISTIK steht hinter dem Verlauf die Tabelle der Blit-Arten
 (Bs_zaehlen in amiga/AMIGA_MESSEN.S); sie wird nach Proben geordnet gezeigt.

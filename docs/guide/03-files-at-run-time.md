@@ -154,9 +154,11 @@ just that entry, at its place in the file.
 
 Those working files are the running game. A **save game** is a folder
 `SAVE.nn` with copies of them; `SAVE.00` is the template for a new game.
-In the folders the files are JH-encrypted, with a four-byte envelope that
-carries its own key ("JH", then the key XOR "JH"); the key changes with
-every save, taken from the frame counter. Loading a save game decrypts them into the working files
+As Thalion ships the folders, their files are plain. What the game saves
+is JH-encrypted, with a four-byte envelope that carries its own key ("JH",
+then the key XOR "JH"); the key changes with every save, taken from the
+frame counter. Loading a save game brings them into the working files,
+decrypted where there is an envelope
 (`Get_saved_game`); saving encrypts them into the folder
 (`Put_saved_game`). Both are library routines; Thalion's code only calls
 them.
@@ -209,8 +211,8 @@ All of it is in `engine/src/HULL/FILES_SUP.S`, except where noted.
 | `Get_saved_game`, `Put_saved_game` | `HULL/SPIELSTAND.S`: save games to working files and back |
 
 The 8.3 names have two sides that change together: the name table
-`dn_tabelle` at the end of `FILES_SUP.S`, and the renaming in
-`deliver_data` in `tools/build_common.sh`.
+`dn_tabelle` at the end of `FILES_SUP.S`, and the table in
+`tools/game_names.py`, which the build's delivery reads.
 
 On the host, `tools/ambtool.py` reads the same formats and is the
 reference the Atari code was checked against over the whole game data.

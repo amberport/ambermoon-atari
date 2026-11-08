@@ -385,6 +385,15 @@ sbl_nein:
 	moveq	#1,d0			; Z frei
 	rts
 sbl_ja:
+	; A computed table (St_bauen) for a map entered in the dark, now at a
+	; light level STPAL.DAT holds exactly (full light): take the file's
+	; table.  Kept, the dark groups put the bright colours together
+	; (user, 2026-11-08: Spannenberg from the house, T112).
+	tst.w	SE_HAND(a0)
+	bne.b	sbl_key
+	bsr	St_from_file		; fills the key too
+	beq.b	sbl_z
+sbl_key:
 	movem.l	a2-a3,-(sp)		; Schluessel: die Farben 0..15
 	lea	SE_KEY(a0),a2
 	move.l	a1,a3
@@ -392,7 +401,7 @@ sbl_ja:
 sbl_k:	move.l	(a3)+,(a2)+
 	dbf	d0,sbl_k
 	movem.l	(sp)+,a2-a3
-	moveq	#0,d0			; Z gesetzt
+sbl_z:	moveq	#0,d0			; Z gesetzt
 	rts
 
 ; Ein Eintrag zum Neubauen: ein freier, sonst reihum, aber keiner, den ein
@@ -1562,10 +1571,22 @@ sqa_out:
 ;
 ; Je Punkt Register r -> Farbe Rep[r] der Bildzeile; davon die unteren d5
 ; Bits in die Ebenenzeilen, Zeile fuer Zeile, darin Ebene fuer Ebene.
+;
+; Fewer than five planes (finding 400): Thalion puts such a block back with
+; the colour offset d4 = 32 - 2^d5, the top of the palette.  The only caller,
+; Get_tactic_window in COMBAT/TACTIC.S, saves with d5 = 3, and
+; Draw_tactic_window puts it back with d4 = 24.  Rep[r] is the lowest colour
+; of the group, so it may lie below that range: register 4 of Tactic_pal
+; holds colours 23 and 28; Rep gave 23, its three bits 7 came back as
+; colour 31, and the tactic field turned light beige.  So for d5 < 5 a
+; register takes a colour of 32 - 2^d5 .. 31 when one of them is in its
+; group (sgb_rep); 24 + (c & 7) is then c again, in the same register.
+; Built once per set, not per line.
 ; ***************************************************************************
 Get_block_orig:
 	addq.w	#1,Data_change_count		; neuer Inhalt im Ziel (St_kachel)
 	movem.l	d0-d7/a0-a6,-(sp)
+	clr.l	sgb_satz		; sgb_rep is built anew in each call
 	move.w	d5,sgb_tiefe
 	move.w	d6,d2
 	add.w	d2,d2
@@ -1586,6 +1607,29 @@ sgb_zeile_lauf:
 	move.w	sgb_zeile,d0
 	bsr	St_zeilensatz_schnell
 	lea	ST_REP(a0),a4		; a4 = Rep
+	cmp.w	#5,sgb_tiefe
+	bcc.b	sgb_rep_da		; five planes: any colour of the group
+	lea	sgb_rep,a4
+	cmp.l	sgb_satz,a0
+	beq.b	sgb_rep_da		; same set as the line before
+	move.l	a0,sgb_satz
+	move.l	ST_REP(a0),(a4)		; start from Rep
+	move.l	ST_REP+4(a0),4(a4)
+	move.l	ST_REP+8(a0),8(a4)
+	move.l	ST_REP+12(a0),12(a4)
+	moveq	#1,d7
+	move.w	sgb_tiefe,d0
+	lsl.w	d0,d7			; 2^d5
+	moveq	#32,d0
+	sub.w	d7,d0			; the first colour of the range
+sgb_rep_c:
+	moveq	#0,d1
+	move.b	ST_TAB(a0,d0.w),d1
+	move.b	d0,0(a4,d1.w)		; register -> a colour of the range
+	addq.w	#1,d0
+	cmp.w	#32,d0
+	bcs.b	sgb_rep_c
+sgb_rep_da:
 	move.l	a1,a2			; Schirmblock
 	move.l	a5,a3			; Zielspalte, Ebene 0
 	move.w	d6,d4
@@ -2097,6 +2141,8 @@ stp_name:	dc.b	"STPAL.DAT",0
 ; in Hatari (2026-10-17).  St_bauen groups the dimmed palette as it is.
 ; Fades and later light levels keep the entry (st_blende); its registers
 ; follow the colours through SE_HSUMME (srp_hand).
+; A computed entry that reaches a light level the file holds exactly
+; (full light after entering in the dark) is filled from here (st_blende).
 St_from_file:
 	movem.l	d0-d7/a0-a6,-(sp)
 	move.l	a0,a5			; a5 = entry
@@ -3605,9 +3651,40 @@ sol_l:	clr.l	(a0)+
 ;   IN : wie St_movep_schirm (a0 Puffer, a1 Schirm, d6 Gruppen - 1,
 ;        d7 Zeilen - 1).  Beendet das Bild (Fuellfarben zurueck).
 ;   Alle Register bleiben.
+;
+; Tempo (2026-11-04): the 3D window has nine groups a row (d6 = 8); for it
+; one movem fetches three groups and the movep go by displacement, without
+; a group loop: 68 instead of 90 cycles a group, about 30 k a frame.
+; Other widths take the plain loop.
 ; ***************************************************************************
 St_abschrift_zeigen:
 	movem.l	d0-d7/a0-a2,-(sp)
+	cmp.w	#8,d6
+	bne.b	sazg_z
+sazg_9:	movem.l	(a0)+,d0-d5
+	movep.l	d0,0(a1)
+	movep.l	d1,1(a1)
+	movep.l	d2,8(a1)
+	movep.l	d3,9(a1)
+	movep.l	d4,16(a1)
+	movep.l	d5,17(a1)
+	movem.l	(a0)+,d0-d5
+	movep.l	d0,24(a1)
+	movep.l	d1,25(a1)
+	movep.l	d2,32(a1)
+	movep.l	d3,33(a1)
+	movep.l	d4,40(a1)
+	movep.l	d5,41(a1)
+	movem.l	(a0)+,d0-d5
+	movep.l	d0,48(a1)
+	movep.l	d1,49(a1)
+	movep.l	d2,56(a1)
+	movep.l	d3,57(a1)
+	movep.l	d4,64(a1)
+	movep.l	d5,65(a1)
+	lea	SCRROW(a1),a1
+	dbf	d7,sazg_9
+	bra.b	sazg_aus
 sazg_z:	move.l	a1,a2
 	move.w	d6,d4
 sazg_g:	move.l	(a0)+,d0
@@ -3618,6 +3695,7 @@ sazg_g:	move.l	(a0)+,d0
 	dbf	d4,sazg_g
 	lea	SCRROW(a1),a1
 	dbf	d7,sazg_z
+sazg_aus:
 	bsr	sab_ende
 	movem.l	(sp)+,d0-d7/a0-a2
 	rts
@@ -3704,7 +3782,9 @@ sgb_schritt:	ds.w	1
 sgb_zeile:	ds.w	1
 sgb_n:		ds.w	1
 sgb_rest:	ds.w	1
+sgb_satz:	ds.l	1		; the set sgb_rep was built from (0: none)
 sgb_punkte:	ds.b	16
+sgb_rep:	ds.b	16		; Rep for d5 < 5 (finding 400)
 st_kachel:	ds.b	KA_GR*ST_KACHEL_N ; 384 KB, St_kachel (P3, P5)
 	even
 ; E12, Abschriften der 3D-Bloecke (St_abschrift_*)

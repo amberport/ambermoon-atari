@@ -5393,3 +5393,26 @@ wrapper skips size 0, where the loop would still read one token.
 Spannenberg 74.7 → 61.5 M cycles, the cellar 54.2 → 43.9 M; unpacking
 about 2.2×, decrypting 1.7× faster. *(Rule: look for Thalion's routine
 before writing one; finding 194.)*
+
+## 275. After 9–11 minutes standing still the 2D map takes no move: Thalion's word compare
+
+*2026-11-06, user on the Falcon: after a while standing on the 2D map,
+mouse and animations go on, but clicks and moves do nothing. Found in the
+source and in `AM2_CPU` 1.07 en; the fix passed on the Falcon (user,
+2026-11-06).*
+
+`Make_2D_move` (`MAP/2D_MAP.S`) compares the long `Timer` as a word
+(`cmp.w d3,d2` / `bmi.s .Exit`). `Time_2D` in the VBL queue counts it in
+every frame, and in 2D only a step clears it. After 32768 frames the low
+word is negative and every move is refused, until it wraps again after
+as many frames: 9:06 minutes at VGA, 10:55 at RGB. Every way to walk ends
+in `Make_2D_move` (`Move_mouse`, the arrow icons, `M2_left`...), so all of
+them stop; the portraits, the right click and the other icons do not.
+3D is not hit: `M3_DisUpd` clears `Timer` in every frame.
+
+The original has the same bug: the same `cmp.w` at 0:$E2BC of `AM2_CPU`
+1.07 en, and its VBL calls `VblQ_handler` in every frame (0:$2127A), as
+our `Bibliothek_vbl` does. Fixed in the library by capping `Timer`
+(docs/17 D11). *(Rule: a counter in the VBL that only a game action
+clears runs for as long as the player waits.)*
+

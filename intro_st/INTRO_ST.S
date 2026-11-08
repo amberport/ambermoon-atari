@@ -54,6 +54,9 @@
 start:
 	move.l	4(sp),a0		; basepage
 	lea	Stack_end,sp
+	ifd	LADEADRESSE
+	bsr	Load_address_show
+	endc
 	cmp.b	#1,$80(a0)
 	bne.b	.no_flag
 	cmp.b	#'1',$81(a0)
@@ -112,6 +115,39 @@ start:
 	move.w	#Pterm,-(sp)
 	trap	#1
 
+	ifd	LADEADRESSE
+; Load_address_show -- diagnosis build INTROSTD.TOS (T109, crash at 16 MHz on
+; the Mega STE): shows the start of TEXT, so a crash PC (tools/st_bomben)
+; minus it is the place in INTROST.map; then waits for a key.  a0 =
+; basepage, kept.
+Load_address_show:
+	move.l	a0,-(sp)
+	move.l	8(a0),d1		; p_tbase
+	lea	Ld_hex,a1
+	moveq	#7,d2
+.digit:	rol.l	#4,d1
+	move.b	d1,d0
+	and.b	#15,d0
+	add.b	#'0',d0
+	cmp.b	#'9',d0
+	bls.b	.put
+	addq.b	#7,d0
+.put:	move.b	d0,(a1)+
+	dbf	d2,.digit
+	pea	Ld_text
+	move.w	#Cconws,-(sp)
+	trap	#1
+	addq.l	#6,sp
+	move.w	#Crawcin,-(sp)
+	trap	#1
+	addq.l	#2,sp
+	move.l	(sp)+,a0
+	rts
+Ld_text:	dc.b	"INTROSTD (T109)",13,10,"load address (TEXT) $"
+Ld_hex:		dc.b	"00000000",13,10,"Key starts the intro.",13,10,0
+	even
+	endc
+
 ; ***************************************************************************
 ; Machine_check -- Z set on an ST, STE or Mega STE with a colour monitor.
 ; Sets Is_ste (STE palette, four bits a channel) and Is_mste.  As in the
@@ -150,6 +186,18 @@ Machine_check:
 ; at rest, the library, mouse, vectors.
 ; ***************************************************************************
 Intro_setup:
+	; Mega STE: 8 MHz without cache for the whole run, switched here, at
+	; IPL 3 and outside any interrupt (T109-T111).  Tb_border counts its
+	; delay in bus cycles at 8 MHz; switching back to 16 MHz inside the
+	; Timer B interrupt garbled the next bus cycle on the Mega STE (bus and
+	; address errors), the same switch from normal code (control panel)
+	; works.  The teardown switches back.
+	tst.b	Is_mste
+	beq.b	.clock
+	move.b	MSTE_CLOCK.w,Old_mste_clock
+	clr.b	MSTE_CLOCK.w
+	st	Ab_clock
+.clock:
 	move.w	#Getrez,-(sp)
 	trap	#14
 	addq.l	#2,sp
@@ -301,7 +349,7 @@ Intro_teardown:
 	move.l	Old_mouse_vector,16(a0)
 	sf	Ab_maus
 .mode:	tst.b	Ab_modus
-	beq.b	.out
+	beq.b	.clock
 	sf	Ab_modus
 	move.b	Old_sync,SYNC_MODE.w
 	move.w	Old_mode,-(sp)
@@ -316,11 +364,17 @@ Intro_teardown:
 	movem.l	Old_colours,d0-d7
 	movem.l	d0-d7,ST_PAL.w
 	tst.b	Im_notausgang
-	bne.b	.out
+	bne.b	.clock
 	pea	Text_cursor_on
 	move.w	#Cconws,-(sp)
 	trap	#1
 	addq.l	#6,sp
+.clock:	tst.b	Ab_clock		; the Mega STE's clock, as at the start
+	beq.b	.out
+	sf	Ab_clock
+	tst.b	Im_notausgang		; not in the emergency exit: it runs in an
+	bne.b	.out			; exception, where the switch is unsafe
+	move.b	Old_mste_clock,MSTE_CLOCK.w
 .out:	rts
 
 NOTAUS_ABRAEUMEN	equ	Intro_teardown
@@ -1435,11 +1489,7 @@ Tb_border:
 	move.w	#$2700,sr
 	movem.l	d0-d5/a0-a1,-(sp)
 	clr.b	MFP_TBCR.w		; one border event per frame
-	tst.b	Is_mste
-	beq.b	.sync
-	move.b	MSTE_CLOCK.w,Old_mste_clock
-	clr.b	MSTE_CLOCK.w		; 8 MHz, no cache: DELAY in bus cycles
-.sync:	lea	VID_CNT+2.w,a0		; mid and low byte, for movep.w
+	lea	VID_CNT+2.w,a0		; mid and low byte, for movep.w
 	move.l	Frame_base,d4
 	move.w	d4,d3			; base, low word
 	move.w	d4,d5			; low byte of line ST_BORDER's start
@@ -1476,10 +1526,7 @@ Tb_border:
 .too_late:
 	addq.l	#1,Border_missed
 .done:
-	tst.b	Is_mste
-	beq.b	.split
-	move.b	Old_mste_clock,MSTE_CLOCK.w
-.split:	move.w	Split_count,d0		; the copper list's colours at line 200
+	move.w	Split_count,d0		; the copper list's colours at line 200
 	beq.b	.out
 	lea	Split_colours,a0
 	lea	ST_PAL.w,a1
@@ -1695,6 +1742,7 @@ Old_tbcr:		ds.b	1
 Old_tbdr:		ds.b	1
 Old_iera:		ds.b	1
 Old_imra:		ds.b	1
+Ab_clock:		ds.b	1	; Mega STE clock switched to 8 MHz (setup)
 Old_mste_clock:		ds.b	1
 Is_ste:			ds.b	1
 Is_mste:		ds.b	1

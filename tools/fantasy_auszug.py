@@ -35,7 +35,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ambtool import read_hunks          # noqa: E402
-from imploder_exe import entpacke       # noqa: E402
+from imploder_exe import unpack_program       # noqa: E402
 import paths  # noqa: E402
 import amiga_places  # noqa: E402
 
@@ -326,7 +326,7 @@ def main():
     datei = os.path.join(AMBERFILES, "Fantasy_intro")
     d = open(datei, "rb").read()
     hunks = read_hunks(d)
-    inhalt, relok = entpacke(hunks)
+    inhalt, relok = unpack_program(hunks)
     # Other versions (1.01): the 1.20 places of the tables here are moved
     # by the map of tools/amiga_places.py; a range must stay one piece.
     places = amiga_places.places_of("fantasy", d, {n: {"groesse": len(inhalt[n])} for n in inhalt},

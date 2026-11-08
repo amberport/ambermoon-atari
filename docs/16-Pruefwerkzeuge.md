@@ -218,7 +218,7 @@ Normalbau ebenso.
 Was die Probe **nicht** sagt: ob ein echter Name seinen Vertrag erfüllt.
 Der Linker prüft nur, dass es ihn gibt (CLAUDE.md, Fallen).
 
-## `tools/am2cpu_lesen.py` — was tut Thalions Bibliothek?
+## `tools/am2cpu_read.py` — was tut Thalions Bibliothek?
 
 Zerlegt `AM2_CPU` (Amiga-Hunks samt Relokationen) und disassembliert eine
 Routine mit einem m68k-`objdump`; an jeden verschobenen Operanden schreibt
@@ -302,7 +302,7 @@ Konverter, `KOPF` in diesem Skript und die Eintragsnummer in `MAP.S`.
 Since 2026-10-15 `build_all.sh` runs `build_falcon.sh` and `build_st.sh`
 (formerly `baue_alles.sh` and `baue_st.sh`); the shared part is
 `build_common.sh`. Together they take the library data from `AM2_CPU`
-(`am2cpu_auszug.py`, only at build time), build the engine for both
+(`am2cpu_extract.py`, only at build time), build the engine for both
 machines, copy programs and original files into `ATARI/` and then check by
 themselves: `register_pruefen.py`, `vars_pruefen.py`, placeholders, the
 full probe and a cross-check whether the source still goes through a

@@ -3,7 +3,7 @@
 ; Save_file, Save_encrypted_file.  Einheit "bibliothek" (engine.s).
 ;
 ; Alle vier stehen im Original in der nicht freigegebenen Bibliothek.  Die
-; Vertraege sind in AM2_CPU 1.20 nachgelesen (tools/am2cpu_lesen.py,
+; Vertraege sind in AM2_CPU 1.20 nachgelesen (tools/am2cpu_read.py,
 ; Erkenntnis 251), nicht an Thalions Aufrufstellen erraten:
 ;
 ;   Get_saved_game       0:$29948

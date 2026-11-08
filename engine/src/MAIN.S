@@ -258,7 +258,8 @@ Main_loop:
 ; puts AMBFILES\ in front), before Open_screen (PLAIN_ST, ST.S) and
 ; Musik_install (MUSIC, MUSIK_SUP.S).  The line under "Ladeadresse" shows
 ; what was read.  Without the file every setting is SET_NONE, and each
-; reader takes its default.
+; reader takes its default.  COARSE_WALLS is set here, into Coarse_walls
+; (D3_WALLS.S, docs/17 D10); not named, the built-in value stays.
 ;   All registers are preserved.
 ; ***************************************************************************
 Einstellungen_lesen:
@@ -267,6 +268,10 @@ Einstellungen_lesen:
 	moveq	#0,d1			; number 0: the name is in a0
 	jsr	Datei_name		; FILES_SUP.S
 	bsr	Settings_read		; no file: every setting SET_NONE
+	move.b	Settings_coarse_walls,d0
+	bmi.b	.text			; not named: the built-in value
+	sne	Coarse_walls		; SET_YES: $FF, SET_NO: 0
+.text:
 	lea	m_einstellungen,a0
 	bsr	Settings_text
 	pea	m_einstellungen

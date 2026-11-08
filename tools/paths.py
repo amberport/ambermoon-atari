@@ -26,7 +26,7 @@ Keys and defaults:
                    ambermoon_gamedata/ambermon.snd
     AMBER_TOS      TOS image for Hatari (tools/hatari/teste.sh)
                    ambermoon_gamedata/TOS404.IMG
-    AMBER_OBJDUMP  m68k objdump; no default, am2cpu_lesen.objdump() searches
+    AMBER_OBJDUMP  m68k objdump; no default, am2cpu_read.objdump() searches
     AMBER_FALCON   the test Falcon's address for uIPtool (testpaket.py
                    falcon); no default, an address, not a path
     AMBER_DOWNLOAD NO forbids the build to fetch a missing Thalion's source

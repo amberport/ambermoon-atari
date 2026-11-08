@@ -2,7 +2,7 @@
 """adf_read.py -- read the files of an Amiga disk image (ADF, OFS or FFS).
 
 The game data of Thalion's disks and of Pyrdacor's 1.2x come as disk images:
-nine or ten ADF (or DMS, which xdms turns into ADF).  tools/game_files.py
+nine or ten ADF (or DMS, which tools/dms_to_adf.py turns into ADF).  tools/game_files.py
 puts the files of all disks into one Amberfiles/ folder, as Thalion's
 installer does.  This module only reads; it never writes into an image.
 

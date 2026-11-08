@@ -1,5 +1,34 @@
 # Release notes
 
+## 0.8.5
+
+### Faster 3D on both machines
+
+To speed up 3D, some of Thalion's 3D code is now replaced by our own. What changed, how much it gains and how to switch each part back to Thalion's code at build time is in [docs/17-deviations.md](docs/17-deviations.md).
+
+Optional: `COARSE_WALLS=YES` in `AMBER.INF` draws the walls coarser while the view moves and sharp again when it stands. Off by default.
+
+### ST colours
+
+- Combat: the tactic field is brown and no longer too bright.
+- Most map and combat palettes are reduced by how much of each colour the game shows, so large areas keep their colour.
+- Lyramion: the sea is blue instead of grey, and the greens are easier to tell apart.
+- Entering a town at night no longer gives wrong colours at dawn.
+- YM music: Grandfather's house stays silent, as the piece played there has no YM version. `AMBFILES\MUSIK_YM.INF` says which YM piece plays where and can be changed.
+- A palette editor page for corrections of your own: the ST build writes it to `build/palette_editor/index.html`.
+
+### Fixes and machines
+
+- 2D maps: after about ten minutes of standing still the party could not move any more. This bug is in the original; the port now works around it.
+- Mega STE at 16 MHz: the intro and the fantasy intro crashed. For now they switch to 8 MHz and set the clock back at the end; the game runs at the clock you set. Not tested on the hardware yet, and to be looked at again later.
+- Falcon with a CT60: first test. The game runs, but 3D is about as fast as on the 68030. TT-RAM (Alt-RAM) is not used yet.
+
+### Building and installing
+
+- Ready-built programs: `install.py` adds your own game files and, if you have it, the YM music. It needs only Python 3, takes the game as a zip or as disk images, and keeps your save games when you update.
+- Pillow is no longer needed. node is needed only for a check of the palette editor; without it the build warns.
+- `objdump` is found under more names, with hints for macOS.
+
 ## 0.8
 
 ### More versions of the game

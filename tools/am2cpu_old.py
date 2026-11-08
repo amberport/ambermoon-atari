@@ -17,7 +17,7 @@ their checks prove the result: a wrong range breaks a check.
 Relocations whose target has no 1.21 place keep their old value and get
 the target hunk UNKNOWN; a tool that meets one in a piece stops.
 
-    read_am2cpu(path) -> hunks as am2cpu_lesen.lies_hunks, virtual for 1.0x
+    read_am2cpu(path) -> hunks as am2cpu_read.load_hunks, virtual for 1.0x
     is_old(path)      -> True for an imploded (Thalion 1.0x) AM2_CPU
     read_old(path)    -> (old hunks, version), unpacked, 0-based
 """
@@ -27,7 +27,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ambtool import read_hunks                     # noqa: E402
-from imploder_exe import entpacke, ExeImploderError  # noqa: E402
+from imploder_exe import unpack_program, ExeImploderError  # noqa: E402
 
 UNKNOWN = 99
 VERSION = re.compile(rb"Ambermoon v(\d\.\d\d)\x00+(\d+-\d+-\d{4}) / (\w+)")
@@ -36,7 +36,7 @@ VERSION = re.compile(rb"Ambermoon v(\d\.\d\d)\x00+(\d+-\d+-\d{4}) / (\w+)")
 # The 46 places of part 1 of Text.amb (1.20/1.21 hunk 6, the same in both):
 # 1.2x fills them at start with pointers to the texts.  0-2 lie in hunk 6
 # (World_map_names), the others in hunk 4.  The virtual hunk 6 carries this
-# table, as am2cpu_auszug.py reads it there.  Numbers only.
+# table, as am2cpu_extract.py reads it there.  Numbers only.
 TEXT_PLACES = [
     (6, 0x104), (6, 0x108), (6, 0x10C),
     0x7D0E, 0x7D16, 0x7D1E, 0x7D26, 0x7D2E, 0x7D36, 0x7D5E, 0x7D62, 0x7D66,
@@ -54,7 +54,7 @@ class OldError(Exception):
 def version(hunks):
     """-> 'v1.07 26-3-1994 English' from the version lines, or None."""
     for h in hunks:
-        m = VERSION.search(h["daten"])
+        m = VERSION.search(h["data"])
         if m:
             return "v%s %s %s" % tuple(x.decode("latin1") for x in m.groups())
     return None
@@ -67,14 +67,14 @@ def is_old(path):
 def read_old(path, check=False):
     raw = read_hunks(open(path, "rb").read())
     try:
-        content, relocs = entpacke(raw)
+        content, relocs = unpack_program(raw)
     except (ExeImploderError, IndexError, KeyError, ValueError, StopIteration):
         if check:
             return None
         raise OldError("%s: not an imploded AM2_CPU" % path)
     hunks = []
     for i in sorted(content):
-        hunks.append({"typ": "?", "groesse": len(content[i]), "daten": content[i],
+        hunks.append({"type": "?", "size": len(content[i]), "data": content[i],
                       "reloc": {o: after - 1 for o, after in relocs[i]}})
     return hunks, version(hunks)
 
@@ -122,7 +122,7 @@ def _short_places(data, nh, place_map, old):
             continue
         end = min([a for a, b in ranges if a > nv] +
                    [m[0] for m in labels[i + 1:] if m[0] > nv] + [nv + SHORT_MAX])
-        source = old[oh]["daten"][ov:ov + end - nv]
+        source = old[oh]["data"][ov:ov + end - nv]
         if any(ov <= p < ov + len(source) for p in old[oh]["reloc"]):
             continue                      # pointers: not short data
         data[nv:nv + len(source)] = source
@@ -138,14 +138,14 @@ def virtual(old, place_map, sizes, types):
         reloc = {}
         for n, o, l, oh in place_map.get(nh, []):
             source = old[oh]
-            data[n:n + l] = source["daten"][o:o + l]
+            data[n:n + l] = source["data"][o:o + l]
             for p, th in source["reloc"].items():
                 if not o <= p < o + l:
                     continue
                 if p + 4 > o + l:
                     raise OldError("relocation at old %d:$%X crosses a range end" % (oh, p))
                 np_ = n + p - o
-                tv = int.from_bytes(source["daten"][p:p + 4], "big")
+                tv = int.from_bytes(source["data"][p:p + 4], "big")
                 target = _to_new(reverse, th, tv, labels)
                 if target is None:
                     reloc[np_] = UNKNOWN
@@ -160,8 +160,8 @@ def virtual(old, place_map, sizes, types):
                 h, v = place if isinstance(place, tuple) else (4, place)
                 data[4 * i:4 * i + 4] = v.to_bytes(4, "big")
                 reloc[4 * i] = h
-        hunks.append({"typ": types[nh], "groesse": size,
-                      "daten": bytes(data) if types[nh] != "BSS" else b"",
+        hunks.append({"type": types[nh], "size": size,
+                      "data": bytes(data) if types[nh] != "BSS" else b"",
                       "reloc": reloc})
     return hunks, unresolved
 
@@ -182,17 +182,17 @@ def gaps(hunks, h, begin, stop):
 
 def read_am2cpu(path, message=None):
     """AM2_CPU as hunks.  1.2x as it is; 1.0x virtual, laid out as 1.21."""
-    from am2cpu_lesen import lies_hunks
+    from am2cpu_read import load_hunks
     old_read = read_old(path, check=True)
     if old_read is None:
-        return lies_hunks(path)
+        return load_hunks(path)
     old, ver = old_read
     import am2cpu_old_maps as K
     if ver not in K.MAPS:
         raise OldError("AM2_CPU %s: no place table for this version (known: %s)"
                         % (ver, ", ".join(sorted(K.MAPS))))
     place_map = K.MAPS[ver]
-    if [h["groesse"] for h in old] != place_map["old_sizes"]:
+    if [h["size"] for h in old] != place_map["old_sizes"]:
         raise OldError("AM2_CPU %s: hunk sizes differ from the table" % ver)
     hunks, unresolved = virtual(old, place_map, K.HUNKS_121, K.TYPES_121)
     hunks[0]["virtual"] = ver
@@ -207,4 +207,4 @@ def read_am2cpu(path, message=None):
 if __name__ == "__main__":
     for path in sys.argv[1:]:
         h = read_am2cpu(path, print)
-        print(path, [(x["typ"], x["groesse"], len(x["reloc"])) for x in h])
+        print(path, [(x["type"], x["size"], len(x["reloc"])) for x in h])

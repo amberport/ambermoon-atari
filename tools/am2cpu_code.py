@@ -8,7 +8,7 @@ routines taken from AM2_CPU at build time.
 sind reiner Speichercode: Sie lesen Grafik, schreiben in Thalions
 Zwischenpuffer und fassen keine Amiga-Hardware an.  Statt sie nach dem
 Vertrag nachzuschreiben, nehmen wir Thalions uebersetzten Code, genau wie die
-Daten in am2cpu_auszug.py: **beim Bau herausgezogen, nie im Repository, nie
+Daten in am2cpu_extract.py: **beim Bau herausgezogen, nie im Repository, nie
 zur Laufzeit gelesen.**  Warum, und wie man zurueckgeht, steht in
 docs/02-3D-Renderpfad.md, Teil A7.
 
@@ -52,7 +52,7 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from am2cpu_lesen import NAMEN, amberfiles, lies_hunks, objdump   # noqa: E402
+from am2cpu_read import NAMES, amberfiles, load_hunks, objdump   # noqa: E402
 
 # (Einsprung, Hunk, von, bis, Tabellen [(von, bis)], Beleg).  Einsprung None:
 # das Stueck wird nur ueber Relokationen erreicht.
@@ -133,6 +133,25 @@ STUECKE = [
 # Weitere Einspruenge mitten in einem Stueck: (Hunk, Versatz) -> Name.
 EINSPRUENGE = {
     (0, 0x2A774): "Draw_floor",
+    # put_dpoly: Thalion's column loops, opaque and see-through (D3_WALLS.S).
+    (0, 0x29B56): "put_dpoly_opaque",
+    (0, 0x29D1E): "put_dpoly_seethru",
+    # draw_zoomshape: Thalion's horizontal scaling of an enlarged object, and
+    # the place behind its call (D3_WALLS.S, D12).
+    (0, 0x2A2C8): "draw_zoomshape_hscale",
+    (0, 0x2A3CE): "draw_zoomshape_hdone",
+}
+
+# DEVIATION (goal 1), docs/17-deviations.md D8, D12 (and Falcon Tempo's D9): an
+# instruction of 6 bytes, opcode word plus an absolute name, becomes
+# "jmp <ours>" (6 bytes); the piece stays as it is otherwise:
+# (Hunk, Versatz) -> (opcode, name, ours).  Anything else at that place stops
+# the build, and so does an entry the extraction never reached.
+EINGRIFFE = {
+    (0, 0x29B4C): (0x4A79, "seethru_flag", "Wall_columns"),   # tst.w seethru_flag
+    # D12: move.w <source height>,d5, the head of the enlarged object's
+    # horizontal scaling in draw_zoomshape.
+    (0, 0x2A3A8): (0x3A39, "Am2cpu_9_0E27E", "Zoom_columns"),
 }
 
 # Wortspruenge aus einem Stueck heraus, die bei uns an einer eigenen Marke
@@ -242,7 +261,7 @@ def dis(daten, von, bis, arch):
     return zeilen
 
 
-class Fehler(Exception):
+class Error(Exception):
     pass
 
 
@@ -278,18 +297,18 @@ def main():
     # Thalion's 1.0x is read as a virtual 1.21 (am2cpu_old.py); then the
     # 1.20 places are moved to this AM2_CPU (am2cpu_places.py), for 1.20
     # itself the shift is zero.
-    import am2cpu_old, am2cpu_auszug, am2cpu_places
+    import am2cpu_old, am2cpu_extract, am2cpu_places
     hunks = am2cpu_old.read_am2cpu(a.datei, lambda t: print("    " + t))
     if hunks[0].get("virtual"):
         # Thalion's put_dpoly fills the edge list itself, inline at the
         # place where 1.2x jumps to 11:$019E/$01B4; hunk 11 is 1.2x's.
         STUECKE[:] = [s for s in STUECKE if s[1] != 11]
-    for line in am2cpu_places.adapt_pieces(sys.modules[__name__], am2cpu_auszug, hunks):
+    for line in am2cpu_places.adapt_pieces(sys.modules[__name__], am2cpu_extract, hunks):
         print("    places: " + line)
     if hunks[0].get("virtual"):
         for name, h, von, bis, _, _ in STUECKE:
             for a, b in am2cpu_old.gaps(hunks, h, von, bis):
-                raise Fehler("piece %s: %d:$%05X..$%05X does not come from Thalion's AM2_CPU "
+                raise Error("piece %s: %d:$%05X..$%05X does not come from Thalion's AM2_CPU "
                        "(am2cpu_old_maps.py)" % (name or "%d:$%X" % (h, von), h, a, b))
 
     def im_stueck(h, v):
@@ -303,7 +322,7 @@ def main():
     befehle = {}                 # (Hunk, von) -> [(Adresse, Laenge, Text)]
     grenzen = set()              # (Hunk, Adresse) aller Befehle und Tabellen
     for name, h, von, bis, tabellen, _ in STUECKE:
-        daten = hunks[h]["daten"]
+        daten = hunks[h]["data"]
         teile, o = [], von
         for tv, tb in sorted(tabellen):
             teile.append((o, tv, "code"))
@@ -320,7 +339,7 @@ def main():
                 continue
             z30 = dis(daten, tv, tb, "m68k:68030")
             z00 = dis(daten, tv, tb, "m68k:68000")
-            wo = "%s %d:$%05X" % (name or "Stueck", h, tv)
+            wo = "%s %d:$%05X" % (name or "piece", h, tv)
             if (h, von) in CPU_020:
                 # Die erlaubten 020-Befehle fuer die Gegenprobe durch NOPs
                 # gleicher Laenge ersetzen; der Rest muss wie ueberall als
@@ -337,15 +356,15 @@ def main():
             if [z[:3] for z in p30] != [z[:3] for z in p00]:
                 for x, y in zip(p30, p00):
                     if x != y:
-                        raise Fehler("%s: kein 68000-Befehl bei $%05X: %s (68000: %s)"
+                        raise Error("%s: not a 68000 instruction at $%05X: %s (68000: %s)"
                                      % (wo, x[0], x[2], y[2]))
-                raise Fehler("%s: 68000 und 68030 lesen verschieden" % wo)
+                raise Error("%s: 68000 and 68030 read it differently" % wo)
             if not z30 or z30[-1][0] + z30[-1][1] != tb:
-                raise Fehler("%s: letzter Befehl ragt ueber $%05X" % (wo, tb))
+                raise Error("%s: the last instruction runs past $%05X" % (wo, tb))
             if (h, tb) in FORTSETZUNGEN and tb == bis:
                 pass
             elif not re.match(r"(rts|rte|jmp|bra[sw]?)\b", z30[-1][2]):
-                raise Fehler("%s: endet nicht mit rts/rte/jmp/bra: %s"
+                raise Error("%s: does not end with rts/rte/jmp/bra: %s"
                              % (wo, z30[-1][2]))
             for adr, n, text in z30:
                 grenzen.add((h, adr))
@@ -363,19 +382,19 @@ def main():
     def im_daten(h, v):
         return any(h == bh and bv <= v < bb for bh, bv, bb in DATEN_BLOECKE)
     daten_marken = {}            # (Hunk, Versatz) -> Name
-    for (h, v), n in NAMEN.items():
+    for (h, v), n in NAMES.items():
         if im_bss(h, v):
             bss[(h, v)] = n
     extern = set()
     for name, h, von, bis, tabellen, _ in STUECKE:
-        daten, reloc = hunks[h]["daten"], hunks[h]["reloc"]
+        daten, reloc = hunks[h]["data"], hunks[h]["reloc"]
         for o in sorted(r for r in reloc if von <= r < bis):
             zh = reloc[o]
             zv = struct.unpack(">I", daten[o:o + 4])[0]
-            wo = "%s %d:$%05X" % (name or "Stueck", h, o)
+            wo = "%s %d:$%05X" % (name or "piece", h, o)
             if im_stueck(zh, zv):
                 if (zh, zv) not in grenzen:
-                    raise Fehler("%s: Ziel %d:$%05X liegt mitten in einem Befehl"
+                    raise Error("%s: target %d:$%05X lies inside an instruction"
                                  % (wo, zh, zv))
                 ziel = marke(zh, zv)
                 marken.add((zh, zv))
@@ -383,32 +402,33 @@ def main():
                 ziel = bss.setdefault((zh, zv), marke(zh, zv))
             elif im_daten(zh, zv):
                 ziel = daten_marken.setdefault((zh, zv), marke(zh, zv))
-            elif (zh, zv) in NAMEN and hunks[zh]["typ"] != "CODE":
-                ziel = NAMEN[(zh, zv)]
+            elif (zh, zv) in NAMES and hunks[zh]["type"] != "CODE":
+                ziel = NAMES[(zh, zv)]
                 extern.add(ziel)
             else:
-                raise Fehler("%s: Relokation nach %d:$%05X hat keinen Namen "
-                             "(NAMEN in am2cpu_lesen.py oder BSS_BLOCK)"
+                raise Error("%s: relocation to %d:$%05X has no name "
+                             "(NAMES in am2cpu_read.py or BSS_BLOECKE)"
                              % (wo, zh, zv))
             if any(tv <= o < tb for tv, tb in tabellen):
-                raise Fehler("%s: Relokation in einer Tabelle" % wo)
+                raise Error("%s: relocation inside a table" % wo)
             reloc_ziel[(h, o)] = ziel
 
     # ---- 3. Spruenge, PC-relative Ziele, absolute Adressen ----
     def daten_h(h):
-        return hunks[h]["daten"]
+        return hunks[h]["data"]
     ausgang_bei = {}             # (Hunk, Befehl) -> Name der Marke
+    eingegriffen = set()         # EINGRIFFE that were reached
     umgebogen = []               # (Adresse, Befehl, Ziel) aus UMBIEGEN
     sprung = re.compile(r"(b[a-z]{1,2}[sw]?|db[a-z]{1,2}\s+%d\d,|bsr[sw]?)\s*0x([0-9a-f]+)$")
     for name, h, von, bis, _, _ in STUECKE:
         for adr, n, text in befehle[(h, von)]:
             if text is None:
                 continue
-            wo = "%s %d:$%05X %s" % (name or "Stueck", h, adr, text)
+            wo = "%s %d:$%05X %s" % (name or "piece", h, adr, text)
             if re.search(r":[wl]:[248]\)|\)@|%z", text):
-                raise Fehler("%s: Adressierungsart erst ab 68020" % wo)
+                raise Error("%s: addressing mode of the 68020 or later" % wo)
             if re.match(r"\.(short|long|byte)\b", text):
-                raise Fehler("%s: kein Befehl (Tabelle nicht angegeben?)" % wo)
+                raise Error("%s: not an instruction (table not listed?)" % wo)
             m = sprung.match(text)
             ziele = [int(t, 16) for t in re.findall(r"%pc@\(0x([0-9a-f]+)", text)]
             if m:
@@ -416,12 +436,12 @@ def main():
             if m and (h, int(m.group(2), 16)) in AUSGAENGE:
                 if n != 4 or daten_h(h)[adr + 1] != 0 or not re.match(
                         r"(b[a-z]{2}w|braw)\b", text):
-                    raise Fehler("%s: Ausgang nur als Wortsprung" % wo)
+                    raise Error("%s: an exit must be a word branch" % wo)
                 ausgang_bei[(h, adr)] = AUSGAENGE[(h, int(m.group(2), 16))]
                 ziele.remove(int(m.group(2), 16))
             for t in ziele:
                 if not (von <= t < bis) or (h, t) not in grenzen:
-                    raise Fehler("%s: Ziel $%05X ausserhalb des Stuecks" % (wo, t))
+                    raise Error("%s: target $%05X outside the piece" % (wo, t))
             if not m:
                 # Jede absolute Adresse braucht eine Relokation an ihrer
                 # Stelle oder einen Eintrag in UMBIEGEN.  Auch als Ziel
@@ -440,7 +460,7 @@ def main():
                     stellen = [x for x in range(adr + 2, adr + n - 3, 2)
                                if struct.unpack(">I", daten_h(h)[x:x + 4])[0] == wert]
                     if ziel is None or len(stellen) != 1:
-                        raise Fehler("%s: absolute Adresse ohne Relokation" % wo)
+                        raise Error("%s: absolute address without relocation" % wo)
                     reloc_ziel[(h, stellen[0])] = ziel
                     umgebogen.append((adr, text, ziel))
 
@@ -448,7 +468,7 @@ def main():
     z = [AUSGABE_KOPF, "\tSECTION\tProgram,code", "\teven"]
     bytes_ges = 0
     for name, h, von, bis, _, beleg in STUECKE:
-        daten = hunks[h]["daten"]
+        daten = hunks[h]["data"]
         z += ["", "; " + "-" * 70,
               "; %s -- AM2_CPU %d:$%05X..$%05X, %d Byte" % (
                   name or "(ohne Einsprung)", h, von, bis, bis - von),
@@ -458,7 +478,7 @@ def main():
         bytes_ges += bis - von
         for (eh, ev), en in EINSPRUENGE.items():
             if eh == h and von < ev < bis and (eh, ev) not in grenzen:
-                raise Fehler("Einsprung %s %d:$%05X liegt mitten in einem Befehl"
+                raise Error("entry %s %d:$%05X lies inside an instruction"
                              % (en, eh, ev))
         for adr, n, text in befehle[(h, von)]:
             if (h, adr) in EINSPRUENGE:
@@ -468,6 +488,17 @@ def main():
             if text is None:                    # Tabelle
                 z += bytes_zeilen(daten, h, adr, adr + n, marken, "Tabelle",
                                   lambda hh, v: marke(hh, v), erste=False)
+                continue
+            if (h, adr) in EINGRIFFE:
+                opcode, alt, neu = EINGRIFFE[(h, adr)]
+                if (n != 6 or daten[adr:adr + 2] != struct.pack(">H", opcode)
+                        or reloc_ziel.get((h, adr + 2)) != alt):
+                    raise Fehler("Eingriff %d:$%05X: dort steht nicht $%04X %s: %s"
+                                 % (h, adr, opcode, alt, text))
+                eingegriffen.add((h, adr))
+                # as dc: vasm must not shorten it
+                z.append("\tdc.w\t$4EF9\t; %05X  %s -> jmp %s" % (adr, text, neu))
+                z.append("\tdc.l\t%s" % neu)
                 continue
             if (h, adr) in ausgang_bei:
                 z.append("\tdc.w\t$%04X\t; %05X  %s -> %s" % (
@@ -506,8 +537,8 @@ def main():
               % (bh, bv, bb), "; Anordnung wie im Original.", "; " + "-" * 70,
               "\tSECTION\tFast_DATA,data", "\tcnop\t0,4"]
         if any(hunks[bh]["reloc"].get(o) is not None for o in range(bv, bb)):
-            raise Fehler("Datenblock %d:$%05X enthaelt Relokationen" % (bh, bv))
-        z += bytes_zeilen(hunks[bh]["daten"], bh, bv, bb,
+            raise Error("data block %d:$%05X holds relocations" % (bh, bv))
+        z += bytes_zeilen(hunks[bh]["data"], bh, bv, bb,
                           {k for k in daten_marken if k[0] == bh}, "Daten",
                           lambda hh, v: daten_marken[(hh, v)])
         z.append("\teven")
@@ -525,19 +556,23 @@ def main():
         z.append("\teven")
     z += ["", "\tSECTION\tProgram,code", ""]
 
+    fehlt = sorted(set(EINGRIFFE) - eingegriffen)
+    if fehlt:
+        raise Fehler("Eingriff nie erreicht: " + ", ".join("%d:$%05X" % k for k in fehlt))
+
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     with open(a.out, "w") as f:
         f.write("\n".join(z))
-    print("  AM2_CPU-Code: %d Stuecke, %d Byte, %d Relokationen, %d BSS-Namen"
+    print("  AM2_CPU code: %d pieces, %d bytes, %d relocations, %d BSS names"
           " -> %s" % (len(STUECKE), bytes_ges, len(reloc_ziel), len(bss), a.out))
-    print("    Thalions Namen: " + " ".join(sorted(extern)))
-    print("    68020-Befehle in CPU_020-Stuecken: %d" % anzahl_020[0])
-    print("    umgebogen (UMBIEGEN): %d Operanden" % len(umgebogen))
+    print("    Thalion's names: " + " ".join(sorted(extern)))
+    print("    68020 instructions in CPU_020 pieces: %d" % anzahl_020[0])
+    print("    redirected (UMBIEGEN): %d operands" % len(umgebogen))
     return 0
 
 
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except Fehler as e:
-        sys.exit("am2cpu_code: ABBRUCH: %s" % e)
+    except Error as e:
+        sys.exit("am2cpu_code: STOP: %s" % e)

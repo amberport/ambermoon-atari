@@ -145,7 +145,7 @@ dsl_l:	addq.l	#1,d0
 ; Behaelter nicht vorkommt (0:$2510A).  Das ist kein Diskfehler -- die
 ; laufen ueber Disk_error_handler mit "Nochmal?" --, sondern ein Fehler im
 ; Programm oder in den Daten; weiter geht es nicht.  Texte und die Namen
-; der Dateiarten kommen aus AM2_CPU (am2cpu_auszug.py).  Die Tabelle des
+; der Dateiarten kommen aus AM2_CPU (am2cpu_extract.py).  Die Tabelle des
 ; Originals (4:$4934) zeigt in Schritten zu 22 Byte auf die Namen; wir
 ; rechnen das aus.
 ;

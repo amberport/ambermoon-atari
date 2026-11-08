@@ -25,12 +25,18 @@ markers of D2, D4 and D5 in the 2D session's files stand on `main`
 | Nr | Goal | What | Machine | Decided | Marker |
 |---|---|---|---|---|---|
 | D1 | 2 | ST palettes reduced at build time, `STPAL.DAT` loaded once at start | ST/STE | user, 2026-10-17 | `ST_LIB.S`, `tools/build_st.sh`, `tools/st_palettes.py` |
-| D2 | 1, 2 | Library data, pure memory routines and the music player (operands bent onto shadow registers) of `AM2_CPU` taken at build time; `AM2_CPU` is never read at run time | both | user, 2026-09-27/28 | `tools/am2cpu_auszug.py`, `am2cpu_code.py`, `am2cpu_lesen.py`, `engine/engine.s`; open: 3D and music session |
+| D2 | 1, 2 | Library data, pure memory routines and the music player (operands bent onto shadow registers) of `AM2_CPU` taken at build time; `AM2_CPU` is never read at run time | both | user, 2026-09-27/28 | `tools/am2cpu_extract.py`, `am2cpu_code.py`, `am2cpu_read.py`, `engine/engine.s`; open: 3D and music session |
 | D3 | 1, 2 | Intro, extro, fantasy intro: Thalion's programs taken apart at build time and bent (K1, K2), own routines at the bottlenecks (K3, `Fee_ablauf`); the ST builds all three itself (below) | both | user, 2026-09-29 and 2026-10-04; ST 2026-10-22/24/29; Falcon fantasy intro 2026-10-30 | Falcon: `fantasy/FEE_SUP.S`, `fantasy/STARS_FALCON.S` (fantasy intro), the rest open (Falcon Tempo); ST: `fantasy_st/`, `intro_st/`, `extro_st/`, `tools/fantasy_st_data.py`, `tools/intro_st_program.py`, `tools/extro_st_program.py`, `tools/extro_st_data.py` |
 | D4 | 1, 2 | Our own start menu for `ENGINE.TOS` started alone; its four texts from `Ambermoon_intro` at build time | both | user, 2026-09-28 ("plain, for now") | `tools/intro_auszug.py`, `HULL/STARTMENUE.S` |
-| D5 | 2 | Positions of the library's texts inside `Text.amb` fixed at build time | both | finding 250 | `tools/textmarken.py`, `HULL/WORDS_SUP.S` |
+| D5 | 2 | Positions of the library's texts inside `Text.amb` fixed at build time | both | finding 250 | `tools/text_labels.py`, `HULL/WORDS_SUP.S` |
 | D6 | 1, 2 | YM music from Big Alec's SNDH file (`big_alec/ambermon.snd`, until 2026-10-27 the "Ambermoon Music Demo" disk), extracted at build time; Big Alec's player instead of Thalion's | ST, Falcon with `YM` | user, 2026-09-29 (docs/11 7.1) | open (music session) |
 | D7 | 2 | Game versions 1.01 and 1.07: `Text.amb`, `Objects.amb`, `Button_graphics` made from `AM2_CPU` at build time | both | user, 2026-11-02 | `tools/thalion_prepare.py` |
+| D8 | 1 | Our column loop for opaque 3D walls instead of Thalion's inner loop in `put_dpoly`; same picture, point for point | both | user, 2026-11-02 | `HULL/D3_WALLS.S`, `tools/am2cpu_code.py` (`EINGRIFFE`), `engine/engine.s` |
+| D9 | 1 | Texel loop of floor and ceiling (Falcon Tempo, E16); the number is kept for it, the text follows from Falcon Tempo after T74 | Falcon | open (Falcon Tempo) | open (Falcon Tempo: `HULL/D3_FLOOR.S`) |
+| D10 | 1 | Coarse walls while the view moves: opaque walls in pairs of columns from one texel; standing still, Thalion's picture; a switch, off by default. For it, the first instruction of Thalion's `Draw_dungeon` is turned into a jump to our `D3_frame` at run time | both | user, 2026-11-04 | `HULL/D3_WALLS.S`, `engine/engine.s` |
+| D11 | 1 | `Timer` capped at $1000 in the VBL, so that Thalion's word compare in `Make_2D_move` cannot go negative: the 2D map no longer stops taking moves after 9–11 minutes of standing still (a bug of the Amiga original) | both | user, 2026-11-06 | `HULL/LIBRARY.S` (`Bibliothek_vbl`) |
+| D12 | 1 | Our loop for the horizontal scaling of an enlarged 3D object instead of Thalion's in `draw_zoomshape`; same picture, point for point | both | user, 2026-11-07 | `HULL/D3_WALLS.S`, `tools/am2cpu_code.py` (`EINGRIFFE`, `EINSPRUENGE`) |
+| D13 | 1 | Our rotation of the 3D point grid and our sort of the faces instead of Thalion's `rotate_y` and `Quicksort` (`3D_MAP.S`); the first six bytes of each are turned into a jump at run time; same results, bit for bit | both | user, 2026-11-07 | `HULL/D3_WALLS.S` |
 
 Not deviations, for completeness: the 8.3 names of the game files (the
 contents stay as they are), the save-game folders `SAVE.nn` (copies of the
@@ -87,15 +93,42 @@ unweighted, exactly as `St_bauen` does at run time, unless
 (`<palette> method weighted N`, N = the floor in per cent). Weighted are
 the three worlds: `Palettes.amb` 1 (Lyramion), 2 (forest moon) and 3
 (Morag), at 1 %. The fire in Grandfather's house is red again (E80 and A20
-in registers of their own). The review sheet (`st_palettes.py sheet`)
-shows every palette whose pictures are counted under each method, with a
-button to choose it, and writes the method lines for the file; every ST
-build writes it (`build/st_palettes/index.html`). T99 passed.
+in registers of their own). The palette editor
+(`tools/palette_editor/palette_sheet.py`, since 2026-10-30 instead of the
+sheet of `st_palettes.py`) shows every palette whose pictures are counted
+under each method, with a button to choose it, and writes the method
+lines for the file (`build/palette_editor/index.html`). T99 passed. The
+user's choice of 2026-10-30 adds 21 palettes: weighted 1 for `pal` 19,
+21, 22, 24, 25, 26, 34, 35, 40 and `combat` 29; weighted 3 for `pal` 10,
+17, 18, 20, 27, 33, 37 and `combat` 28, 39, 42, 49.
+
+**What is counted since 2026-11-06** (user: "for the 3D worlds and the
+tactic screen there are no pictures"). Besides 2D map tiles, event pictures
+and combat backgrounds the tool now counts the 3D maps and the tactic field,
+so these palettes can take a weighted method too:
+- a 3D map counts as many points as a 2D map of its size (256 per square),
+  shared out like the 3D view: walls half, objects a tenth (an estimate;
+  the view changes with every step), the rest sky above the horizon line
+  (`D3_horizon`/`C3_horizon`, the horizon picture in it) and floor below,
+  as the ST draws them (no textured floor or ceiling). Each wall (with its
+  overlays put in, as `Load_3D_map_data` does) and each object counts by
+  how often it stands on the map.
+- `Tactic_pal`: the combat layout from line 133 down and each of the 35
+  tactical icons once.
+
+This changes no palette without a method line: `STPAL.DAT` stayed byte for
+byte the same (1.07, 11,448 bytes). The user's choice of 2026-11-06 with
+these pictures: weighted 1 for `pal` 4, 6, 11–16, 23 and `combat` 30, 31,
+36, 41, 43–48, weighted 3 for `pal` 7; `pal` 17, 18, 20, 27 and `combat`
+28 from weighted 3 to weighted 1 (T104 passed). `tactic` stays unweighted. `Main_pal` and `Automap_pal` still have
+nothing counted. Reading the 3D files the tool met entries `ambtool.py`
+gives back still encrypted (finding 249, docs/05c).
 
 **Why.** Speed and look. `St_bauen` costs about one second on 8 MHz for
 every new palette: at every map change, every combat, every event picture.
 And the result could not be corrected by hand: some palettes look wrong on
-the ST (tactic field too bright, world map too colourless, docs/05). The
+the ST (world map too colourless, docs/05; the too bright tactic field
+was a library error, finding 400 in docs/05c). The
 file can carry corrections, kept apart for the ST and the STE.
 
 **What stays at run time.** Thalion's colours still come from the original
@@ -128,7 +161,8 @@ one register.
 - `engine/src/HULL/ST_LIB.S`: `St_load_palettes`, `St_from_file`,
   `srp_hand`, entry fields `SE_HAND`, `SE_HWERT`, `SE_HSUMME`.
 - `engine/src/HULL/ST.S`: `Open_screen` calls `St_load_palettes`.
-- `tools/st_palettes.py`, `tools/st_palettes.txt`, `tools/build_st.sh`.
+- `tools/st_palettes.py`, `tools/st_palettes.txt`, `tools/build_st.sh`;
+  the choice on the page of `tools/palette_editor/palette_sheet.py`.
 
 **Going back.** Remove the `STPAL.DAT` line from `tools/build_st.sh` (and
 the file from the Atari): the engine falls back to `St_bauen` for every
@@ -139,7 +173,7 @@ palette. Corrections in `tools/st_palettes.txt` are then lost.
 **What.** `AM2_CPU` is Thalion's library, not released as source. The
 build extracts its data (`Main_pal`, `Tactic_pal`, `Automap_pal`, window
 icons, `Status_*`, `Button_up`/`Button_down`, `World_data`, font, mouse
-pointers, tables; `tools/am2cpu_auszug.py` → `build/am2cpu_daten.i`) and
+pointers, tables; `tools/am2cpu_extract.py` → `build/am2cpu_daten.i`) and
 its pure memory routines into the program: the 3D rasteriser
 (`put_dpoly` with the edge list, `draw_zoomshape`, `Insert_horizon`)
 including `Draw_floor`/`Draw_ceiling` (pieces in `CPU_020`, which may
@@ -164,17 +198,48 @@ The build checks every piece and stops at a relocation without a name, a
 jump out of the piece, a hardware address or an instruction the 68000
 does not know (`tools/am2cpu_code.py`; a hardware address passes only
 as an entry in `UMBIEGEN`). Where the pieces lie is in
-`tools/am2cpu_lesen.py` (`STUECKE`, `NAMEN`). Another game version means
+`tools/am2cpu_read.py` (`STUECKE`, `NAMEN`). Another game version means
 building again.
 
 **Why.** Library data that Thalion's code expects at fixed names; code
 that only works in memory is Thalion's own and better than a rewrite. The
 user ruled that this is not a copy (CLAUDE.md, goal 1).
 
-**Where.** `tools/am2cpu_auszug.py`, `tools/am2cpu_code.py`,
-`tools/am2cpu_lesen.py`, the INCLUDE lines in `engine/engine.s`.
+**Where.** `tools/am2cpu_extract.py`, `tools/am2cpu_code.py`,
+`tools/am2cpu_read.py`, the INCLUDE lines in `engine/engine.s`.
 
 **Going back.** docs/02 A7; CLAUDE.md "Daten".
+
+### AM2_CPU and the two goals (user, 2026-11-07)
+
+"grundsätzlich: am2_cpu liegt nicht streng in leitziel 1 und 2. [...] Also
+Daten vorbereiten. [...] lieber engine tos wie auch in am2_cpu" (user,
+2026-11-07). So what comes from `AM2_CPU` may be replaced or prepared at
+build time for speed, and data prepared from it go into `ENGINE.TOS` /
+`ENGINEST.TOS`, as the extracts of D2 do, not into a file of their own.
+Each such place still gets its Dn here and its marker, so that it stays
+known what is ours and what would be Thalion's.
+
+Data from the game files (walls, objects, overlays: `*Wall3D.amb`,
+`*Object3D.amb`, `*Overlay3D.amb`) are not `AM2_CPU`. They are loaded per
+map, and Thalion's `3D_MAP.S` paints the overlays onto the walls after
+loading (`Put_unmasked_MOVEP_block`, `Put_masked_MOVEP_block`, Thalion's
+source), so a wall's final picture exists only at run time. Goal 2 holds
+for them.
+
+**What of `AM2_CPU` is ours, what is Thalion's** (state 2026-11-07):
+
+| Piece of `AM2_CPU` | Thalion's, unchanged | ours | Dn | way back |
+|---|---|---|---|---|
+| `put_dpoly` | near plane, projection, edge list, clipping in x, the loop of see-through walls | the column loop of opaque walls; coarse walls while moving (switch, off) | D8, D10 | `-DWALLS_THALION=1`; `COARSE_WALLS=NO` |
+| `draw_zoomshape` | clipping, step tables, shrunk objects, mask, copy into the 3D buffer | the horizontal scaling of enlarged objects | D12 | `-DZOOM_THALION=1` |
+| `Draw_floor`, `Draw_ceiling` | Falcon: open (Falcon Tempo) | Falcon: the texel loop (open) | D9 | open |
+| `Draw_zoom_shape`, `Draw_zoom_silhouette` (combat) | head and zoom tables | the blitter part (`COMBAT_SUP.S`, hardware layer, no deviation) | – | – |
+| `Sa_spieler` (music) | the player | operands bent onto shadow registers (D2) | D2 | – |
+| `Insert_horizon`, `Recolour_block`, `Fade_colour`, `Lob_core`, the library data | all | – | D2 | – |
+
+Not `AM2_CPU` but Thalion's source (`3D_MAP.S`), bound at run time:
+the head of `Draw_dungeon` (D10), `rotate_y` and `Quicksort` (D13).
 
 ## D3: intro, extro, fantasy intro (goals 1 and 2)
 
@@ -442,21 +507,21 @@ both cases the choice goes through Thalion's `Intro_menu_choice`.
 **What.** In the German 1.20, `Text.amb` holds texts that the original
 keeps in `AM2_CPU`. The file is read whole at run time (`Lade_texte` in
 `HULL/WORDS_SUP.S`); only where `Race_names`, `Age_txt` and the like lie
-inside it is fixed at build time (`tools/textmarken.py` →
-`build/textmarken.i`, finding 250). `textmarken.py` checks the structure
+inside it is fixed at build time (`tools/text_labels.py` →
+`build/textmarken.i`, finding 250). `text_labels.py` checks the structure
 of the file and stops when it does not add up; another language or
 version means building again, as with the `AM2_CPU` extract. At run time
 `Lade_texte` checks only the unpacked length (`TEXT_LAENGE`); if it
 differs, `Textdaten` stays zero and every name is an empty text.
 
-**Where.** `tools/textmarken.py`, `Lade_texte` in `HULL/WORDS_SUP.S`.
+**Where.** `tools/text_labels.py`, `Lade_texte` in `HULL/WORDS_SUP.S`.
 
 ## D6: YM music (goals 1 and 2)
 
 **What.** Big Alec's YM version of the music is not one of Thalion's game
 files, and with it Big Alec's player runs instead of Thalion's: what
 sounds is Big Alec's arrangement, not Thalion's data from `Music.amb`.
-`tools/ym_auszug.py` takes it at build time from the SNDH archive's
+`tools/ym_extract.py` takes it at build time from the SNDH archive's
 `big_alec/ambermon.snd` (`AMBER_YMSNDH` through `tools/paths.py`, by default `ambermon.snd` in
 `ambermoon_gamedata/` next to the repository; until 2026-10-27
 from the MSA image of the "Ambermoon Music Demo"). The block (Big Alec's
@@ -474,7 +539,7 @@ repository or the delivery.
 but are not delivered). E4 (2026-10-10) only says that the STE plays the
 YM like the ST.
 
-**Where.** `tools/ym_auszug.py`, `engine/src/HULL/MUSIK_YM.S`
+**Where.** `tools/ym_extract.py`, `engine/src/HULL/MUSIK_YM.S`
 (`ym_install`), `tools/musik_ym.inf`; the call in the build scripts.
 
 **Going back.** Without the SNDH file the build goes on and the YM stays
@@ -498,3 +563,275 @@ verfügbaren sourcen, die es bei am2_cpu nicht gibt".
 
 **Going back.** Read them from `AM2_CPU` at run time; the places are those of
 `tools/am2cpu_old.py`.
+
+## D8: the column loop of opaque walls (goal 1)
+
+**What.** Thalion's `put_dpoly` from `AM2_CPU` keeps its near plane,
+projection, edge list and clipping in x. At its `tst.w seethru_flag` the build
+writes `jmp Wall_columns` (same length, `EINGRIFFE` in `tools/am2cpu_code.py`,
+which stops if another instruction is there). `Wall_columns` draws opaque
+walls: the columns sharing a longword of the buffer are gathered in a column of
+our own, and each row is written once, where Thalion does two read-modify-writes
+per point. Since 2026-11-08 two neighbouring columns go through the gather loop
+together and write that column once a row for both (docs/05c (A)). See-through
+walls go on in Thalion's loop. `3D_MAP.S` is untouched.
+The same code runs on Falcon and ST, with no machine switch.
+
+**Why.** The wall loop is the largest item of a 3D frame on the ST, 107 cycles a
+point (docs/05c, 3D profile). One code base for both machines was the user's
+condition.
+
+**Decided.** User, 2026-11-02: "los, dinge, die sinnvoll sind und eine Codebasis
+erlauben, bitte auch für falcon 3d umsetzen und dich mit falcon tempo abstimmen.
+damit wartbarkeit beider versionen einfacher bleibt". Before it, on goal 1: "das
+leitziel bezog sich vor allem auf die verfügbaren sourcen, die es bei am2_cpu
+nicht gibt". Thalion's loop is library code without source.
+
+**Same picture.** `VASM_EXTRA="-DWALLCHECK=1"` draws every wall both ways and
+compares the buffer with a row of margin on either side, then runs
+`WALLCHECK_RANDOM` invented walls through the whole of `put_dpoly`. The counters
+are `wchk_walls` and `wchk_bad`. Results in docs/05c, section "Wall loop".
+
+**Tested.** T102 (a)-(c) passed on the STE and the Falcon (user, 2026-11-05: "sieht
+alles gleich aus, ggf. ein vbl besser. bei beiden systemen").
+
+**Where.** `engine/src/HULL/D3_WALLS.S`, the table `EINGRIFFE` in
+`tools/am2cpu_code.py` (with its adaptation in `tools/am2cpu_places.py`), the
+include in `engine/engine.s`.
+
+**Going back.** `VASM_EXTRA="-DWALLS_THALION=1"` takes Thalion's loop in one
+build; it stays in the program for that. For good: delete `EINGRIFFE` and the two
+`put_dpoly_*` entries in `tools/am2cpu_code.py`, and the file and its include.
+
+## D10: coarse walls while the view moves (goal 1)
+
+**What.** While the player turns, walks or the camera height changes,
+`Wall_columns` (D8) draws opaque walls in pairs of columns: columns 2k and
+2k+1 of the 3D buffer, when both belong to the wall, both get the texel of
+the left one, and the right one is skipped (no texel, no steps). Its rows are
+those of the left one, so an edge steps in two points. A column at the end of
+a wall without its partner stays single. See-through walls, objects, floor and
+sky stay as they are. In the first frame in which the view no longer changes,
+the picture is Thalion's again, point for point (D8).
+
+To know that a new frame begins, `D3_frame` has to run once a frame, before the
+walls. `wc_bind` makes that so at run time, the first time a wall is drawn:
+the first instruction of Thalion's `Draw_dungeon` (`clr.w dface_anz`, 6 bytes)
+becomes `jmp D3_frame`, and `D3_frame` does that `clr` itself and goes on behind
+it. It checks the instruction first; if it is not what Thalion's source says,
+nothing changes and the walls stay full (`wc_hooked` stays 0). Thalion's file
+`3D_MAP.S` stays unchanged; the change is in memory only. (The call in
+`M3_DisUpd` cannot be bent: vasm made it a `bsr.w`, and `D3_frame` lies out of
+its reach.)
+
+**Why.** Walls are about half of a 3D frame on the ST; with D8 the same
+picture costs 87-95 cycles a point, and there is not much more in it
+(docs/05c). Pairs cost about a third less in the wall loop. Measured in Hatari
+(STE, 8 MHz), the same standing frames once full and once coarse
+(`COARSE_ALWAYS`, a measuring switch): Keller 10.75 → 9.71 VBL a frame,
+Spannenberg 10.99 → 9.09.
+
+**Decided.** User, 2026-11-04, on the proposal to draw walls in double
+width only while moving, as a switch: "2 als schalter"; on a renderer of our
+own: "3 ja, jedoch abweichungen in docs vermerken". After T102 (d), 2026-11-05
+(typed in the Falcon Tempo session, relayed): "T102CR funktioniert. ich würde das feature drin lassen. aber per default ausschalten und dann in amber.in als schalter einbauen". So it stays, off by default,
+switched in `AMBER.INF`.
+
+**The switch.** The byte `Coarse_walls` in `D3_WALLS.S`: 0 off (the default,
+Thalion's picture always), `$FF` on. `VASM_EXTRA="-DCOARSE_WALLS=1"` builds it
+on. The key `COARSE_WALLS=YES` in `AMBER.INF` is a wish to main (docs/05c). With the switch
+off, `wc_bind` changes nothing in Thalion's code. The first frame of a 3D map (the one
+Thalion's `M3_DisInit` draws, with `NPCs_off` set) is always full, even if the
+view differs from the map before (finding of the user, 2026-11-06; T103 passed the same day).
+
+**Checked.** `VASM_EXTRA="-DWALLCHECK=1 -DWALLCHECK_COARSE=1"` draws every
+wall Thalion's way and coarse, and asks: is every point but the right columns
+of pairs Thalion's (`wchk_bad`), and in every row where a pair changed, is the
+right point the left one (`wchk_pairbad`)? Results in docs/05c. On the
+hardware: T102 (d) passed (user, 2026-11-05).
+
+**Where.** `engine/src/HULL/D3_WALLS.S`: `wall_coarse` and what follows it,
+`D3_frame`, `wc_bind`; the include in `engine/engine.s`.
+
+**Going back.** Switch off: no coarse frame, no change in memory. For good:
+delete `wall_coarse` up to `wc_pairs_left`, `D3_frame`, `wc_bind`, the branch
+to `wall_coarse` and the call of `wc_bind` in `Wall_columns`, and the `\4` of
+`WC_COLUMN`.
+
+## D11: Timer capped, against a bug of the original (goal 1)
+
+**What.** `Bibliothek_vbl` caps Thalion's long `Timer` at `TIMER_CAP`
+($1000) right after `VblQ_handler`. Nothing else changes: below the cap the
+counter runs as before, and no register is touched.
+
+**Why.** Thalion's `Make_2D_move` (`MAP/2D_MAP.S`) asks whether a step is
+due with a word compare of a long counter:
+
+```
+move.l  Timer,d2
+move.w  #M2_movement_speed,d3   ; 8
+sub.w   Time_warp,d3
+cmp.w   d3,d2
+bmi.s   .Exit
+```
+
+On the 2D map the VBL queue (`Map2D_VblQ`, `Time_2D`) counts `Timer` up in
+every frame, and only a step clears it (`clr.l Timer`, line 851). After
+32768 frames of standing still the low word is negative, `bmi` is taken
+every time, and no move is accepted: no left click on the map, no arrow
+icon, no cursor key. The mouse, the animations and the other clicks go on.
+It lasts until the low word wraps again, another 32768 frames. At VGA
+(60 Hz) it begins after 9:06 minutes, at RGB (50 Hz) after 10:55. Reported
+by the user on the Falcon, 2026-11-06.
+
+It is Thalion's bug, not ours: `AM2_CPU` 1.07 en has the same `cmp.w` at
+0:$E2BC, and its VBL calls the queue in every frame (0:$2127A); the 1.2x
+source has it too. Finding 275.
+
+**Why $1000.** Any value from `M2_movement_speed` (8) up acts the same in
+2D. 3D clears `Timer` in every frame (`M3_DisUpd`, line 639) and clips it at
+`Max_3D_VBLs` (13) itself. No other code reads `Timer`. $1000 keeps the
+compare positive and is far above both.
+
+**Decided.** User, 2026-11-06, on the proposal to cap `Timer` in the
+library: "bitte umsetzen".
+
+**Checked.** Passed on the Falcon (user, 2026-11-06: "test bestanden"):
+standing still on a 2D map for more than 11 minutes, then walking with the
+mouse, an arrow icon and the cursor keys.
+
+**Where.** `engine/src/HULL/LIBRARY.S`: `TIMER_CAP` and the four lines
+behind `jsr VblQ_handler` in `Bibliothek_vbl`.
+
+**Going back.** Delete those four lines and `TIMER_CAP`; then the 2D map
+stops again after 9–11 minutes of standing still, as on the Amiga.
+
+## D12: the horizontal scaling of enlarged 3D objects (goal 1)
+
+**What.** Thalion's `draw_zoomshape` from `AM2_CPU` draws an object of the 3D
+view. When the object is taller on the screen than in its graphic, it first
+scales each source row across into `zoom_screen`, then makes a mask and copies
+the rows down into the 3D buffer. For the first step only, the build writes
+`jmp Zoom_columns` over its first instruction (`move.w <source height>,d5`, the
+same length; `EINGRIFFE` in `tools/am2cpu_code.py`, which stops if another
+instruction is there). `Zoom_columns` comes back behind Thalion's call of the
+step (`draw_zoomshape_hdone`), and Thalion makes the mask and copies.
+Clipping, the step tables, shrunk objects, the mask and the copy stay
+Thalion's. The same code runs on Falcon and ST, with no machine switch.
+
+`Zoom_columns` cuts the columns of each longword into segments: neighbouring
+columns that take the same source point (enlarged) or the next one (about
+1:1). Per row a segment costs one or two fetches, shifts and masks and one
+write, where Thalion does two read-modify-writes per point. Bits of a longword
+outside the object's columns become 0 where Thalion leaves what was there; the
+mask and the copy never take them (Thalion's edge masks).
+
+**Why.** With an object close by this step was the largest item of a 3D frame
+on the ST: 0.5 M cycles at 99 a point (docs/05c, "Objects in 3D"). Objects
+close by are about 1:1 across: Grandfather's cellar, a pillar one square ahead,
+63 columns from 63 source columns. Hatari STE, standing, VBL per frame:
+
+| Scene (docs/05c) | Thalion | D12 | the step itself |
+|---|---|---|---|
+| A, a pillar close by | 15.15 | 12.20 | 499 k → 54 k |
+| B, a pillar close by | 14.08 | 11.11 | 493 k → 54 k |
+| C, a pillar close by | 14.29 | 11.11 | 502 k → 54 k |
+| the well | 10.99 | 10.10 | 208 k → 106 k |
+| objects at middle distance | 11.76 | 11.11 | 69 k → 21 k |
+
+**Decided.** User, 2026-11-07, after the profile: "ja, los mit dem Umbau".
+Like D8, on goal 1 and `AM2_CPU` (user, 2026-11-02): "das leitziel bezog sich
+vor allem auf die verfügbaren sourcen, die es bei am2_cpu nicht gibt".
+
+**Same picture.** `VASM_EXTRA="-DZOOMCHECK=1"` runs both for every enlarged
+object: Thalion's step into `zoom_screen`, kept; ours over a pattern; then the
+object's points compared (its columns, its source rows; what the mask and the
+copy take). Before the first object `ZOOMCHECK_RANDOM` (5000) invented objects
+go through Thalion's whole `draw_zoomshape`: source width 16-128, height
+4-120, taller on the screen by 1-256 rows, width 1-256, random place, mask
+on or off, random clip window. Counters `zchk_objects`, `zchk_bad`, the first
+difference in `zchk_first`. Results in docs/05c, section "Objects in 3D".
+
+**Tested.** T106 passed (user, 2026-11-07: "T106 funktioniert"; machines not
+named): `T106ST.TOS` and `T106F.TOS`, release builds of 2fdf451.
+
+**Where.** `engine/src/HULL/D3_WALLS.S` (`Zoom_columns`, `zoom_ours`,
+`Zoom_check`), the tables `EINGRIFFE` and `EINSPRUENGE` in
+`tools/am2cpu_code.py` (`draw_zoomshape_hscale`, `draw_zoomshape_hdone`).
+
+**Going back.** `VASM_EXTRA="-DZOOM_THALION=1"` takes Thalion's step in one
+build; it stays in the program for that. For good: delete the `EINGRIFFE`
+entry for `Zoom_columns`, the two `draw_zoomshape_*` entries in `EINSPRUENGE`
+and the part "Enlarged objects" of `D3_WALLS.S`.
+
+## D13: rotation of the point grid and sort of the faces (goal 1)
+
+**What.** Two routines of Thalion's source file `3D_MAP.S`, which is goal 1
+proper (not `AM2_CPU`), run as ours:
+
+- `rotate_y`, called once a frame by `Rotate_points`, turns the point grid of
+  the view (up to 16 × 16 points, `patt_size` apart) by `Y_angle`, with four
+  `muls` per point. Our `Rotate_grid` takes the products of the first point
+  as Thalion does and then adds per point and per row: the products of
+  neighbouring grid points differ by `patt_size` × sin or cos, the sums are
+  exact integers, so after Thalion's `asl.l #2` and `swap` every word is
+  Thalion's. The offsets (`xoffset`, `zoffset`, cleared by `Rotate_points`)
+  go into the high word, the same word arithmetic.
+- `Quicksort`, called once a frame by `Draw_dungeon`, sorts `wall_list0`
+  (faces and objects by depth). Thalion's limit for the quicksort part is the
+  whole list ("immer bubblesort"), so it always sorts by insertion:
+  ascending by the signed long in front of each 8-byte entry, stable. The
+  list comes mostly in falling order, the slow case. Our `Sort_faces` is a
+  merge sort, stable as well, so the order is the same, equal keys included.
+
+Thalion's file stays unchanged. `Geo_bind` turns the first six bytes of
+`rotate_y` and of `Quicksort` into `jmp` to ours, at run time, the first time
+a wall is drawn (from `Draw_faces`, so the change counts from the next
+frame); only if the bytes are what Thalion's source assembles to there, else
+Thalion's routines stay (`geo_hooked`: bit 0 rotation, bit 1 sort). Each of
+ours does the six bytes it covers itself where it hands back to Thalion's:
+another caller (a0 ≠ a1, a count that is not the grid; entries not 8 bytes
+or more than 200) gets Thalion's routine. The same code runs on Falcon and
+ST, with no machine switch.
+
+**Why.** Speed in 3D on the ST, the next step after D12 (docs/05c, "Speed in
+3D, step 0"). Hatari STE, standing, cycles per frame:
+
+| | Thalion | D13 |
+|---|---|---|
+| sort (`qsb_*` / `sf_*`), about 48 entries, about 630 shifts | 75 k | 37 k |
+| rotation of the grid | 30 k | 9 k |
+| scene A, VBL per frame | 12.20 | 11.90 |
+| scene B, VBL per frame | 11.11 | 10.87 |
+| scene D, VBL per frame | 9.62 | 9.62 (Hatari counts whole VBL) |
+
+**Decided.** User, 2026-11-07: "wir gehen mal alles an. abweichung von
+leitziel 1 ist hier ok", then "ja, beide Rechner" and "ja, los mit 2a + 2b".
+
+**Same results.** `VASM_EXTRA="-DGEOMCHECK=1"` runs both for every call:
+Thalion's on a copy of the input, kept; ours; then the output compared,
+every word of the grid, every byte of the list. Before the first call
+`GEOMCHECK_ROT` (2000) invented grids (1-16 × 1-16 points, any place within
+±8192, any angle word, offsets now and then) and `GEOMCHECK_SORT` (300)
+invented lists (2-200 entries; keys with many equal ones, any signed long,
+falling with bumps, rising in small steps; the second long is the entry's
+number, so a change in the order of equal keys shows). Counters
+`geo_rot_calls`, `geo_rot_fast`, `geo_rot_bad`, `geo_sort_calls`,
+`geo_sort_bad`, the first difference in `geo_first`. Results in docs/05c.
+
+**Tested.** T107 passed (user, 2026-11-07: "t107 sieht gut aus"), release
+builds of 5f3da3e on the STE and the Falcon, 1.07 en.
+
+**Where.** `engine/src/HULL/D3_WALLS.S`, the part "The geometry of a 3D frame"
+(`Geo_bind`, `Rotate_grid`, `Sort_faces`, `Rotate_check`, `Sort_check`) and
+the call of `Geo_bind` at the head of `Wall_columns`.
+
+**Going back.** `VASM_EXTRA="-DGEOM_THALION=1"` binds nothing, Thalion's two
+routines run. For good: delete the call at the head of `Wall_columns` and the
+part "The geometry of a 3D frame" of `D3_WALLS.S`.
+
+**Open.** Like `wc_bind` (D10), `Geo_bind` writes code without flushing the
+instruction cache. Thalion's two routines ran earlier in the same frame, and
+by their next call a 68030 has long dropped them from its 256 bytes; on a
+68060 (CT60) the cache is 8 KB. Part of the cache point deferred until the whole CT60 adaptation
+(docs/05c).

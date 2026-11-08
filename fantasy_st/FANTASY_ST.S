@@ -143,6 +143,18 @@ Machine_check:
 ; The counterpart of Thalion's start ($000-$10E: switch the OS off).
 ; ***************************************************************************
 Fairy_setup:
+	; Mega STE: 8 MHz without cache for the whole run, switched here, at
+	; IPL 3 and outside any interrupt (T109-T111).  Tb_border counts its
+	; delay in bus cycles at 8 MHz; switching back to 16 MHz inside the
+	; Timer B interrupt garbled the next bus cycle on the Mega STE (bus and
+	; address errors), the same switch from normal code (control panel)
+	; works.  The teardown switches back.
+	tst.b	Is_mste
+	beq.b	.clock
+	move.b	MSTE_CLOCK.w,Old_mste_clock
+	clr.b	MSTE_CLOCK.w
+	st	Ab_clock
+.clock:
 	move.w	#Getrez,-(sp)
 	trap	#14
 	addq.l	#2,sp
@@ -304,7 +316,7 @@ Fairy_teardown:
 	move.l	Old_mouse_vector,16(a0)
 	sf	Ab_maus
 .mode:	tst.b	Ab_modus
-	beq.b	.out
+	beq.b	.clock
 	sf	Ab_modus
 	move.b	Old_sync,SYNC_MODE.w
 	move.w	Old_mode,-(sp)
@@ -319,11 +331,17 @@ Fairy_teardown:
 	movem.l	Old_colours,d0-d7
 	movem.l	d0-d7,ST_PAL.w
 	tst.b	Im_notausgang
-	bne.b	.out
+	bne.b	.clock
 	pea	Text_cursor_on
 	move.w	#Cconws,-(sp)
 	trap	#1
 	addq.l	#6,sp
+.clock:	tst.b	Ab_clock		; the Mega STE's clock, as at the start
+	beq.b	.out
+	sf	Ab_clock
+	tst.b	Im_notausgang		; not in the emergency exit: it runs in an
+	bne.b	.out			; exception, where the switch is unsafe
+	move.b	Old_mste_clock,MSTE_CLOCK.w
 .out:	rts
 
 NOTAUS_ABRAEUMEN	equ	Fairy_teardown
@@ -1126,11 +1144,7 @@ Tb_border:
 	move.w	#$2700,sr
 	movem.l	d0-d5/a0-a1,-(sp)
 	clr.b	MFP_TBCR.w		; one border event per frame
-	tst.b	Is_mste
-	beq.b	.sync
-	move.b	MSTE_CLOCK.w,Old_mste_clock
-	clr.b	MSTE_CLOCK.w		; 8 MHz, no cache: DELAY in bus cycles
-.sync:	lea	VID_CNT.w,a0
+	lea	VID_CNT.w,a0
 	bsr	Screen_base
 	addq.l	#2,a0			; mid and low byte, for movep.w
 	move.w	d4,d3			; base, low word
@@ -1166,10 +1180,7 @@ Tb_border:
 .too_late:
 	addq.l	#1,Border_missed
 .done:
-	tst.b	Is_mste
-	beq.b	.out
-	move.b	Old_mste_clock,MSTE_CLOCK.w
-.out:	bclr	#0,MFP_ISRA.w
+	bclr	#0,MFP_ISRA.w
 	movem.l	(sp)+,d0-d5/a0-a1
 	rte
 
@@ -1224,6 +1235,7 @@ Old_tbcr:		ds.b	1
 Old_tbdr:		ds.b	1
 Old_iera:		ds.b	1
 Old_imra:		ds.b	1
+Ab_clock:		ds.b	1	; Mega STE clock switched to 8 MHz (setup)
 Old_mste_clock:	ds.b	1
 Is_ste:		ds.b	1
 Is_mste:		ds.b	1

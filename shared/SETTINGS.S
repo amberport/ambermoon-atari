@@ -2,7 +2,7 @@
 ; SETTINGS.S -- AMBER.INF, the one settings file for every program (E17).
 ;
 ; A module for the game, the intros and the loader.  No SECTION: the code
-; and its few bytes of results land in the code section of whoever includes
+; and its results and file buffer land in the code section of whoever includes
 ; it, so each program has its own copy.  Pure 68000, no macros, only GEMDOS
 ; (trap #1).  Its labels start with Settings_ (public) or set_ (inside).
 ;
@@ -11,12 +11,14 @@
 ;	; Ambermoon settings
 ;	MUSIC=DSP        ; OFF, DSP, CPU, YM
 ;	PLAIN_ST=NO      ; NO: as detected; YES: an STE runs like a plain ST
+;	COARSE_WALLS=NO  ; YES: coarse 3D walls while the view moves (D10)
 ;
 ; One KEY=VALUE per line, case does not matter, blanks around "=" are
 ; allowed.  ";" or "#" starts a comment, to the end of the line.  A key
 ; that is missing keeps SET_NONE: the program takes its own default.  An
 ; unknown key or value is skipped; the first one is kept for the screen
-; (Settings_bad).  Read are the first SET_MAX bytes.
+; (Settings_bad).  Read are the first SET_MAX bytes, into set_file, not
+; onto the stack: Settings_read may run on TOS's small supervisor stack.
 ;
 ; A new setting is one entry in set_table and one result byte below; its
 ; values count from 0 in the order of the table.
@@ -33,9 +35,11 @@
 ;   Settings_music     SET_OFF, SET_DSP, SET_CPU, SET_YM (= MI_* in
 ;                      HULL/MUSIK_SUP.S)
 ;   Settings_plain_st  SET_NO, SET_YES
+;   Settings_coarse_walls  SET_NO, SET_YES
 ; ***************************************************************************
 
-SET_MAX		equ	512		; bytes of AMBER.INF that are read
+SET_MAX		equ	2048		; bytes of AMBER.INF that are read (512 cut the
+					; template's comments short, T41)
 SET_TOKEN	equ	16		; a key or value, 15 characters and the null
 SET_TEXT_LEN	equ	80		; the buffer for Settings_text
 
@@ -44,20 +48,21 @@ SET_OFF		equ	0		; MUSIC
 SET_DSP		equ	1
 SET_CPU		equ	2
 SET_YM		equ	3
-SET_NO		equ	0		; PLAIN_ST
+SET_NO		equ	0		; PLAIN_ST, COARSE_WALLS
 SET_YES		equ	1
 
 ; ---------------------------------------------------------------------------
 ; Settings_read -- a0 = file name.  d0 = 0 read, -1 no file.
-; Frame on the stack: the file, then the key and the value of one line.
+; Frame on the stack: the key and the value of one line; the file is in
+; set_file.
 Settings_read:
 	movem.l	d1-d7/a0-a6,-(sp)
-	lea	-SET_MAX-2*SET_TOKEN(sp),sp
+	lea	-2*SET_TOKEN(sp),sp
 	move.l	a0,a2
 	lea	Settings(pc),a3
-	lea	(sp),a4			; the file
-	lea	SET_MAX(sp),a5		; the key
-	lea	SET_MAX+SET_TOKEN(sp),a6	; the value
+	lea	set_file(pc),a4		; the file
+	lea	(sp),a5			; the key
+	lea	SET_TOKEN(sp),a6	; the value
 	sf	Settings_found-Settings(a3)
 	clr.b	Settings_bad-Settings(a3)
 	move.l	a2,-(sp)
@@ -140,7 +145,7 @@ Settings_read:
 .done:	moveq	#0,d0
 	bra.s	.out
 .none:	moveq	#-1,d0
-.out:	lea	SET_MAX+2*SET_TOKEN(sp),sp
+.out:	lea	2*SET_TOKEN(sp),sp
 	movem.l	(sp)+,d1-d7/a0-a6
 	rts
 
@@ -307,6 +312,9 @@ set_table:
 	dc.w	Settings_plain_st-Settings
 	dc.b	"PLAIN_ST",0,"NO",0,"YES",0,0
 	even
+	dc.w	Settings_coarse_walls-Settings
+	dc.b	"COARSE_WALLS",0,"NO",0,"YES",0,0
+	even
 	dc.w	-1
 
 set_t_head:	dc.b	"AMBER.INF:",0
@@ -318,6 +326,9 @@ set_t_empty:	dc.b	"=",0
 Settings:
 Settings_music:		dc.b	SET_NONE
 Settings_plain_st:	dc.b	SET_NONE
+Settings_coarse_walls:	dc.b	SET_NONE
 Settings_found:		dc.b	0	; set: the file was there
 Settings_bad:		ds.b	SET_TOKEN	; the first unknown key, or empty
+	even
+set_file:		ds.b	SET_MAX		; the file as read
 	even

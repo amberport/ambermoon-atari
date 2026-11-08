@@ -14,3 +14,13 @@
 # The whole ATARI/ of this worktree is not laid over main's: it carries
 # older Falcon programs.  The ST engine goes under its own name instead and
 # is started directly; the game files are the same as main's.
+
+# T114: Lyramion (pal 1) as the user set it in the palette editor: OKLab,
+# UI ramp 3 registers, colour 21 a register of its own.
+
+# T111: Mega STE, intro and fairy at 8 MHz for their whole run (T109,
+# T110 failed); the crash reader now clears the record after reading.
+# deferred to 2026-11-11 (no Mega STE): T111	st	build/t111/INTROST.TOS	INTROST.TOS
+# deferred to 2026-11-11 (no Mega STE): T111	st	build/t111/FANTSYST.TOS	FANTSYST.TOS
+# deferred to 2026-11-11 (no Mega STE): T111	st	build/t111/BOMBEN.TOS	BOMBEN.TOS
+

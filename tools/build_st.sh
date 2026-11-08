@@ -42,15 +42,14 @@ note "ENGINEST.TOS $(( $(wc -c < build/st/ENGINEST.TOS) / 1024 )) KB, 68000, -DZ
 # here, from Palettes.amb and AM2_CPU, with the hand corrections in
 # tools/st_palettes.txt; ENGINEST.TOS loads STPAL.DAT once at start.
 step "ST palettes"
-# The check page needs Pillow, the game does not.
-if python3 -c 'import PIL' 2>/dev/null; then
-	python3 tools/st_palettes.py build -o build/st/STPAL.DAT
-	python3 tools/palette_editor/palette_sheet.py
-	note "STPAL.DAT, sheet build/palette_editor/index.html"
-else
-	python3 tools/st_palettes.py build --no-sheet -o build/st/STPAL.DAT
-	warn "no Pillow (python3-pil): no palette check page, the game is complete"
-	note "STPAL.DAT"
+# The palette editor's page is for the developer, the game does not need it.
+# It needs no Pillow (the page computes the grouping itself, st_group.js),
+# only node for its check of st_group.js against st_palettes.py.
+python3 tools/st_palettes.py build -o build/st/STPAL.DAT
+python3 tools/palette_editor/palette_sheet.py
+note "STPAL.DAT, palette editor build/palette_editor/index.html"
+if ! command -v node >/dev/null 2>&1; then
+	warn "no node: the palette editor's grouping is not checked against st_palettes.py, the game is complete"
 fi
 
 step "Game files and delivery"

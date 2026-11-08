@@ -3,8 +3,9 @@
 ## Game files at run time
 
 Thalion's game files lie in `AMBFILES\` as they ship, only renamed to
-8.3 by the build (the name table in `FILES_SUP.S` is the other side of
-that renaming; both change together). Nothing is converted in advance.
+8.3 by the build (`tools/game_names.py`; the name table in `FILES_SUP.S`
+is the other side of that renaming; both change together). Nothing is
+converted in advance.
 
 ```
 jsr Load_subfile         d1 = Thalion's file number, d0 = entry
@@ -29,7 +30,8 @@ hundred call sites use them, and the claim counters behave as in the
 original: Thalion's `Out_of_memory` lives on them.
 
 **Save games** as in the original: working files in `AMBFILES\`,
-`SAVE.00` is "new game", `SAVE.01`–`SAVE.10` are JH-encrypted, `SAVES`
+`SAVE.00`–`SAVE.10` as Thalion ships them are plain and all "new game",
+what the game saves into `SAVE.01`–`SAVE.10` is JH-encrypted, `SAVES`
 holds the names and the last save game. Whether the game continues or
 starts a new quest is decided by Thalion's `Init_program` from
 `Intro_menu_choice`, which the loader or our start menu sets.
@@ -37,10 +39,11 @@ starts a new quest is decided by Thalion's `Init_program` from
 The build delivers `Saves` **unchanged** (user, 2026-09-30). Its last save
 game is 0, so Thalion's `Init_program` puts up the character editor
 (`Chared_Mod`) for a new game, as on the Amiga (finding 261). To start a
-test at a later place, `tools/spielstand_setzen.py` moves a copy of a
+test at a later place, `tools/set_save_game.py` moves a copy of a
 save game to another map, and with `--saves` it writes a copy of `SAVES`
-whose last save game is that one, so "continue" loads it. It changes only
-copies of the save game files, never the game code.
+whose last save game is that one, so "continue" loads it. The copy stays
+in the form of its source, plain or JH-encrypted. It changes only copies
+of the save game files, never the game code.
 
 File names in our strings are written with a double backslash,
 `"AMBFILES\\"`, `"SAVE.00\\PARTYCHR.AMB"`: the build assembles with
@@ -49,7 +52,7 @@ start an escape.
 
 The library's texts (messages, names, templates) are in `Text.amb`.
 `Lade_texte` loads it at start; where each text lies in it is computed
-at build time (`tools/textmarken.py`, `build/textmarken.i`).
+at build time (`tools/text_labels.py`, `build/textmarken.i`).
 
 ## Music: three ways to the speaker
 
@@ -82,7 +85,7 @@ sound registers saved at start, so the desktop clicks again afterwards.
 `MAIN.S`) chooses at start: `OFF`, `DSP` (default), `CPU`, `YM`. The ST
 always plays YM; there only `OFF` counts. The YM block (player and
 pieces) comes at build time from the SNDH archive's
-`big_alec/ambermon.snd` (`tools/ym_auszug.py --sndh`, `AMBER_YMSNDH`).
+`big_alec/ambermon.snd` (`tools/ym_extract.py --sndh`, `AMBER_YMSNDH`).
 The SNDH version drives the player with MFP Timer A and B, but Timer B
 is the ST's raster, so the tool binds its 36 bytes back to Timer D, as in
 the Music Demo, checking each against its expected value. The result must

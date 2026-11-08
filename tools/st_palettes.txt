@@ -6,7 +6,7 @@
 # that file once at start (docs/17-deviations.md, D1).  This file holds only
 # what differs from the computed result.  Look first, then correct:
 #
-#   python3 tools/st_palettes.py sheet            build/st_palettes/index.html
+#   python3 tools/palette_editor/palette_sheet.py -> build/palette_editor/index.html
 #   build/st_palettes/listing.txt                 every palette in numbers
 #
 # Both contain Thalion's colours and graphics and stay in build/.
@@ -26,7 +26,21 @@
 #                                without this line) or "weighted N" (by how
 #                                many points of each colour the game shows,
 #                                every colour at least N %, 1 without N);
-#                                choose with the buttons of the sheet
+#                                choose with the buttons of the palette
+#                                editor's page; either may end in "oklab":
+#                                colour distances in OKLab, hue counting
+#                                double, instead of RGB (e.g. "weighted 1
+#                                oklab"; build time only, St_bauen stays RGB)
+#   <palette> own <c> [<c> ...]  these colours (1..25) form a register of
+#                                their own, no other colour joins it; a
+#                                colour of the same value goes with them;
+#                                one line per register
+#   <palette> ramp <n>           Thalion's UI ramp 26..31 takes at most n
+#                                registers (1..5, default 5); the rest go to
+#                                the map colours
+#
+# The palette editor's page sets method, own and ramp lines by click and
+# shows the result at once.
 #
 # <palette> is one of
 #   pal N        Palettes.amb N (maps, event pictures)
@@ -44,10 +58,56 @@
 #   tactic ste 3 666
 #   tactic st 3 333
 
-# Methods (default unweighted, user 2026-10-29): the worlds stay weighted,
+# Methods (default unweighted, user 2026-10-29; 3D and combat palettes
+# weighted, user 2026-11-06): the worlds stay weighted,
 # their large areas need it (Lyramion: sea blue instead of grey, the greens
-# apart); unweighted elsewhere keeps the rare accents (the fire in
-# Grandfather's house).
-pal 1 method weighted 1      # Lyramion, maps 1-256
+# apart); unweighted elsewhere keeps the rare accents.  Pal 7 (= 8, 9,
+# Grandfather's house) stays unweighted, so the kitchen fire keeps a
+# register of its own (user, 2026-11-06, after weighted 3; the editor shows
+# that kitchen).
+main method unweighted oklab
+pal 1 method weighted 1 oklab # Lyramion, maps 1-256
+pal 1 ramp 4
+pal 1 own 21
 pal 2 method weighted 1      # forest moon, maps 300-335
 pal 3 method weighted 1      # Morag, maps 513-528
+pal 4 method weighted 1
+pal 6 method weighted 1
+pal 10 method weighted 3
+pal 11 method weighted 1
+pal 12 method weighted 1
+pal 13 method weighted 1
+pal 14 method weighted 1
+pal 15 method weighted 1
+pal 16 method weighted 1
+pal 17 method weighted 1
+pal 18 method weighted 1
+pal 19 method weighted 1
+pal 20 method weighted 1
+pal 21 method weighted 1
+pal 22 method weighted 1
+pal 23 method weighted 1
+pal 24 method weighted 1
+pal 25 method weighted 1
+pal 26 method weighted 1
+pal 27 method weighted 1
+pal 33 method weighted 3
+pal 34 method weighted 1
+pal 35 method weighted 1
+pal 37 method weighted 3
+pal 40 method weighted 1
+combat 28 method weighted 1
+combat 29 method weighted 1
+combat 30 method weighted 1
+combat 31 method weighted 1
+combat 36 method weighted 1
+combat 39 method weighted 3
+combat 41 method weighted 1
+combat 42 method weighted 3
+combat 43 method weighted 1
+combat 44 method weighted 1
+combat 45 method weighted 1
+combat 46 method weighted 1
+combat 47 method weighted 1
+combat 48 method weighted 1
+combat 49 method weighted 3

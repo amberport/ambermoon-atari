@@ -607,11 +607,11 @@ Big Alec/Delta Force, written with his tracker "Triplex", converted from
 Steinwachs' Sonic Arranger pieces according to the demo's text. Code
 Grazey/PHF and GGN/KUA.
 
-**Extract:** `tools/ym_auszug.py`, the file comes through `AMBER_YMSNDH`
+**Extract:** `tools/ym_extract.py`, the file comes through `AMBER_YMSNDH`
 or `--sndh`.
 - The block starts at $D6 of the SNDH file. The SNDH version drives the
   player with MFP Timer A and Timer B; the tool binds the 36 bytes of
-  Timer B back to Timer D (table `ZURUECK`, every byte checked against
+  Timer B back to Timer D (table `BIND_BACK`, every byte checked against
   its old value), because Timer B is the ST's raster.
 - The result is checked by SHA-256: the first 241 630 bytes of the block
   the build took from the demo disk until 2026-10-27 (tested on
@@ -679,15 +679,20 @@ Daraus folgt:
 - `+8` schreibt IERA/IMRA und IERB/IMRB als Ganzes zurück. `ym_stop`
   übernimmt davon nur die Bits von Timer A und D, damit Timer B (der
   ST-Raster) bleibt, wie er vor dem Stop war.
-- **`+4` hält Timer C an** (Befund im ersten Hatari-Test, Nutzer
-  2026-10-10: nur ein stehender Pfeifton, je Stück anders hoch). Es stellt
-  Timer D, indem es `TCDCR` ganz überschreibt (`move.b d1,$FFFFFA1D`,
-  `d1` = 0–6, im Block bei `$67A` und `$7B8`), und löscht damit die Bits
-  4–6, die Timer C steuern. Damit stand `_hz_200`, mit ihm unser Takt, und
-  Timer A/D hielten die letzte Note. Die Demo merkt das nicht, sie ruft
-  `+4` aus ihrem VBL. `ym_takt` setzt Timer C nach jedem `+4` zurück.
-  Angenommen: Der kurze Halt verschiebt den Takt unhörbar, und das
-  Neuschreiben mit demselben Teiler stört Timer D nicht.
+- **`+4` stops Timer C, but only because we rebind it to Timer D** (found
+  in the first Hatari test, user 2026-10-10: only a steady whistle, a
+  different pitch per piece). It sets Timer D by overwriting `TCDCR`
+  whole (`move.b d1,$FFFFFA1D`, `d1` = 0-6, in the block at `$67A` and
+  `$7B8`), which clears bits 4-6, Timer C's. Then `_hz_200` stood still,
+  our tick with it, and Timer A/D held the last note. In the SNDH the
+  same two places write `TBCR` (`$FA1B`), Timer B's own register; Timer C
+  runs on, and the SNDH header even asks for it (`TC50`: call `play` at
+  50 Hz from Timer C; `FLAG~aby`: Timer A, Timer B, YM). Only the demo,
+  with Timer D like us, stops Timer C, and does not notice, since it calls
+  `+4` from its VBL. We need Timer D because Timer B is the ST's raster
+  (`BIND_BACK` in `tools/ym_extract.py`), so `ym_takt` sets Timer C back
+  after each `+4`. Assumed: the short stop shifts the tick inaudibly, and
+  writing the same divisor again does not disturb Timer D.
 - Die Interruptroutinen wählen das YM-Register, ohne das gewählte zu
   retten. Wer den YM in zwei Schritten anspricht (wählen, dann schreiben),
   kann dazwischen umgelenkt werden: TOS beim Tastenklick, bei der Glocke
@@ -702,27 +707,26 @@ Schritte einmal `+4`, höchstens zwei je Bild; lag das Spiel länger fest
 Schirm mit 50, 60 oder 71 Hz läuft. Ist Thalions `Music_flag` aus, hält es
 an.
 
-**Offen, neu durchdenken (Nutzer 2026-10-10): einfacher, ohne Timer C?**
-Der Nutzer möchte die Architektur einfacher halten. Die Frage ist, ob wir
-es wie die Demo machen: Timer C bleibt aus, solange der YM spielt, und
-`+4` hängt nur am VBL, ohne `_hz_200` und ohne `ym_takt`. Die Demo kommt
-damit aus, weil sie Tastatur (`$118`, `$FFFC02`) und VBL (`$70`) selbst
-bedient und `_hz_200` nie liest.
-- *Dafür:* Timer C (200 Hz, dazu TOS mit `etv_timer` 50-mal je Sekunde)
-  kostet vermutlich deutlich mehr als die rechnerisch geschätzten 1 %:
-  ein Interrupt bei vollem Bus und ausgelasteter CPU. Auf dem ST liegen
-  alle MFP-Interrupte auf derselben Stufe; Timer C kann also den Timer-B-
-  Raster verzögern. Auf dem Falcon stört er die Caches. Beides angenommen,
-  nicht gemessen.
-- *Dagegen, und was dann zu lösen wäre:* Die Tastenwiederholung kommt von
-  TOS aus Timer C (wir lesen über `Bconin`); laut Nutzer braucht das Spiel
-  sie aber nicht (2026-10-10). Die Disketten- und
-  Festplattentreiber messen ihre Zeitgrenzen mit `_hz_200`, Timer C
-  bräuchte also beim Laden Strom. Die Bildrate ist nicht überall 50 Hz
-  (Falcon in T9 59,6 Hz, ST mit 60 Hz); dann bräuchte der VBL-Takt einen
-  Zähler über die einmal gemessene Bildrate.
-- Entscheidet der Nutzer nach T10. Hängt die Entscheidung an den Kosten,
-  lohnt eine Messung mit und ohne Timer C (ST, Hatari-Profiler).
+**Decided (user, 2026-11-04, docs/05c E42): Timer C stays on.** The
+question (user, 2026-10-10) was whether to do it like the demo: Timer C
+off while the YM plays, `+4` only from the VBL, without `_hz_200` and
+without `ym_takt`.
+- *Cost, measured* (Hatari STE, EmuTOS, Spannenberg standing, 1000 VBL,
+  2026-11-04): the Timer C interrupt with TOS's timer chain (`etv_timer`
+  every fourth tick) takes about 1,200-1,300 cycles per VBL, about 0.8 %
+  of the CPU, about 0.1 VBL per 3D frame. For comparison: TOS's VBL
+  handler about 2,300, Big Alec's Timer A/D (the YM sound itself) about
+  6,400. Not measured: real TOS 2.06 (the AES may hang more on
+  `etv_timer`), and whether Timer C visibly delays the Timer B raster
+  (the user has reported nothing of the kind).
+- *Against switching it off:* the disk and hard disk drivers time out
+  through `_hz_200`, so Timer C would need to run while loading; the
+  frame rate is not 50 Hz everywhere (Falcon 59.6 Hz in T9, ST at 60 Hz),
+  so a VBL tick would need a counter; and the demo is no model for it:
+  its stop is a side effect of Timer D (above), the SNDH relies on Timer
+  C.
+- Way back, if a hardware measurement ever shows more: the demo's way as
+  described, with the three points above solved.
 
 **Laden:** `ym_install` (aus `Musik_install`, Supervisor) lädt
 `MUSIK_YM.BIN` mit `Malloc`, vor Thalions Speicherverwaltung, und
@@ -749,7 +753,7 @@ YM was silent then, and the test package, which leaves `*.INF` out, played
 no music on the ST.
 
 **Build:** when the build finds the SNDH file, it writes the block with
-`ym_auszug.py` as `MUSIK_YM.BIN` into `ATARI/AMBFILES` (241 630 bytes),
+`ym_extract.py` as `MUSIK_YM.BIN` into `ATARI/AMBFILES` (241 630 bytes),
 the same file for Falcon and ST. It looks in `AMBER_YMSNDH` through
 `tools/paths.py` (variable, `build.cfg`, else `ambermon.snd` in
 `ambermoon_gamedata/` next to the repository). Without the

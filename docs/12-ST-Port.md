@@ -57,19 +57,32 @@ relaxed for it, and the deviation is documented
 - Method per palette (user, 2026-10-29): unweighted is the default again
   (as `St_bauen`, the fire in the house red); only the worlds, pal 1-3,
   are weighted at 1 %. A line `<palette> method weighted N` or
-  `... method unweighted` in `tools/st_palettes.txt` chooses; the review
-  sheet shows each palette under each method with a button and writes
+  `... method unweighted` in `tools/st_palettes.txt` chooses; the palette
+  editor (`tools/palette_editor/palette_sheet.py`, Docs) shows each palette under each method with a button and writes
   the lines (a whole `st_palettes.txt` to download).
+- Counted since 2026-11-06 (user: no pictures for the 3D worlds and the
+  tactic screen): the 3D maps (walls with overlays, objects, horizon, sky
+  and floor, shared out like the 3D view, D1) and the tactic field (combat
+  layout from line 133, the 35 tactical icons). 3D palettes and `tactic`
+  can now take a weighted method; none has one yet, so `STPAL.DAT` is
+  unchanged. Only `Main_pal` and `Automap_pal` stay without counts.
 - Hand corrections: `tools/st_palettes.txt` (colour into another
   register; register value per machine). The repository holds only these;
   the defaults are averages of Thalion's colours and stay in `build/`.
-- To look at and choose: every ST build (and `python3 tools/st_palettes.py sheet`) writes
-  `build/st_palettes/index.html` (per palette Thalion's colours, table,
-  STE and ST registers, a picture from the game: 2D map in the layout,
-  event picture, combat background, 3D maps only the layout; Thalion, then
-  STE and ST under each method, unweighted, weighted 1 % and 3 %).
-  `build/st_palettes/listing.txt` in numbers. Both contain Thalion's
-  graphics: not for the repository, not for publishing.
+- To look at and choose: the palette editor
+  `python3 tools/palette_editor/palette_sheet.py` writes
+  `build/palette_editor/index.html` (per palette Thalion's colours, then
+  STE and ST under each method, unweighted, weighted 1 % and 3 %, next to
+  pictures from the game; since 2026-10-30 it replaces the sheet
+  `st_palettes.py` wrote, which now only points to it). Since
+  2026-11-06 also: per 3D palette a mock-up of the 3D view (sky, horizon,
+  floor, the most common wall) and all its textures; for `tactic` the tactic
+  field with its icons; for the worlds (pal 1-3) the whole world as an
+  overview with a cut at full size. The textures and the worlds are
+  recoloured by the page itself, with a button per method and machine.
+  `build/st_palettes/listing.txt` (written by every ST build) in numbers.
+  Both contain Thalion's graphics: not for the repository, not for
+  publishing.
 - Run time (`ST_LIB.S`): `St_load_palettes` from `Open_screen`;
   `St_from_file` before `St_bauen` fills an entry from the file, for the
   palette exactly as it is. `srp_hand` scales the file values with the
@@ -315,7 +328,9 @@ dem Register ihrer Farbe. Tempo ungemessen.
 Vom Nutzer in Hatari geprüft (2026-10-10, STE, 4 MB, 8 MHz, `T15ENG.TOS`):
 keine Grafikfehler, Farben im Kampfbild in Ordnung, der Zeiger flüssiger.
 Das Taktikfeld ist sehr hell; das kommt mit den Spezialpaletten
-(zurückgestellt). Danach T15 (a) und (c) vom Nutzer getestet
+(zurückgestellt). *(2026-11-06: not the palette. `Get_block_orig` gave back
+the wrong colour for Thalion's three-plane save of the tactic field,
+finding 400 in docs/05c, fixed, T104.)* Danach T15 (a) und (c) vom Nutzer getestet
 (2026-10-10): Dungeons, Kämpfe, Stadt, Gasthaus, Landkarte in Ordnung.
 Offen nur T15 (b), der Absturztest.
 

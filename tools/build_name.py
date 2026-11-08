@@ -33,7 +33,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ambtool import unpack                     # noqa: E402
 import paths                                   # noqa: E402
-import textmarken                              # noqa: E402
+import text_labels                              # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -63,9 +63,9 @@ def game_files_version(amberfiles):
     kind, parts = unpack(open(os.path.join(amberfiles, "Text.amb"), "rb").read())
     d = bytes(parts[0])
     with contextlib.redirect_stdout(sys.stderr):     # its notes
-        labels, _ = textmarken.zerlegen(d)
+        labels, _ = text_labels.parse_text_amb(d)
     lines = []
-    for name in textmarken.VERSION:
+    for name in text_labels.VERSION:
         o = next(o for o, n in labels.items() if name in n)
         lines.append(d[o:d.index(b"\0", o)])
     return lines

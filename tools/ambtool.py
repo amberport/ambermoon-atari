@@ -1,48 +1,48 @@
 #!/usr/bin/env python3
 """
-ambtool.py -- entpackt Ambermoon-Datendateien (Amiga-Original).
+ambtool.py -- unpacks Ambermoon's data files (Amiga original).
 
-Formate
+Formats
 =======
 
-JH-Verschlüsselung (Jurie Horneman)
-    16-Bit-XOR mit fortlaufendem Schlüssel.  Der Schlüsselstrom ist ein
-    linearer Kongruenzgenerator:
+JH encryption (Jurie Horneman)
+    16-bit XOR with a running key.  The key stream is a linear congruential
+    generator:
 
         k  <-  (k * 17 + 87) mod 65536
 
-    Der Startschlüssel ist
-      * bei Einzeldateien:  word[0] XOR word[1]   (word[0] == "JH" == $4A48),
-        Nutzdaten ab Offset 4
-      * bei AMNC-Containern: die Eintragsnummer (ab 1)
+    The start key is
+      * for single files:  word[0] XOR word[1]   (word[0] == "JH" == $4A48),
+        payload from offset 4
+      * for AMNC containers: the entry number (from 1)
 
-    Der Generator wurde hier aus `Palettes.amb` zurückgerechnet: 49 Einträge
-    à 32 Farben, jede Farbe im Format $0RGB, also High-Nibble immer 0.  Das
-    ergibt 6272 Bit Randbedingung — (17, 87) ist die einzige Lösung.
+    The generator was worked out here from `Palettes.amb`: 49 entries of 32
+    colours, each in the format $0RGB, so the high nibble is always 0.  That
+    gives 6272 bits of constraint; (17, 87) is the only solution.
 
-LOB-Kompression (Lothar Becks)
-    LZ77/LZSS-Variante.  Header: "\\x01LOB", dann ein u32, dessen oberstes
-    Byte konstant 6 ist und dessen untere 24 Bit die entpackte Größe angeben.
-    Optional folgt ein u32 mit der gepackten Größe (in Blöcken innerhalb von
-    Containern und bei JH-umhüllten Dateien).
+LOB compression (Lothar Becks)
+    An LZ77/LZSS variant.  Header: "\\x01LOB", then a u32 whose top byte is
+    always 6 and whose lower 24 bits give the unpacked size.  Optionally a u32
+    with the packed size follows (in blocks inside containers and in files
+    with a JH wrapper).
 
-    Die Daten bestehen aus Chunks: 1 Headerbyte, danach 8 Anweisungen.  Jedes
-    Headerbit (MSB zuerst) bedeutet 1 = Literalbyte, 0 = Rückverweis.  Ein
-    Rückverweis sind zwei Bytes `AB CD`: Länge = B + 3 (also 3..18),
-    Abstand = $ACD (12 Bit).
+    The data consists of chunks: 1 header byte, then 8 instructions.  Each
+    header bit (MSB first) means 1 = literal byte, 0 = back reference.  A back
+    reference is two bytes `AB CD`: length = B + 3 (so 3..18),
+    distance = $ACD (12 bits).
 
-Container
-    AMNC   u16 Anzahl, u32 Größen[], dann Blöcke; Blöcke JH-verschlüsselt
-           mit Schlüssel = Eintragsnummer.  "C" = crypted.
-    AMNP   wie AMNC, Blöcke aber LOB-gepackt; Größe 0 = leerer Eintrag.
-    AMBR   roh, unkomprimiert.
-    AMPC   wie AMBR, Blöcke optional LOB-gepackt.
+Containers
+    AMNC   u16 count, u32 sizes[], then blocks; blocks JH-encrypted with
+           key = entry number.  "C" = crypted.
+    AMNP   like AMNC, but the blocks LOB-packed; size 0 = empty entry.
+    AMBR   raw, not compressed.
+    AMPC   like AMBR, blocks optionally LOB-packed.
 
-Amiga-Hunk-Executable
-    Beginnt mit $000003F3.  Wird gebraucht für Fantasy_intro,
-    Ambermoon_intro, Ambermoon_extro und AM2_CPU — die sind nicht gepackt.
+Amiga hunk executable
+    Starts with $000003F3.  Needed for Fantasy_intro, Ambermoon_intro,
+    Ambermoon_extro and AM2_CPU; those are not packed.
 
-Quellen: Amberworld (Oliver Gantert), Pyrdacor/Ambermoon FileSpecs.
+Sources: Amberworld (Oliver Gantert), Pyrdacor/Ambermoon FileSpecs.
 """
 
 import argparse
@@ -60,7 +60,7 @@ JH_ADD = 87
 
 
 def jh_decrypt(data, key):
-    """16-Bit-XOR mit LCG-Schlüsselstrom."""
+    """16-bit XOR with an LCG key stream."""
     out = bytearray(len(data))
     k = key & 0xFFFF
     n = len(data) & ~1
@@ -91,13 +91,13 @@ def lob_decompress(src, decoded_size):
     n = len(src)
     while di < decoded_size:
         if si >= n:
-            raise ValueError(f"LOB: Eingabe zu kurz (bei {di}/{decoded_size})")
+            raise ValueError(f"LOB: input too short (at {di}/{decoded_size})")
         header = src[si]
         si += 1
         for _ in range(8):
-            if (header & 0x80) == 0:                      # Rückverweis
+            if (header & 0x80) == 0:                      # back reference
                 if si + 1 >= n:
-                    raise ValueError("LOB: abgeschnittener Rückverweis")
+                    raise ValueError("LOB: back reference cut off")
                 b0 = src[si]
                 si += 1
                 length = (b0 & 0x0F) + 3
@@ -105,7 +105,7 @@ def lob_decompress(src, decoded_size):
                 si += 1
                 mi = di - offset
                 if mi < 0:
-                    raise ValueError(f"LOB: Rückverweis vor Pufferanfang ({mi})")
+                    raise ValueError(f"LOB: back reference before the buffer ({mi})")
                 for _ in range(length):
                     if di >= decoded_size:
                         break
@@ -114,7 +114,7 @@ def lob_decompress(src, decoded_size):
                     mi += 1
             else:                                          # Literal
                 if si >= n:
-                    raise ValueError("LOB: abgeschnittenes Literal")
+                    raise ValueError("LOB: literal cut off")
                 out[di] = src[si]
                 si += 1
                 di += 1
@@ -129,13 +129,13 @@ def lob_raw_size(block):
 
 
 def lob_unpack(block):
-    """Entpackt einen LOB-Block. Gibt (daten, entpackte_groesse).
+    """Unpacks a LOB block.  Returns (data, unpacked size).
 
-    Nach dem 8-Byte-Header folgt optional ein u32 mit der gepackten Größe.
-    Er ist genau dann vorhanden, wenn er exakt `len(block) - 12` ergibt.
+    After the 8-byte header optionally a u32 with the packed size follows.  It
+    is there exactly when it gives `len(block) - 12`.
     """
     if not block.startswith(LOB_MAGIC):
-        raise ValueError("kein LOB-Block")
+        raise ValueError("not a LOB block")
     iterations = block[0]
     raw_size = lob_raw_size(block)
     body = 8
@@ -172,12 +172,13 @@ def identify(data):
 
 
 def unpack_entry(block, index, kind):
-    """Ein Containerblock -> Klartext.  index ist 1-basiert.
+    """A container block -> plain text.  index starts at 1.
 
-    AMNP ist der interessante Fall: nur die ersten 8 Byte (LOB-Magic und
-    entpackte Größe) liegen im Klartext.  Alles danach ist JH-verschlüsselt
-    mit der Eintragsnummer als Startschlüssel, und beginnt mit einem u32,
-    das die gepackte Größe angibt — sie entspricht immer `Blockgröße - 12`.
+    AMNP is the interesting case: only the first 8 bytes (LOB magic and
+    unpacked size) are plain.  Everything after them is JH-encrypted with the
+    entry number as the start key, and starts with a u32 giving the packed
+    size, which is always `block size - 12`.  An AMNP entry without LOB is
+    four zero bytes and then the encrypted data; it comes back without them.
     """
     if not block:
         return b""
@@ -192,10 +193,17 @@ def unpack_entry(block, index, kind):
             csize = struct.unpack(">I", body[:4])[0]
             if csize != len(block) - 12:
                 raise ValueError(
-                    f"AMNP-Eintrag {index}: gepackte Größe {csize} passt nicht "
-                    f"zu Blockgröße {len(block)}")
+                    f"AMNP entry {index}: packed size {csize} does not fit "
+                    f"block size {len(block)}")
             return lob_decompress(body[4:], raw_size)
         return lob_unpack(block)[0]
+
+    # An unpacked AMNP entry: four zero bytes in plain, then the data
+    # JH-encrypted with the entry number, as Load_subfile and
+    # Packkopf_aufloesen (engine/src/HULL/FILES_SUP.S) take it.  Until
+    # 2026-11-08 it came back as it is in the file (finding 249).
+    if kind == "AMNP" and len(block) > 8 and block[:4] == bytes(4):
+        return jh_decrypt(block[4:], index)
 
     if block[:2] == b"JH":
         w0, w1 = struct.unpack(">HH", block[:4])
@@ -205,8 +213,8 @@ def unpack_entry(block, index, kind):
 
 
 def unpack(data):
-    """Datei -> Liste von Einträgen (bytes).  Einzeldateien ergeben eine Liste
-    mit genau einem Element."""
+    """File -> list of entries (bytes).  Single files give a list with exactly
+    one element."""
     kind = identify(data)
 
     if kind == "JH":
@@ -234,7 +242,7 @@ def unpack(data):
 
 
 # --------------------------------------------------------------------------
-# Amiga-Hunks
+# Amiga hunks
 # --------------------------------------------------------------------------
 
 HUNK_NAMES = {0x3E9: "CODE", 0x3EA: "DATA", 0x3EB: "BSS"}
@@ -242,12 +250,12 @@ MEM_NAMES = {0: "ANY", 1: "CHIP", 2: "FAST"}
 
 
 def read_hunks(data):
-    """Zerlegt ein Amiga-Hunk-Executable. Gibt Liste von dicts."""
+    """Splits an Amiga hunk executable.  Returns a list of dicts."""
     if data[:4] != HUNK_MAGIC:
-        raise ValueError("kein Amiga-Hunk-Executable")
+        raise ValueError("not an Amiga hunk executable")
     u = lambda o: struct.unpack(">I", data[o:o + 4])[0]
     o = 4
-    while u(o) != 0:                      # Namensliste residenter Bibliotheken
+    while u(o) != 0:                      # name list of resident libraries
         o += 4 * (u(o) + 1)
     o += 4
     count = u(o)
@@ -296,26 +304,26 @@ def read_hunks(data):
 
 
 # --------------------------------------------------------------------------
-# Grafik: plane-sequentielles Amiga-Format -> Indexbild
+# Graphics: Amiga plane format -> index picture
 # --------------------------------------------------------------------------
 
 def planar_to_indices(data, width, planes, height=None, layout="line"):
-    """Amiga-Planar -> Farbindizes.
+    """Amiga planar -> colour indices.
 
-    layout="line" (der tatsächlich benutzte Fall): zeilenverschachtelt.  Pro
-    Bildzeile stehen die Plane-Zeilen direkt hintereinander:
+    layout="line" (the case actually used): interleaved by line.  For each
+    picture line the plane lines stand right after each other:
 
-        Zeile 0: Plane0 Plane1 Plane2 Plane3 Plane4
-        Zeile 1: Plane0 Plane1 ...
+        line 0: plane0 plane1 plane2 plane3 plane4
+        line 1: plane0 plane1 ...
 
-    layout="plane": Plane 0 komplett, dann Plane 1 usw. (IFF-ACBM-Stil).
+    layout="plane": all of plane 0, then plane 1 and so on (IFF ACBM style).
 
-    Amberworld beschreibt das Format als ACBM-ähnlich, das ist aber falsch:
-    der Vergleich mit der Referenz in `specs/picbinary.txt` (Portraits.amb,
-    Eintrag 1) ergibt bei "line" exakte Übereinstimmung, bei "plane"
-    168 von 170 Abweichungen.
+    Amberworld describes the format as similar to ACBM, but that is wrong: the
+    comparison with the reference in `specs/picbinary.txt` (Portraits.amb,
+    entry 1) gives an exact match for "line", and 168 of 170 differences for
+    "plane".
 
-    Beides ist NICHT das Atari-Layout, das die Planes wortweise verzahnt.
+    Neither is the Atari layout, which interleaves the planes by word.
     """
     stride = width // 8
     if height is None:
@@ -341,7 +349,7 @@ def planar_to_indices(data, width, planes, height=None, layout="line"):
 
 
 def parse_palette(data):
-    """32 Farben à 16 Bit im Format $0RGB -> Liste von (r,g,b) 8 Bit."""
+    """32 colours of 16 bits in the format $0RGB -> list of (r,g,b) 8 bits."""
     n = len(data) // 2
     out = []
     for i in range(n):
@@ -378,10 +386,10 @@ def cmd_info(a):
             k, entries = unpack(data)
             total = sum(len(e) for e in entries)
             empty = sum(1 for e in entries if not e)
-            line += (f"  {len(entries):>4} Eintr.  {total:>9} entpackt"
-                     + (f"  ({empty} leer)" if empty else ""))
+            line += (f"  {len(entries):>4} entries  {total:>9} unpacked"
+                     + (f"  ({empty} empty)" if empty else ""))
         except Exception as e:
-            line += f"  FEHLER: {e}"
+            line += f"  ERROR: {e}"
         print(line)
 
 
@@ -397,7 +405,7 @@ def cmd_extract(a):
         p = os.path.join(a.outdir, f"{base}_{i + 1:03d}.bin")
         open(p, "wb").write(e)
         n += 1
-    print(f"{a.file}: {kind}, {n} Einträge nach {a.outdir}")
+    print(f"{a.file}: {kind}, {n} entries to {a.outdir}")
 
 
 def cmd_hunks(a):
@@ -405,7 +413,7 @@ def cmd_hunks(a):
     hunks = read_hunks(data)
     print(f"{a.file}: {len(hunks)} Hunks")
     for h in hunks:
-        print(f"  {h['index']:2}  {h['type']:4}  {h['size']:>8} Byte  "
+        print(f"  {h['index']:2}  {h['type']:4}  {h['size']:>8} bytes  "
               f"{MEM_NAMES.get(h['mem'], '?')}")
     if a.outdir:
         os.makedirs(a.outdir, exist_ok=True)
@@ -422,7 +430,7 @@ def cmd_palettes(a):
     data = open(a.file, "rb").read()
     kind, entries = unpack(data)
     pals = [parse_palette(e) for e in entries if e]
-    print(f"{len(pals)} Paletten à {len(pals[0])} Farben")
+    print(f"{len(pals)} palettes of {len(pals[0])} colours")
     if a.json:
         json.dump([[list(c) for c in p] for p in pals], open(a.json, "w"))
         print(f"  -> {a.json}")
@@ -466,8 +474,8 @@ def cmd_gfx(a):
             save_png(os.path.join(a.outdir, name + ".png"), idx, a.width, hh,
                      palette)
             made += 1
-    print(f"{a.file}: {made} Bilder ({a.width}px, {a.planes} Planes) "
-          f"nach {a.outdir}")
+    print(f"{a.file}: {made} pictures ({a.width}px, {a.planes} planes) "
+          f"to {a.outdir}")
 
 
 def main():
@@ -476,34 +484,34 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    i = sub.add_parser("info", help="Format und Inhalt anzeigen")
+    i = sub.add_parser("info", help="show format and content")
     i.add_argument("files", nargs="+")
     i.set_defaults(func=cmd_info)
 
-    e = sub.add_parser("extract", help="Container entpacken")
+    e = sub.add_parser("extract", help="unpack a container")
     e.add_argument("file")
     e.add_argument("outdir")
     e.set_defaults(func=cmd_extract)
 
-    h = sub.add_parser("hunks", help="Amiga-Hunk-Executable zerlegen")
+    h = sub.add_parser("hunks", help="split an Amiga hunk executable")
     h.add_argument("file")
     h.add_argument("outdir", nargs="?")
     h.set_defaults(func=cmd_hunks)
 
-    pa = sub.add_parser("palettes", help="Palettes.amb auslesen")
+    pa = sub.add_parser("palettes", help="read Palettes.amb")
     pa.add_argument("file")
     pa.add_argument("--json")
     pa.add_argument("--png")
     pa.set_defaults(func=cmd_palettes)
 
-    g = sub.add_parser("gfx", help="Planar-Grafik nach PNG")
+    g = sub.add_parser("gfx", help="planar graphics to PNG")
     g.add_argument("file")
     g.add_argument("outdir")
     g.add_argument("--width", type=int, required=True)
     g.add_argument("--planes", type=int, required=True)
-    g.add_argument("--height", type=int, help="feste Höhe = mehrere Frames")
+    g.add_argument("--height", type=int, help="fixed height = several frames")
     g.add_argument("--palette-file", required=True)
-    g.add_argument("--palette", type=int, default=1, help="Palettennummer")
+    g.add_argument("--palette", type=int, default=1, help="palette number")
     g.set_defaults(func=cmd_gfx)
 
     a = p.parse_args()

@@ -1,55 +1,56 @@
 #!/usr/bin/env python3
 """
-imploder_exe.py -- Entpacker für Imploder-gepackte Amiga-Programme.
+imploder_exe.py -- unpacker for Imploder-packed Amiga programs.
 
-Für `Fantasy_intro` und `Ambermoon_extro`.  Das ist eine andere Variante als
-die Datenblöcke mit `IMP!`-Signatur (siehe `imploder.py`): der Kern ist
-derselbe, aber drumherum liegt ein Lader, der ein ganzes Programm aufbaut.
+For `Fantasy_intro` and `Ambermoon_extro`.  This is another variant than the
+data blocks with the `IMP!` signature (see `imploder.py`): the core is the
+same, but around it lies a loader that builds a whole program.
 
-Aufbau der Datei (Hunks, Fantasy_intro / Ambermoon_extro)
-=========================================================
+Layout of the file (hunks, Fantasy_intro / Ambermoon_extro)
+===========================================================
 
-    0          CODE  120 Byte   Startstück
-    1 .. n     BSS             die Hunks des eigentlichen Programms (n = 4 / 6)
-    n+1        CODE  512 Byte   Entpacker
-    n+2        DATA            gepackter Strom
-    n+3        BSS             Ringpuffer (18692 / 18628 Byte)
+    0          CODE  120 bytes  start piece
+    1 .. n     BSS              the hunks of the actual program (n = 4 / 6)
+    n+1        CODE  512 bytes  unpacker
+    n+2        DATA             packed stream
+    n+3        BSS              ring buffer (18692 / 18628 bytes)
 
-Das Startstück ruft den Entpacker, legt Hunk 1 als Rücksprungadresse auf
-den Stapel und gibt Entpacker, Strom und Ring frei: **das Programm beginnt
-am Anfang von Hunk 1.**
+The start piece calls the unpacker, puts hunk 1 on the stack as the return
+address and frees unpacker, stream and ring: **the program starts at the
+beginning of hunk 1.**
 
-Zwei Ebenen
-===========
-1. **Der Kern** ($84-$1F8) entpackt je Aufruf einen Ring voll, rückwärts
-   vom Ringende aus.  Er liest den Strom rückwärts ab `adda.l #n,a1` ($06).
-   **Der Ring bleibt zwischen den Aufrufen stehen**: Ein Rückverweis über das
-   Ringende hinaus liest Bytes des vorigen Blocks.  Die erste Fassung dieses
-   Werkzeugs legte jedes Mal einen leeren Puffer an; der Code kam trotzdem
-   richtig heraus, die Grafik in Hunk 2 nicht (20000 Byte verschieden).
-2. **Der Befehlsstrom** ($00-$6A) liest den Ring langwortweise vom Ende her:
+Two levels
+==========
+1. **The core** ($84-$1F8) unpacks one ring full per call, backwards from the
+   end of the ring.  It reads the stream backwards from `adda.l #n,a1` ($06).
+   **The ring stays between calls**: a back reference beyond the end of the
+   ring reads bytes of the previous block.  The first version of this tool made
+   a new empty buffer every time; the code still came out right, the graphics
+   in hunk 2 did not (20000 bytes differed).
+2. **The command stream** ($00-$6A) reads the ring longword by longword from
+   the end:
 
-       Bit 31 gesetzt     nächster Zielhunk (nach dem letzten: fertig)
-       Bit 30 gesetzt     Relokationen: je Gruppe Anzahl, Zielhunk - 1,
-                          dann Anzahl Abstände (aufsummiert); Gruppe 0 = Ende
-       0                  nichts
-       sonst              so viele Langworte Daten ab Hunkanfang
+       bit 31 set         next target hunk (after the last one: done)
+       bit 30 set         relocations: per group count, target hunk - 1,
+                          then count distances (summed up); group 0 = end
+       0                  nothing
+       otherwise          that many longwords of data from the hunk's start
 
-   Was ein Zielhunk nicht an Daten bekommt, bleibt 0 (Amiga: MEMF_CLEAR).
+   What a target hunk does not get as data stays 0 (Amiga: MEMF_CLEAR).
 
-Selbstprüfung
-=============
-Drei Bedingungen müssen zugleich aufgehen: der Lesezeiger steht am Anfang
-des Stroms (`a0` = 0), der Durchlaufzähler aus $1EA auf null, und der
-Befehlsstrom hat alle Zielhunks abgeschlossen.  Beides trifft bei
-`Fantasy_intro` und `Ambermoon_extro` zu.  In `Fantasy_intro` steht danach
-in Hunk 1 Thalions `FAIRY.S` (`mani_tab`, `puls_tab`, `plot00`...).
+Self check
+==========
+Three conditions must hold together: the read pointer is at the start of the
+stream (`a0` = 0), the pass counter from $1EA is at zero, and the command
+stream has finished all target hunks.  All of it holds for `Fantasy_intro` and
+`Ambermoon_extro`.  In `Fantasy_intro` hunk 1 then holds Thalion's `FAIRY.S`
+(`mani_tab`, `puls_tab`, `plot00`...).
 
-Aufruf
-======
-    python3 tools/imploder_exe.py <Datei> <Zielverzeichnis>
+Usage
+=====
+    python3 tools/imploder_exe.py <file> <target folder>
 
-legt `hunkNN.bin` und `relok.txt` (Hunk, Versatz, Zielhunk) ab.
+writes `hunkNN.bin` and `relocs.txt` (hunk, offset, target hunk).
 """
 
 import os
@@ -70,57 +71,57 @@ def _s(x):
     return x - 0x10000 if x & 0x8000 else x
 
 
-class Kern:
-    """Der Entpacker, Befehl für Befehl nach dem 512-Byte-Codehunk."""
+class Core:
+    """The unpacker, instruction by instruction after the 512-byte code hunk."""
 
-    def __init__(self, strom, code):
-        self.strom = strom
+    def __init__(self, stream, code):
+        self.stream = stream
         self.code = code
         self.a0 = struct.unpack_from(">I", code, 0x08)[0]      # adda.l #n,a1
-        self.groesse = struct.unpack_from(">H", code, 0x18)[0]  # move.w #n,d4
-        self.ring = bytearray(self.groesse)
-        # Zustand bei $1E6: d2.w, d1.b, d0.b, Zähler.l
+        self.size = struct.unpack_from(">H", code, 0x18)[0]    # move.w #n,d4
+        self.ring = bytearray(self.size)
+        # state at $1E6: d2.w, d1.b, d0.b, counter.l
         self.d2 = struct.unpack_from(">H", code, 0x1E6)[0]
         self.d1 = code[0x1E8]
         self.d0 = code[0x1E9]
-        self.zaehler = struct.unpack_from(">I", code, 0x1EA)[0]
+        self.counter = struct.unpack_from(">I", code, 0x1EA)[0]
         self.a5 = 0
-        self.fertig = False
+        self.done = False
 
-    def _wort(self, adr):
-        return _s(struct.unpack_from(">H", self.code, adr)[0])
+    def _word(self, addr):
+        return _s(struct.unpack_from(">H", self.code, addr)[0])
 
     def _byte(self):
         self.a0 -= 1
         if self.a0 < 0:
-            raise ExeImploderError("Lesezeiger vor dem Anfang des Stroms")
-        return self.strom[self.a0]
+            raise ExeImploderError("read pointer before the start of the stream")
+        return self.stream[self.a0]
 
     def _bit(self):
         # add.b d1,d1 / bne.s / move.b -(a0),d1 / addx.b d1,d1
-        alt = self.d1
-        self.d1 = (alt << 1) & 0xFF
-        c = alt >> 7
+        old = self.d1
+        self.d1 = (old << 1) & 0xFF
+        c = old >> 7
         if self.d1 == 0:
             n = self._byte()
             self.d1 = ((n << 1) | c) & 0xFF
             c = n >> 7
         return c
 
-    def fuellen(self):
-        """Ein Aufruf ab $84: füllt den Ring vom Ende her."""
-        if self.fertig:
-            raise ExeImploderError("Befehlsstrom liest über das Ende hinaus")
-        ende = self.groesse
-        a3 = ende
-        d5 = self.groesse
+    def fill(self):
+        """One call from $84: fills the ring from the end."""
+        if self.done:
+            raise ExeImploderError("command stream reads past the end")
+        end = self.size
+        a3 = end
+        d5 = self.size
         d2, d0, a5 = self.d2, self.d0, self.a5
         ring = self.ring
-        kopie = d0 != 0                          # tst.b d0 / bne $1D8
-        pruefen = False
+        copying = d0 != 0                        # tst.b d0 / bne $1D8
+        check = False
         while True:
-            if not kopie:
-                while _w(d2):                    # $9C: direkte Bytes
+            if not copying:
+                while _w(d2):                    # $9C: direct bytes
                     d5 = _w(d5 - 1)
                     if d5 & 0x8000:
                         self.d2, self.d0, self.a5 = d2, d0, a5
@@ -128,12 +129,12 @@ class Kern:
                     a3 -= 1
                     ring[a3] = self._byte()
                     d2 = _w(d2 - 1)
-                self.zaehler = (self.zaehler - 1) & 0xFFFFFFFF
-                if self.zaehler == 0:            # $AC
-                    self.fertig = True
+                self.counter = (self.counter - 1) & 0xFFFFFFFF
+                if self.counter == 0:            # $AC
+                    self.done = True
                     self.d2, self.d0, self.a5 = d2, d0, a5
                     return
-                # Länge ($B2-$114)
+                # length ($B2-$114)
                 if not self._bit():
                     d0, d7 = 2, 0
                 elif not self._bit():
@@ -150,7 +151,7 @@ class Kern:
                 else:
                     d0, d7 = self._byte(), 3
                 d3 = d7
-                # Anzahl der folgenden direkten Bytes ($118-$162)
+                # number of the following direct bytes ($118-$162)
                 if not self._bit():
                     d2 = _w((d2 << 1) | self._bit())
                 else:
@@ -160,27 +161,27 @@ class Kern:
                         d6 = self.code[0x136 + d7]
                         d7 += 4
                     n = self.code[0x13A + d7]
-                    while True:                  # subq.b/bne: 0 heißt 256
+                    while True:                  # subq.b/bne: 0 means 256
                         d2 = _w((d2 << 1) | self._bit())
                         n = (n - 1) & 0xFF
                         if n == 0:
                             break
                     d2 = _w(d2 + d6)
-                # Abstand ($164-$1D0)
+                # distance ($164-$1D0)
                 d6, a5, d7 = 0, 0, d3
                 if self._bit():
                     d3 += d3
                     if self._bit():
-                        a5, d7 = self._wort(0x190 + d3), d7 + 8
+                        a5, d7 = self._word(0x190 + d3), d7 + 8
                     else:
-                        a5, d7 = self._wort(0x188 + d3), d7 + 4
+                        a5, d7 = self._word(0x188 + d3), d7 + 4
                 d7 = self.code[0x198 + d7]
-                schleife = True
-                if d7 & 0x80:                    # ein ganzes Byte, dann Restbits
+                loop = True
+                if d7 & 0x80:                    # a whole byte, then the other bits
                     d6 = self._byte()
                     d7 &= 0x0F
-                    schleife = d7 != 0
-                if schleife:
+                    loop = d7 != 0
+                if loop:
                     while True:
                         d6 = _w((d6 << 1) | self._bit())
                         d7 = (d7 - 1) & 0xFF
@@ -188,11 +189,11 @@ class Kern:
                             break
                 d6 = _w(d6 + 1)
                 a5 += _s(d6) + a3                # adda.w / adda.l
-                if a5 > ende:                    # cmpa.l a2,a5 / bls: Ring
-                    a5 -= self.groesse
-                kopie = pruefen = True
-            if pruefen and a5 == 0:              # $1D2: Anfang -> Ende
-                a5 = ende
+                if a5 > end:                     # cmpa.l a2,a5 / bls: ring
+                    a5 -= self.size
+                copying = check = True
+            if check and a5 == 0:                # $1D2: start -> end
+                a5 = end
             d5 = _w(d5 - 1)                      # $1D8
             if d5 & 0x8000:
                 self.d2, self.d0, self.a5 = d2, d0, a5
@@ -201,89 +202,89 @@ class Kern:
             a3 -= 1
             ring[a3] = ring[a5]
             d0 = (d0 - 1) & 0xFF
-            kopie = pruefen = d0 != 0
+            copying = check = d0 != 0
 
 
-def entpacke(hunks):
-    """hunks: Liste aus ambtool.read_hunks().
+def unpack_program(hunks):
+    """hunks: list from ambtool.read_hunks().
 
-    Gibt (inhalt, relok) zurück: inhalt = {Hunk: bytes in voller Größe},
-    relok = {Hunk: [(Versatz, Zielhunk), ...]}.  Das Programm beginnt am
-    Anfang von Hunk 1."""
+    Returns (content, relocs): content = {hunk: bytes in full size},
+    relocs = {hunk: [(offset, target hunk), ...]}.  The program starts at the
+    beginning of hunk 1."""
     code_i = next(h["index"] for h in hunks
                   if h["type"] == "CODE" and h["size"] == 512)
     code = hunks[code_i]["data"]
-    strom = hunks[code_i + 1]["data"]
+    stream = hunks[code_i + 1]["data"]
     if hunks[code_i + 1]["type"] != "DATA":
-        raise ExeImploderError("hinter dem Entpacker liegt kein DATA-Hunk")
-    kern = Kern(strom, code)
-    if hunks[code_i + 2]["size"] != kern.groesse:
-        raise ExeImploderError("Ringgröße passt nicht zum Hunk dahinter")
-    anzahl = struct.unpack_from(">H", code, 0x2A)[0]       # cmpi.w #n,d5
-    ziele = list(range(1, anzahl + 1))
-    groesse = {h["index"]: h["size"] for h in hunks}
-    inhalt = {i: bytearray(groesse[i]) for i in ziele}
-    relok = {i: [] for i in ziele}
+        raise ExeImploderError("no DATA hunk behind the unpacker")
+    core = Core(stream, code)
+    if hunks[code_i + 2]["size"] != core.size:
+        raise ExeImploderError("ring size does not fit the hunk behind it")
+    count = struct.unpack_from(">H", code, 0x2A)[0]        # cmpi.w #n,d5
+    targets = list(range(1, count + 1))
+    size = {h["index"]: h["size"] for h in hunks}
+    content = {i: bytearray(size[i]) for i in targets}
+    relocs = {i: [] for i in targets}
 
-    lesezeiger = [0]                                         # a2, 0 = leer
+    read_pointer = [0]                                     # a2, 0 = empty
 
     def byte():
-        if lesezeiger[0] == 0:
-            kern.fuellen()
-            lesezeiger[0] = kern.groesse
-        lesezeiger[0] -= 1
-        return kern.ring[lesezeiger[0]]
+        if read_pointer[0] == 0:
+            core.fill()
+            read_pointer[0] = core.size
+        read_pointer[0] -= 1
+        return core.ring[read_pointer[0]]
 
-    def lang():
+    def long():
         return int.from_bytes(bytes(byte() for _ in range(4)), "big")
 
     nr = 0
     while True:
-        v = lang()
+        v = long()
         if v & 0x80000000:
             nr += 1
-            if nr == anzahl:
+            if nr == count:
                 break
             continue
-        hunk = ziele[nr]
+        hunk = targets[nr]
         if v & 0x40000000:
             while True:
-                n = lang()
+                n = long()
                 if n == 0:
                     break
-                nach = lang() + 1
-                versatz = 0
+                target = long() + 1
+                offset = 0
                 for _ in range(n):
-                    versatz = (versatz + lang()) & 0xFFFFFFFF
-                    relok[hunk].append((versatz, nach))
+                    offset = (offset + long()) & 0xFFFFFFFF
+                    relocs[hunk].append((offset, target))
             continue
         if v == 0:
             continue
-        if 4 * v > len(inhalt[hunk]):
-            raise ExeImploderError(f"Hunk {hunk}: {4 * v} Byte Daten, "
-                                   f"Platz für {len(inhalt[hunk])}")
+        if 4 * v > len(content[hunk]):
+            raise ExeImploderError(f"hunk {hunk}: {4 * v} bytes of data, "
+                                   f"room for {len(content[hunk])}")
         for j in range(4 * v):
-            inhalt[hunk][j] = byte()
+            content[hunk][j] = byte()
 
-    if kern.a0 != 0:
-        raise ExeImploderError(f"Selbstprüfung: {kern.a0} Byte des Stroms unverbraucht")
-    if kern.zaehler != 0 or not kern.fertig:
-        raise ExeImploderError(f"Selbstprüfung: Durchlaufzähler steht auf {kern.zaehler}")
-    return {i: bytes(b) for i, b in inhalt.items()}, relok
+    if core.a0 != 0:
+        raise ExeImploderError(f"self check: {core.a0} bytes of the stream left")
+    if core.counter != 0 or not core.done:
+        raise ExeImploderError(f"self check: pass counter at {core.counter}")
+    return {i: bytes(b) for i, b in content.items()}, relocs
 
 
 if __name__ == "__main__":
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from ambtool import read_hunks
     if len(sys.argv) != 3:
-        sys.exit("Aufruf: imploder_exe.py <Datei> <Zielverzeichnis>")
-    datei, ziel = sys.argv[1], sys.argv[2]
-    inhalt, relok = entpacke(read_hunks(open(datei, "rb").read()))
-    os.makedirs(ziel, exist_ok=True)
-    for i, blob in inhalt.items():
-        open(os.path.join(ziel, f"hunk{i:02d}.bin"), "wb").write(blob)
-        print(f"Hunk {i}: {len(blob)} Byte, {len(relok[i])} Relokationen")
-    with open(os.path.join(ziel, "relok.txt"), "w") as f:
-        for i in inhalt:
-            for versatz, nach in relok[i]:
-                f.write(f"{i} {versatz:06x} {nach}\n")
+        sys.exit("usage: imploder_exe.py <file> <target folder>")
+    path, folder = sys.argv[1], sys.argv[2]
+    content, relocs = unpack_program(read_hunks(open(path, "rb").read()))
+    os.makedirs(folder, exist_ok=True)
+    for i, blob in content.items():
+        open(os.path.join(folder, f"hunk{i:02d}.bin"), "wb").write(blob)
+        print(f"hunk {i}: {len(blob)} bytes, {len(relocs[i])} relocations")
+    with open(os.path.join(folder, "relocs.txt"), "w") as f:
+        for i in content:
+            for offset, target in relocs[i]:
+                f.write(f"{i} {offset:06x} {target}\n")

@@ -51,7 +51,7 @@ Thalion's released source has 40 assembler files; the engine includes all but `F
 
 | File | Use | Tool |
 |---|---|---|
-| `AM2_CPU` | Thalion's unreleased library (Amiga executable). Read only at build time: data and pure memory code (appendix C). Never read at run time. | `tools/am2cpu_auszug.py`, `tools/am2cpu_code.py` |
+| `AM2_CPU` | Thalion's unreleased library (Amiga executable). Read only at build time: data and pure memory code (appendix C). Never read at run time. | `tools/am2cpu_extract.py`, `tools/am2cpu_code.py` |
 | `Ambermoon_intro` | The intro without source. Split into hunks at build time and rebound (K1 hardware addresses, K2 blitter) into `INTRO.TOS`; its start menu texts also feed our start menu. | `tools/amiga_programm.py intro`, `tools/intro_auszug.py` |
 | `Extro` | The extro without source, imploded. Unpacked, split and rebound like the intro into `EXTRO.TOS`. | `tools/imploder_exe.py`, `tools/amiga_programm.py extro` |
-| `Text.amb` | Game data, read at run time (`Lade_texte`); the build only computes where the library texts lie in it. | `tools/textmarken.py` |
+| `Text.amb` | Game data, read at run time (`Lade_texte`); the build only computes where the library texts lie in it. | `tools/text_labels.py` |

@@ -9,10 +9,35 @@ For the palette file each palette is grouped by one of two **methods**
                 more was right with it, the fire in Grandfather's house
                 stays red)
   weighted N    by how many points of each colour the game shows with the
-                palette (2D map tiles, event pictures, combat backgrounds;
-                every colour at least N % of them), which St_bauen at run
-                time cannot know; better for the worlds (Lyramion: sea blue
-                instead of grey, the greens apart), so the worlds take it
+                palette (2D map tiles, 3D walls, objects, horizon, sky and
+                floor, event pictures, combat backgrounds, the tactic
+                field; every colour at least N % of them), which St_bauen
+                at run time cannot know; better for the worlds (Lyramion:
+                sea blue instead of grey, the greens apart), so the worlds
+                take it.  Only main and automap have nothing counted.
+
+Either method can add ` oklab` (user, 2026-11-08): the distance between two
+colours is then measured in OKLab with hue and saturation counting double,
+instead of plain RGB, so that colours of the same lightness but another hue
+(dark brown wood, dark green meadow) stay apart.  The register values are
+still the RGB means of their colours.  Build time only; St_bauen at run time
+measures in RGB.
+
+Two more lines (user, 2026-11-08) steer the grouping of one palette:
+
+  own C C ...   these colours (1..25) form a register of their own, no
+                other colour joins it (e.g. the dark brown of the bridge in
+                Lyramion, which the methods put with the green of the
+                meadow); a colour of the same value goes with them; several
+                lines, several registers
+  ramp N        the UI ramp 26..31 gets at most N registers (1..5, default
+                5); the registers it gives up go to the map colours.  The
+                ST takes the ramp mask from the file's table (st_rmaske), so
+                ST_LIB.S needs no change
+
+The palette editor recomputes all of this in the browser
+(tools/palette_editor/st_group.js); its build compares that with this tool
+for every palette and method.
 
 Unweighted:
 
@@ -31,16 +56,13 @@ exactly (docs/12).
         Tactic_pal, Automap_pal and the combat palettes -- reduced like
         St_bauen, with the hand corrections from tools/st_palettes.txt
         applied, an STE and an ST column each.  Also writes the listing
-        build/st_palettes/listing.txt and the review sheet (see sheet; not
-        with --no-sheet), so every ST build comes with it.  Called by
-        tools/build_st.sh.
+        build/st_palettes/listing.txt.  Called by tools/build_st.sh.
     st_palettes.py sheet [NAME ...]
-        Review sheet build/st_palettes/index.html: per palette Thalion's
-        colours, the table, the STE and the ST registers, and a picture from
-        the game: Thalion (Amiga/Falcon), then STE and ST for every method,
-        each with a button to choose it; the page writes the method lines
-        for tools/st_palettes.txt.  NAME as in the corrections file
-        ("pal 12", "combat 39", "main"); none = all.
+        Only a pointer: the review sheet, where the method per palette is
+        chosen, is the palette editor tools/palette_editor/palette_sheet.py
+        (Docs, 2026-10-30; page build/palette_editor/index.html).  It
+        imports this tool for the methods, the pictures and the file
+        format.
     st_palettes.py ramp [-k 5] [-s 1] [-o FILE]
         Chart: colours 24..31 per palette, Thalion / without / with ramp
         protection
@@ -53,15 +75,20 @@ exactly (docs/12).
 **What goes where.**  The corrections file in the repository holds only our
 own values: which Thalion colour goes into which register, and register
 values chosen by hand.  Everything that contains Thalion's colours -- the
-palette file, the listing, the sheet -- is computed at build time from the
+palette file and the listing -- is computed at build time from the
 original files and stays in build/ (not versioned): the default register
 values are averages of Thalion's colours, and a group of one colour is
 Thalion's colour itself.  Needs Pillow for the pictures only.
+
+**Since 2026-11-06** the tool also reads the 3D files (2/3Lab_data,
+2/3Wall3D, 2/3Object3D, 2/3Overlay3D, Lab_background; class D3) and the
+tactical icons of Combat_graphics, for the weighting and for the pictures
+of the palette editor.  This changes no palette that has no method line:
+STPAL.DAT stays as it was until a 3D palette or tactic gets one.
 """
 import argparse
 import collections
 import html
-import json
 import math
 import os
 import re
@@ -83,7 +110,9 @@ RAMP_REGS = 5                   # ST_RAMPE_REG in ST_LIB.S
 PENALTY = 1                     # map colour -> ramp register: distance x2
 FLOOR = 0.01                    # "weighted" without a number: every colour at least 1 %
 DEFAULT_METHOD = "unweighted"   # without a method line (user, 2026-10-29)
-SHEET_METHODS = ("unweighted", "weighted 1", "weighted 3")   # offered by the sheet
+SHEET_METHODS = ("unweighted", "unweighted oklab", "weighted 1", "weighted 1 oklab",
+                 "weighted 3")  # offered by the sheet
+OKLAB_CHROMA = 2                # oklab: a and b count this many times as much as L
 MAGIC = b"STP1"
 ENTRY_SIZE = 176                # STP_GROESSE in ST_LIB.S
 MAX_ENTRIES = 112               # STP_MAX in ST_LIB.S
@@ -92,6 +121,39 @@ MIDDLE_Y = 36
 MAP2D_X, MAP2D_Y = 16, 49       # GAME_OFF.S
 PAL_2D = (1, 2, 3, 7, 8, 9, 10)
 PAL_3D = (4, 5, 6, 11, 12, 13, 14, 15, 16)
+# The 2D map a palette shows as its reference picture, where the automatic
+# choice (the map with the most colours) misses what matters: palette ->
+# (map, tile column, tile row of the cut's top left corner, place).
+# Pal 7: the kitchen of Grandfather's house, its fire (user, 2026-11-06).
+MAP_REFERENCE = {7: (258, 6, 0, "the kitchen of Grandfather's house")}
+# 3D (GAME_OFF.S, MAP/3D_MAP.S)
+LAYOUT_COMBAT = 4                       # Combat_layout
+MAP3D_X, MAP3D_Y, VIEW3D = 32, 49, 144  # Map3D_X, Map3D_Y; the 3D buffer is 144 x 144
+SCRY = {False: 144 // 3, True: 144 // 2}   # D3_horizon (dungeon), C3_horizon (city)
+HORIZON_HEIGHT = 20                     # Horizon_height; Lab_background is 144 x 20, 4 planes
+WALL_W, WALL_H = 128, 80                # Wall_width, Wall_size = 80*8*2*planes
+FIRST_WALL = 101                        # map byte: 1..100 object group, from 101 wall
+CITY_BIT = 6                            # City_bit of Map_special
+# The 3D view, as the weighting counts it (an estimate, the 3D view itself
+# changes with every step): walls cover half of it, objects a tenth, the
+# rest is sky above the horizon line and floor below; the ST draws no
+# textured floor or ceiling (68000).
+VIEW_WALLS, VIEW_OBJECTS = 0.5, 0.1
+# Tactic field (COMBAT/TACTIC.S, GAME_OFF.S): Tactic_pal from line 133 down
+# (Combat_RL), the icons 16 x 14, 5 planes, at Tactic_X + 16*column,
+# Tactic_Y - 1 + Tactic_cell_height*row, 6 x 5 cells.
+TACTIC_LINE = 133
+TACTIC_X, TACTIC_Y, TACTIC_CELL = 96, 133, 13
+TACTIC_ICON = 14 * 2 * 5                # 14 lines, one word per plane, 5 planes
+# Tactical_GFX in Combat_graphics: the rsgfx list before it in GAME_OFF.S
+# (width/16 * Screen_depth * 2 * height * frames) plus Fighting_FXGFX
+TACTICAL_GFX = sum(w // 16 * 5 * 2 * h * n for w, h, n in (
+    (16, 16, 8), (16, 32, 8), (16, 16, 6), (32, 32, 24), (32, 32, 12), (32, 64, 4),
+    (32, 32, 4), (16, 16, 5), (16, 16, 5), (32, 64, 1), (16, 1, 1), (16, 19, 1),
+    (16, 19, 1), (16, 20, 1), (16, 20, 1), (16, 16, 1), (16, 15, 1), (16, 16, 1),
+    (32, 16, 1), (64, 32, 1), (64, 32, 1), (16, 16, 1), (16, 16, 1), (32, 32, 1),
+    (16, 16, 11), (48, 59, 14), (32, 32, 4), (16, 32, 2), (16, 43, 3), (32, 32, 4),
+    (16, 13, 4))) + 2 * 6 * 36
 
 
 # ---------------------------------------------------------------- St_bauen
@@ -100,76 +162,135 @@ def quarter(w):
     return (((w >> 8) & 15) * 4, ((w >> 4) & 15) * 4, (w & 15) * 4)
 
 
-def distance(w, m):
-    return sum((a - b) ** 2 for a, b in zip(quarter(w), m))
+def srgb_linear(c):
+    c /= 15
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
 
-def nearest(w, centres, nfixed=0, penalty=0):
+def oklab(w):
+    """$0RGB -> OKLab (Björn Ottosson's matrices), L times 100, a and b times
+    100 * OKLAB_CHROMA, so that a difference in hue or saturation counts
+    more than one in lightness."""
+    r, g, b = (srgb_linear((w >> s) & 15) for s in (8, 4, 0))
+    l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    k = 100 * OKLAB_CHROMA
+    return (100 * (0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s),
+            k * (1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s),
+            k * (0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s))
+
+
+# The point of a colour in the space a method groups in: "rgb" like
+# St_bauen (integers, quarter steps), "oklab" (floats, build time only).
+SPACES = {"rgb": quarter, "oklab": oklab}
+
+
+def py_sum(xs):
+    """sum() as CPython computes it since 3.12, written out: integers
+    exactly until the first float, then floats with Neumaier's compensation.
+    Many weighted means lie exactly on a half step, where a plain sum falls
+    the other way than this (four palettes of STPAL.DAT would change); written
+    out, the result does not hang on the Python version, and st_group.js
+    follows it step by step."""
+    it = iter(xs)
+    total = 0
+    for x in it:
+        if isinstance(x, float):
+            hi, lo = total + x, 0.0
+            break
+        total += x
+    else:
+        return total
+    for x in it:
+        x = float(x)
+        t = hi + x
+        if abs(hi) >= abs(x):
+            lo += (hi - t) + x
+        else:
+            lo += (x - t) + hi
+        hi = t
+    return hi + lo if lo and math.isfinite(lo) else hi
+
+
+def distance(w, m, space="rgb"):
+    return py_sum((a - b) ** 2 for a, b in zip(SPACES[space](w), m))
+
+
+def nearest(w, centres, nfixed=0, penalty=0, space="rgb"):
     """(distance, number) of the nearest centre; on a tie the first.  To
     the first nfixed centres the distance counts 2**penalty times."""
     best = None
     for j, m in enumerate(centres):
-        d = distance(w, m) << (penalty if j < nfixed else 0)
+        d = distance(w, m, space) * (1 << (penalty if j < nfixed else 0))
         if best is None or d < best[0]:
             best = (d, j)
     return best
 
 
-def kmeans(points, n, fixed=(), penalty=0):
+def kmeans(points, n, fixed=(), penalty=0, space="rgb"):
     """Centres like St_bauen: farthest point, then eight rounds.  fixed are
     centres that stand already and do not move; they count when searching
-    the farthest point and when assigning."""
+    the farthest point and when assigning.  space: see SPACES (rgb rounds
+    the means like the 68000)."""
+    point = SPACES[space]
     fixed = list(fixed)
     if len(points) <= n:
-        return fixed + [quarter(w) for w in points]
+        return fixed + [point(w) for w in points]
     centres = fixed[:]
     if not centres:
-        centres.append(quarter(points[0]))
+        centres.append(point(points[0]))
     while len(centres) < len(fixed) + n:
         bd, bp = -1, 0
         for w in points:
-            d, _ = nearest(w, centres, len(fixed), penalty)
+            d, _ = nearest(w, centres, len(fixed), penalty, space)
             if d > bd:
                 bd, bp = d, w
-        centres.append(quarter(bp))
+        centres.append(point(bp))
     for _ in range(8):
         total = [[0, 0, 0, 0] for _ in centres]
         for w in points:
-            _, j = nearest(w, centres, len(fixed), penalty)
-            p = quarter(w)
+            _, j = nearest(w, centres, len(fixed), penalty, space)
+            p = point(w)
             for k in range(3):
                 total[j][k] += p[k]
             total[j][3] += 1
         for j in range(len(fixed), len(centres)):
             a = total[j][3]
-            if a:
+            if a and space == "rgb":
                 centres[j] = tuple((total[j][k] + a // 2) // a for k in range(3))
+            elif a:
+                centres[j] = tuple(total[j][k] / a for k in range(3))
     return centres
 
 
-def wkmeans(points, weights, n, fixed=(), penalty=0):
+def wkmeans(points, weights, n, fixed=(), penalty=0, space="rgb"):
     """kmeans weighted by how much of the picture each colour covers
     (build time only, D1): the farthest point counts its distance times its
     weight, the centres are weighted means, twenty rounds."""
+    point = SPACES[space]
     fixed = list(fixed)
     if len(points) <= n:
-        return fixed + [quarter(w) for w in points]
-    centres = fixed[:] or [quarter(max(points, key=lambda w: weights[w]))]
+        return fixed + [point(w) for w in points]
+    centres = fixed[:] or [point(max(points, key=lambda w: weights[w]))]
     while len(centres) < len(fixed) + n:
-        bp = max(points, key=lambda w: nearest(w, centres, len(fixed), penalty)[0] * weights[w])
-        centres.append(quarter(bp))
+        bp = max(points, key=lambda w: nearest(w, centres, len(fixed), penalty,
+                                                space)[0] * weights[w])
+        centres.append(point(bp))
     for _ in range(20):
         total = [[0, 0, 0, 0] for _ in centres]
         for w in points:
-            _, j = nearest(w, centres, len(fixed), penalty)
-            p = quarter(w)
+            _, j = nearest(w, centres, len(fixed), penalty, space)
+            p = point(w)
             for k in range(3):
                 total[j][k] += p[k] * weights[w]
             total[j][3] += weights[w]
         for j in range(len(fixed), len(centres)):
             a = total[j][3]
-            if a:
+            if a and space == "rgb":
                 centres[j] = tuple(round(total[j][k] / a) for k in range(3))
+            elif a:
+                centres[j] = tuple(total[j][k] / a for k in range(3))
     return centres
 
 
@@ -177,7 +298,7 @@ def floored(counts, floor=FLOOR):
     """Weights per colour number 1..31 from pixel counts: every colour at
     least floor of all pixels, so rare bright accents keep a say.  None
     without counts."""
-    total = sum(counts.get(i, 0) for i in range(1, 32))
+    total = py_sum(counts.get(i, 0) for i in range(1, 32))
     if not total:
         return None
     return {i: max(counts.get(i, 0), floor * total) for i in range(32)}
@@ -203,9 +324,9 @@ def registers(pal, tab, counts=lambda i, r: True, weights=None):
             for s in (8, 4, 0):
                 v = (v << 4) | ((sum((pal[i] >> s) & 15 for i in g) + a // 2) // a)
         else:
-            a = sum(weights[i] for i in g)
+            a = py_sum(weights[i] for i in g)
             for s in (8, 4, 0):
-                c = sum(((pal[i] >> s) & 15) * weights[i] for i in g) / a
+                c = py_sum(((pal[i] >> s) & 15) * weights[i] for i in g) / a
                 v = (v << 4) | min(15, int(c + 0.5))
         regs.append(v)
     return regs
@@ -236,7 +357,7 @@ def st_plain(pal):
     return tab, registers(pal, tab)
 
 
-def st_ramp(pal, k=RAMP_REGS, penalty=PENALTY, weights=None):
+def st_ramp(pal, k=RAMP_REGS, penalty=PENALTY, weights=None, space="rgb", own=()):
     """Ramp protection: 26..31 in at most k registers of their own, only
     among themselves.  A map colour may share a ramp register; the distance
     there counts 2**penalty times, else the ramp takes the register from
@@ -245,24 +366,44 @@ def st_ramp(pal, k=RAMP_REGS, penalty=PENALTY, weights=None):
     weights (colour number -> weight, see floored): the colours 1..25 are
     grouped by how much of the picture they cover, and the register values
     are weighted means.  Build time only (D1); St_bauen at run time does not
-    know the pictures and stays unweighted."""
+    know the pictures and stays unweighted.
+
+    space (see SPACES): "oklab" groups by OKLab distance; its centres are
+    not rounded to register steps, which only St_bauen's RGB needs.
+
+    own: groups of colour numbers 1..25 (the file's own lines), each a
+    register of its own after the ramp registers, which no other colour
+    joins; a colour 1..25 of the same value goes with its group.  The other
+    colours share what is left.  Too many registers: ValueError (own_error)."""
+    keep = rounded if space == "rgb" else list
     ramp = unique(pal, RAMP)
-    rm = rounded(kmeans(ramp, min(k, len(ramp))))
-    rest = unique(pal, range(1, 26), without=ramp)
+    rm = keep(kmeans(ramp, min(k, len(ramp)), space=space))
+    group_of = {}                       # value -> number of its own group
+    for g, cs in enumerate(own):
+        for c in cs:
+            group_of[pal[c] & 0xFFF] = g
+    rest = unique(pal, range(1, 26), without=ramp + list(group_of))
+    n = 15 - len(rm) - len(own)
+    if n < 0 or (rest and n < 1):
+        raise ValueError("%d ramp registers and %d own groups leave no register for "
+                         "the other colours" % (len(rm), len(own)))
     if weights is None:
-        centres = rounded(kmeans(rest, 15 - len(rm), fixed=rm, penalty=penalty))
+        centres = keep(kmeans(rest, n, fixed=rm, penalty=penalty, space=space))
     else:
         wv = collections.Counter()
         for i in range(1, 26):
             wv[pal[i] & 0xFFF] += weights[i]
-        centres = rounded(wkmeans(rest, wv, 15 - len(rm), fixed=rm, penalty=penalty))
+        centres = keep(wkmeans(rest, wv, n, fixed=rm, penalty=penalty, space=space))
     tab = [0]
     for i in range(1, 32):
         w = pal[i] & 0xFFF
-        if w in ramp:
-            tab.append(nearest(w, rm)[1] + 1)
+        if i < RAMP[0] and w in group_of:
+            tab.append(len(rm) + group_of[w] + 1)
+        elif w in ramp:
+            tab.append(nearest(w, rm, space=space)[1] + 1)
         else:
-            tab.append(nearest(w, centres, len(rm), penalty)[1] + 1)
+            j = nearest(w, centres, len(rm), penalty, space)[1]
+            tab.append(j + 1 if j < len(rm) else j + 1 + len(own))
     return tab, ramp_registers(pal, tab, weights)
 
 
@@ -275,7 +416,7 @@ def am2cpu_bytes(label):
         text = open(AM2CPU_DATA).read()
     except OSError:
         raise SystemExit("st_palettes: %s missing -- run the build first "
-                         "(tools/am2cpu_auszug.py)" % AM2CPU_DATA)
+                         "(tools/am2cpu_extract.py)" % AM2CPU_DATA)
     part = text.split("\n%s:" % label)[1].split("even")[0]
     return [int(x, 16) for x in re.findall(r"\$([0-9A-Fa-f]{2})", part)]
 
@@ -330,12 +471,16 @@ class Game:
     def count_pixels(self):
         """How many points of each colour the game shows with a palette, for
         the weighting (st_ramp): the tiles of every 2D map (underlay and
-        overlay, each tile as often as it lies on the map), the event
-        pictures, the combat backgrounds.  The rest -- 3D maps, main,
-        tactic, automap -- stays unweighted."""
+        overlay, each tile as often as it lies on the map), the 3D maps
+        (view3d_counts), the event pictures, the combat backgrounds, the
+        tactic field (tactic_counts).  main and automap stay unweighted."""
         d, tile_hist = self.d, {}
+        self.d3 = D3(d)
         for nr, m in sorted(d.karten.items()):
             if m["type"] != ambmap.TYPE_2D:
+                h = self.d3.view_counts(nr, m)
+                self.map_pixels[nr] = h
+                self.pixels["pal %d" % m["palette"]].update(h)
                 continue
             ts = m["tileset"]
             if ts not in tile_hist:
@@ -359,6 +504,7 @@ class Game:
                 self.pixels["pal %d" % n].update(planar_picture("Event_pix.amb", i + 1, 92))
         for n, bg in self.combat_bg.items():
             self.pixels["combat %d" % n].update(planar_picture("Combat_background.amb", bg, 95))
+        self.pixels["tactic"].update(tactic_counts(d))
 
     def palette(self, name):
         kind, _, n = name.partition(" ")
@@ -396,7 +542,9 @@ class Corrections:
         self.st = collections.defaultdict(dict)         # name -> {reg: $0RGB, 0..7}
         self.methods = {}                               # name -> "unweighted" | "weighted N"
         self.notes = {}                                 # name -> comment of its method line
-        self.lines = []                                 # the file without its method lines
+        self.own = collections.defaultdict(list)        # name -> [(colour, ...)]
+        self.ramp = {}                                  # name -> registers of the ramp
+        self.lines = []                                 # the file without method, own, ramp
         self.path = path
         if not os.path.exists(path):
             return
@@ -415,6 +563,20 @@ class Corrections:
                     self.methods[name] = method_key(rest[1:])
                     if "#" in line:
                         self.notes[name] = line.split("#", 1)[1].strip()
+                    continue
+                if rest and rest[0] == "own":
+                    cs = tuple(int(c) for c in rest[1:])
+                    taken = {c for g in self.own[name] for c in g}
+                    if not cs or len(set(cs)) < len(cs) or taken & set(cs) or \
+                            not all(1 <= c < RAMP[0] for c in cs):
+                        raise ValueError
+                    self.own[name].append(cs)
+                    continue
+                if rest and rest[0] == "ramp":
+                    n = int(rest[1])
+                    if len(rest) != 2 or name in self.ramp or not 1 <= n <= RAMP_REGS:
+                        raise ValueError
+                    self.ramp[name] = n
                     continue
                 self.lines.append(line)
                 kind, a, b = rest
@@ -437,25 +599,36 @@ class Corrections:
                 raise SystemExit("st_palettes: %s: cannot read %r" % (where, line.strip()))
 
     def names(self):
-        return set(self.colours) | set(self.ste) | set(self.st) | set(self.methods)
+        return (set(self.colours) | set(self.ste) | set(self.st) | set(self.methods)
+                | {n for n, g in self.own.items() if g} | set(self.ramp))
 
 
 def method_key(words):
-    """["unweighted"] or ["weighted"] or ["weighted", "N"] -> the method as
-    the file and the sheet name it: "unweighted" or "weighted N" (N % floor,
-    1 without a number)."""
+    """["unweighted"] or ["weighted"] or ["weighted", "N"], each optionally
+    followed by "oklab" -> the method as the file and the sheet name it:
+    "unweighted" or "weighted N" (N % floor, 1 without a number), plus
+    " oklab"."""
+    suffix = ""
+    if words and words[-1] == "oklab":
+        words, suffix = words[:-1], " oklab"
     if words == ["unweighted"]:
-        return "unweighted"
+        return "unweighted" + suffix
     if words and words[0] == "weighted" and len(words) <= 2:
         n = int(words[1]) if len(words) == 2 else round(FLOOR * 100)
         if 1 <= n <= 20:
-            return "weighted %d" % n
+            return "weighted %d" % n + suffix
     raise ValueError
 
 
 def method_floor(method):
     """The floor of a method, None = unweighted."""
-    return None if method == "unweighted" else int(method.split()[1]) / 100
+    w = method.split()
+    return None if w[0] == "unweighted" else int(w[1]) / 100
+
+
+def method_space(method):
+    """The space a method groups in (SPACES)."""
+    return "oklab" if method.endswith(" oklab") else "rgb"
 
 
 def st_from_ste(v):
@@ -478,7 +651,17 @@ class Entry:
         self.method = method
         floor = method_floor(method)
         self.weights = floored(self.counts, floor) if floor is not None else None
-        tab, _ = st_ramp(pal, weights=self.weights)
+        self.own = [g for n in names for g in corr.own.get(n, [])]
+        self.ramp = next((corr.ramp[n] for n in names if n in corr.ramp), RAMP_REGS)
+        values = [pal[c] & 0xFFF for g in self.own for c in g]
+        if len(set(values)) < len(values):
+            raise SystemExit("st_palettes: %s: two own groups hold the same colour value"
+                             % names[0])
+        try:
+            tab, _ = st_ramp(pal, k=self.ramp, weights=self.weights,
+                             space=method_space(method), own=self.own)
+        except ValueError as err:
+            raise SystemExit("st_palettes: %s: %s" % (names[0], err))
         self.tab = list(tab)
         self.auto_tab = list(tab)
         self.hand_colours, self.hand_ste, self.hand_st = {}, {}, {}
@@ -558,12 +741,10 @@ def cmd_build(a):
         f.write(listing_text(game, es))
     hand = sum(1 for e in es if e.hand_colours or e.hand_ste or e.hand_st)
     weighted = ", ".join("%s (%s)" % (e.names[0], e.method) for e in es if e.weights)
+    steered = sum(1 for e in es if e.own or e.ramp != RAMP_REGS)
     print("  %s: %d palettes, weighted by pixels: %s; %d bytes, "
-          "%d with hand corrections; listing %s"
-          % (a.o, len(es), weighted or "none", len(data), hand, listing))
-    if not a.no_sheet:
-        print("  review sheet, to choose the method per palette: %s"
-              % write_sheet(game, corr))
+          "%d with hand corrections, %d with own or ramp lines; listing %s"
+          % (a.o, len(es), weighted or "none", len(data), hand, steered, listing))
 
 
 def hex3(v):
@@ -580,9 +761,14 @@ def listing_text(game, es):
             for u in game.usage.get(n, []):
                 out.append("    used: " + u)
         total = sum(e.counts.get(i, 0) for i in range(1, 32))
-        out.append("    grouping: %s" % ("weighted by %d points, floor %d %%"
-                                         % (total, method_floor(e.method) * 100) if e.weights
-                                         else "unweighted"))
+        out.append("    grouping: %s%s" % ("weighted by %d points, floor %d %%"
+                                           % (total, method_floor(e.method) * 100) if e.weights
+                                           else "unweighted",
+                                           ", OKLab distance" if method_space(e.method) == "oklab"
+                                           else ""))
+        if e.ramp != RAMP_REGS or e.own:
+            out.append("    ramp: at most %d registers; own groups: %s" % (
+                e.ramp, "; ".join(" ".join(map(str, g)) for g in e.own) or "none"))
         out.append("    colour  Thalion  register  pixels")
         for i in range(32):
             share = ("%6.2f%%" % (100 * e.counts.get(i, 0) / total)) if total else ""
@@ -623,13 +809,15 @@ def layout_picture(d, nr):
     return pic
 
 
-def map_cut(d, m, w=176, h=144):
-    """The middle of a 2D map, w x h points, rendering only those tiles."""
+def map_cut(d, m, w=176, h=144, at=None):
+    """w x h points of a 2D map, rendering only those tiles: the middle, or
+    from tile (column, row) at."""
     defs = ambmap.parse_tileset(d.icondata[m["tileset"] - 1])
     tiles = d.kacheln(m["tileset"])
     mw, mh = m["width"] * 16, m["height"] * 16
-    x0 = max(0, min(mw - w, mw // 2 - w // 2))
-    y0 = max(0, min(mh - h, mh // 2 - h // 2))
+    x0, y0 = (at[0] * 16, at[1] * 16) if at else (mw // 2 - w // 2, mh // 2 - h // 2)
+    x0 = max(0, min(mw - w, x0))
+    y0 = max(0, min(mh - h, y0))
     pic = [0] * (w * h)
     for ty in range(y0 // 16, min(m["height"], (y0 + h + 15) // 16)):
         for tx in range(x0 // 16, min(m["width"], (x0 + w + 15) // 16)):
@@ -655,10 +843,285 @@ _loaded = {}
 
 
 def planar_picture(file, nr, height):
-    if file not in _loaded:
-        _loaded[file] = farbreduktion.lade(file)
-    raw = _loaded[file][nr - 1]
+    raw = loaded(file)[nr - 1]
     return ambtool.planar_to_indices(raw, 320, 5, height)[0]
+
+
+def loaded(file):
+    """The entries of a game file, as farbreduktion.lade gives them, once
+    per file (ambtool.py decrypts the unpacked entries of an AMNP container
+    since main d0e8144, finding 249)."""
+    if file not in _loaded:
+        _loaded[file] = list(farbreduktion.lade(file))
+    return _loaded[file]
+
+
+def layouts(d):
+    if not getattr(d, "layouts", None):
+        d.layouts = loaded("Layouts.amb")
+    return d.layouts
+
+
+# ---------------------------------------------------------------- 3D
+
+_BITS = [[[(b >> (7 - k) & 1) << p for k in range(8)] for b in range(256)] for p in range(4)]
+
+
+def movep_picture(data, w, h):
+    """Wall3D/Object3D/Overlay3D -> colour numbers 0..15: the format of the
+    3D buffer (MOVEP), every 8 points of a line take 4 bytes, one per plane;
+    a line is (w+7)//8 such groups."""
+    groups = (w + 7) // 8
+    out = []
+    t0, t1, t2, t3 = _BITS
+    for y in range(h):
+        line = []
+        for g in range(groups):
+            o = (y * groups + g) * 4
+            line.extend(a | b | c | e for a, b, c, e in zip(
+                t0[data[o]], t1[data[o + 1]], t2[data[o + 2]], t3[data[o + 3]]))
+        out.extend(line[:w])
+    return out
+
+
+def lab_data(raw):
+    """One entry of 2/3Lab_data.amb (GAME_OFF.S, the LAByrinth offsets)."""
+    sky, floor = raw[4], raw[5]
+
+    def count(o):
+        return struct.unpack_from(">H", raw, o)[0], o + 2
+
+    n, o = count(8)
+    groups = []
+    for _ in range(n):
+        # Object_automapper_icon, then Objects_per_group x (X, Y, Z, Object_nr)
+        groups.append([struct.unpack_from(">4H", raw, o + 2 + 8 * k)[3] for k in range(8)])
+        o += 2 + 8 * 8
+    n, o = count(o)
+    objects = []
+    for _ in range(n):
+        _, gfx, frames, _, w, h, _, _ = struct.unpack_from(">IHBBBBHH", raw, o)
+        objects.append((gfx, frames, w, h))
+        o += 14
+    walls = []
+    n, o = count(o)
+    for _ in range(n):
+        gfx, nov = raw[o + 4], raw[o + 7]
+        o += 8
+        walls.append((gfx, [tuple(raw[o + 6 * j:o + 6 * j + 6]) for j in range(nov)]))
+        o += 6 * nov
+    return {"sky": sky, "floor": floor, "groups": groups, "objects": objects, "walls": walls}
+
+
+def part3d(nr):
+    """Which container of the 3D files a map reads (Teildatei_waehlen in
+    FILES_SUP.S, after AM2_CPU): 2 below map 300 and from 400, else 3."""
+    return 3 if 300 <= nr < 400 else 2
+
+
+class D3:
+    """The 3D textures of the maps: walls with their overlays, objects (first
+    frame), horizon, sky and floor colour.  Colour numbers 0..15 of the map
+    palette (the 3D buffer has four planes)."""
+
+    def __init__(self, d):
+        self.d = d
+        self._walls, self._objects = {}, {}
+
+    def lab(self, m):
+        return lab_data(loaded("2Lab_data.amb")[m["tileset"] - 1])
+
+    def wall(self, part, wall):
+        """A wall as Load_3D_map_data builds it: the graphics, then each
+        overlay put in (x on 8 points, Put_(un)masked_MOVEP_block)."""
+        gfx, overlays = wall
+        key = (part, gfx, tuple(overlays))
+        if key not in self._walls:
+            pic = movep_picture(loaded("%dWall3D.amb" % part)[gfx - 1], WALL_W, WALL_H)
+            for mask, g, x, y, w, h in overlays:
+                x, w = x & ~7, w & ~7
+                ov = movep_picture(loaded("%dOverlay3D.amb" % part)[g - 1], w, h)
+                for yy in range(h):
+                    for xx in range(w):
+                        c = ov[yy * w + xx]
+                        if (c or not mask) and x + xx < WALL_W and y + yy < WALL_H:
+                            pic[(y + yy) * WALL_W + x + xx] = c
+            self._walls[key] = pic
+        return self._walls[key]
+
+    def object(self, part, obj):
+        """(colour numbers, width, height) of the first frame; 0 is clear."""
+        gfx, _, w, h = obj
+        key = (part, gfx, w, h)
+        if key not in self._objects:
+            raw = loaded("%dObject3D.amb" % part)[gfx - 1]
+            # an entry can be empty in the container the map reads (1.07: map
+            # 355, part 3, object 168 is only in part 2); then it is left out
+            ok = len(raw) >= (w + 7) // 8 * 4 * h
+            self._objects[key] = (movep_picture(raw, w, h) if ok else [], w, h)
+        return self._objects[key]
+
+    def horizon(self, m):
+        if not m["lab_background"]:
+            return None
+        raw = loaded("Lab_background.amb")[m["lab_background"] - 1]
+        return ambtool.planar_to_indices(raw, VIEW3D, 4, HORIZON_HEIGHT)[0]
+
+    def contents(self, nr, m):
+        """lab, part, Counter wall index -> squares, Counter object -> count."""
+        lab, part = self.lab(m), part3d(nr)
+        walls, objects = collections.Counter(), collections.Counter()
+        for b in m["wall"]:
+            if b >= FIRST_WALL:
+                if b - FIRST_WALL < len(lab["walls"]):
+                    walls[b - FIRST_WALL] += 1
+            elif 0 < b <= len(lab["groups"]):
+                for k in lab["groups"][b - 1]:
+                    if 0 < k <= len(lab["objects"]):
+                        objects[k - 1] += 1
+        return lab, part, walls, objects
+
+    def view_counts(self, nr, m):
+        """Colour counts of a 3D map for the weighting: as many points as a
+        2D map of that size (256 per square), shared out like the 3D view
+        (VIEW_WALLS, VIEW_OBJECTS; sky above the horizon line SCRY, the
+        horizon in it, floor below), each wall and object by how often it
+        stands on the map."""
+        lab, part, walls, objects = self.contents(nr, m)
+        budget = m["width"] * m["height"] * 256
+        sw = VIEW_WALLS if walls else 0
+        so = VIEW_OBJECTS if objects else 0
+        back = (1 - sw - so) * budget
+        scry = SCRY[bool(m["flags"] >> CITY_BIT & 1)]
+        h = collections.Counter()
+        sky = back * scry / VIEW3D
+        hor = self.horizon(m)
+        if hor:
+            part_h = sky * HORIZON_HEIGHT / scry
+            sky -= part_h
+            for c, k in collections.Counter(hor).items():
+                h[c or lab["sky"]] += part_h * k / len(hor)
+        h[lab["sky"]] += sky
+        h[lab["floor"]] += back - back * scry / VIEW3D
+        for share, items, pic in (
+                (sw, walls, lambda i: self.wall(part, lab["walls"][i])),
+                (so, objects, lambda i: [c for c in self.object(part, lab["objects"][i])[0] if c])):
+            total = sum(items.values())
+            for i, k in items.items():
+                p = pic(i)
+                if p:
+                    for c, n in collections.Counter(p).items():
+                        h[c] += share * budget * k / total * n / len(p)
+        return h
+
+    def view_picture(self, nr, m):
+        """A mock-up of the 3D view, 144 x 144: sky, horizon and floor as
+        Thalion clears and draws them, the wall that stands most often on the
+        map straight ahead.  Not Thalion's 3D view (no perspective)."""
+        lab, part, walls, _ = self.contents(nr, m)
+        scry = SCRY[bool(m["flags"] >> CITY_BIT & 1)]
+        pic = [lab["sky"]] * (VIEW3D * scry) + [lab["floor"]] * (VIEW3D * (VIEW3D - scry))
+        hor = self.horizon(m)
+        if hor:
+            o = (scry - HORIZON_HEIGHT) * VIEW3D
+            for i, c in enumerate(hor):
+                if c:
+                    pic[o + i] = c
+        if walls:
+            w = self.wall(part, lab["walls"][walls.most_common(1)[0][0]])
+            x0, y0 = (VIEW3D - WALL_W) // 2, max(0, scry - WALL_H // 2)
+            for y in range(min(WALL_H, VIEW3D - y0)):
+                pic[(y0 + y) * VIEW3D + x0:(y0 + y) * VIEW3D + x0 + WALL_W] = w[y * WALL_W:(y + 1) * WALL_W]
+        return pic
+
+    def sheet(self, maps, width=8 * (WALL_W + 4) - 4, gap=4):
+        """All walls (with overlays), objects and horizons of these 3D maps,
+        each once, packed in rows: (colour numbers, width, height, legend)."""
+        items, seen = [], set()
+        for kind in ("wall", "object", "horizon"):
+            for nr, m in maps:
+                lab, part, walls, objects = self.contents(nr, m)
+                if kind == "wall":
+                    for i in sorted(walls):
+                        p = self.wall(part, lab["walls"][i])
+                        if tuple(p) not in seen:
+                            seen.add(tuple(p))
+                            items.append((p, WALL_W, WALL_H))
+                elif kind == "object":
+                    for i in sorted(objects):
+                        p, w, h = self.object(part, lab["objects"][i])
+                        if p and tuple(p) not in seen:
+                            seen.add(tuple(p))
+                            items.append((p, w, h))
+                else:
+                    p = self.horizon(m)
+                    if p and tuple(p) not in seen:
+                        seen.add(tuple(p))
+                        items.append((p, VIEW3D, HORIZON_HEIGHT))
+        swatches = sorted({(self.lab(m)["sky"], self.lab(m)["floor"]) for _, m in maps})
+        places, x, y, row = [], 0, 0, 0
+        for p, w, h in items:
+            if x and x + w > width:
+                x, y, row = 0, y + row + gap, 0
+            places.append((x, y))
+            x, row = x + w + gap, max(row, h)
+        sw_y = y + row + gap
+        height = sw_y + 24
+        out = [0] * (width * height)
+        for (p, w, h), (x0, y0) in zip(items, places):
+            for yy in range(h):
+                out[(y0 + yy) * width + x0:(y0 + yy) * width + x0 + w] = p[yy * w:(yy + 1) * w]
+        for j, (s, f) in enumerate(swatches):
+            for k, c in enumerate((s, f)):
+                x0 = j * 56 + k * 24
+                if x0 + 20 <= width:
+                    for yy in range(20):
+                        out[(sw_y + yy) * width + x0:(sw_y + yy) * width + x0 + 20] = [c] * 20
+        legend = ("%d walls with their overlays, %d objects (first frame), %d horizons; "
+                  "bottom row: sky and floor colour per lab"
+                  % (sum(1 for _, w, h in items if (w, h) == (WALL_W, WALL_H)),
+                     sum(1 for _, w, h in items if (w, h) not in ((WALL_W, WALL_H), (VIEW3D, HORIZON_HEIGHT))),
+                     sum(1 for _, w, h in items if (w, h) == (VIEW3D, HORIZON_HEIGHT))))
+        return out, width, height, legend
+
+
+# ---------------------------------------------------------------- tactic field
+
+def tactic_icons():
+    """The tactical icons from Combat_graphics, 16 x 14 colour numbers each."""
+    raw = loaded("Combat_graphics")[0][TACTICAL_GFX:]
+    return [ambtool.planar_to_indices(raw[i:i + TACTIC_ICON], 16, 5, 14)[0]
+            for i in range(0, len(raw) - TACTIC_ICON + 1, TACTIC_ICON)]
+
+
+def tactic_picture(d):
+    """The combat layout from line TACTIC_LINE down (where Tactic_pal
+    holds), its tactic field filled with the icons in their order: 320 x
+    (200 - TACTIC_LINE)."""
+    layouts(d)
+    lay = layout_picture(d, LAYOUT_COMBAT)
+    h = 200 - TACTIC_LINE
+    pic = lay[TACTIC_LINE * 320:]
+    for n, icon in enumerate(tactic_icons()[:30]):
+        x0 = TACTIC_X + 16 * (n % 6)
+        y0 = TACTIC_Y + TACTIC_CELL * (n // 6) - TACTIC_LINE
+        for y in range(14):
+            for x in range(16):
+                c = icon[y * 16 + x]
+                if c and y0 + y < h:
+                    pic[(y0 + y) * 320 + x0 + x] = c
+    return pic, 320, h
+
+
+def tactic_counts(d):
+    """Weighting of Tactic_pal: the layout from line TACTIC_LINE down, and
+    every tactical icon once (which ones a combat shows depends on the
+    party and the monsters)."""
+    layouts(d)
+    h = collections.Counter(layout_picture(d, LAYOUT_COMBAT)[TACTIC_LINE * 320:])
+    for icon in tactic_icons():
+        h.update(c for c in icon if c)
+    return h
 
 
 def examples(game, d, e):
@@ -673,19 +1136,34 @@ def examples(game, d, e):
             maps3d = [nr for nr, m in sorted(d.karten.items())
                       if m["palette"] == num and m["type"] != ambmap.TYPE_2D]
             if maps2d:
-                # the map with the most colours that cover something (not
-                # the first: map 1 of Lyramion is open sea)
-                nr, m = max(maps2d, key=lambda t: (sum(
-                    1 for k in game.map_pixels.get(t[0], {}).values() if k > 200), -t[0]))
+                ref = MAP_REFERENCE.get(num)
+                if ref:
+                    nr, at, place = ref[0], ref[1:3], ": " + ref[3]
+                    m = d.karten[nr]
+                else:
+                    # the map with the most colours that cover something (not
+                    # the first: map 1 of Lyramion is open sea)
+                    nr, m = max(maps2d, key=lambda t: (sum(
+                        1 for k in game.map_pixels.get(t[0], {}).values() if k > 200), -t[0]))
+                    at, place = None, ""
                 pic = layout_picture(d, LAYOUT_2D)
-                cut = map_cut(d, m)
+                cut = map_cut(d, m, at=at)
                 for y in range(144):
                     for x in range(176):
                         pic[(MAP2D_Y + y) * 320 + MAP2D_X + x] = cut[y * 176 + x]
-                out.append(("2D map %d in the layout" % nr, pic, 320, 200))
+                out.append(("2D map %d in the layout%s" % (nr, place), pic, 320, 200))
             if maps3d:
-                out.append(("3D map %d: layout only (the 3D view needs a savestate "
-                            "picture)" % maps3d[0], layout_picture(d, LAYOUT_3D), 320, 200))
+                # the 3D map with the most squares of wall
+                nr = max(maps3d, key=lambda n: (sum(1 for b in d.karten[n]["wall"]
+                                                    if b >= FIRST_WALL), -n))
+                pic = layout_picture(d, LAYOUT_3D)
+                view = game.d3.view_picture(nr, d.karten[nr])
+                for y in range(VIEW3D):
+                    pic[(MAP3D_Y + y) * 320 + MAP3D_X:(MAP3D_Y + y) * 320 + MAP3D_X + VIEW3D] = \
+                        view[y * VIEW3D:(y + 1) * VIEW3D]
+                out.append(("3D map %d, mock-up: sky, horizon, floor and its most common "
+                            "wall, without perspective; all textures in the sheet below" % nr,
+                            pic, 320, 200))
             for i, p in enumerate(game.events):
                 if p == num:
                     out.append(("event picture %d" % (i + 1),
@@ -696,6 +1174,10 @@ def examples(game, d, e):
                         planar_picture("Combat_background.amb", bg, 95), 320, 95))
         elif kind == "main":
             out.append(("inventory layout", layout_picture(d, LAYOUT_INV), 320, 200))
+        elif kind == "tactic":
+            pic, w, h = tactic_picture(d)
+            out.append(("combat layout from line %d, tactic field with the first 30 of "
+                        "the %d tactical icons" % (TACTIC_LINE, len(tactic_icons())), pic, w, h))
     return out
 
 
@@ -726,179 +1208,10 @@ def strip(title, cs):
 
 
 def cmd_sheet(a):
-    game = Game(maps=True)
-    print(write_sheet(game, Corrections(), a.names))
-
-
-def write_sheet(game, corr, names=()):
-    """The review sheet build/st_palettes/index.html, for the palettes
-    names (none = all); returns its path."""
-    d = game.d
-    d.layouts = farbreduktion.lade("Layouts.amb")
-    es = entries(game, corr)
-    variants = {m: entries(game, corr, m) for m in SHEET_METHODS}
-    picked = list(range(len(es)))
-    if names:
-        want = set(names)
-        picked = [k for k in picked if want & set(es[k].names)]
-        if not picked:
-            raise SystemExit("st_palettes: no palette called %s" % ", ".join(names))
-    os.makedirs(OUT_DIR, exist_ok=True)
-    parts, choices = [], []
-    for k in picked:
-        e = es[k]
-        sl = slug(e.names)
-        # a method can be chosen where the game's pictures were counted
-        methods = SHEET_METHODS if sum(e.counts.values()) else ()
-        name = next((n for n in e.names if n in corr.methods), e.names[0])
-        if methods:
-            choices.append({"slug": sl, "name": name, "method": e.method,
-                            "note": corr.notes.get(name, "")})
-        thalion, ste, st = colours_of(e)
-        rows = ["<h2 id='%s'>%s</h2>" % (sl, html.escape(" = ".join(e.names)))]
-        uses = [u for n in e.names for u in game.usage.get(n, [])]
-        rows.append("<p class=use>method in tools/st_palettes.txt: <b>%s</b>%s</p>" % (
-            e.method, "" if methods else " (no pictures counted: only unweighted)"))
-        if uses:
-            rows.append("<p class=use>%s</p>" % html.escape("; ".join(uses[:12]) +
-                                                           (" ..." if len(uses) > 12 else "")))
-        rows.append("<table class=pal><tr><th>colour</th>%s</tr>" %
-                    "".join("<td>%d</td>" % i for i in range(32)))
-        rows.append(strip("Thalion", thalion))
-        for m in methods or (e.method,):
-            v = variants[m][k] if methods else e
-            _, vste, vst = colours_of(v)
-            rows.append(strip("STE %s" % m, vste))
-            rows.append(strip("ST %s" % m, vst))
-        rows.append("<tr><th>register (%s)</th>%s</tr></table>" % (e.method, "".join(
-            "<td%s>%d</td>" % (" class=hand" if i in e.hand_colours else "", e.tab[i])
-            for i in range(32))))
-        rows.append("<table class=reg><tr><th>register (%s)</th>%s</tr>" %
-                    (e.method, "".join("<td>%d</td>" % r for r in range(1, 16))))
-        rows.append("<tr><th>STE</th>%s</tr>" % "".join(
-            "<td%s>%s</td>" % (" class=hand" if r in e.hand_ste else "", hex3(e.ste[r]))
-            for r in range(1, 16)))
-        rows.append("<tr><th>ST</th>%s</tr></table>" % "".join(
-            "<td%s>%s</td>" % (" class=hand" if r in e.hand_st else "", hex3(e.st[r]))
-            for r in range(1, 16)))
-        for j, (caption, pic, w, h) in enumerate(examples(game, d, e)):
-            name0 = "%s_%d_Thalion.png" % (sl, j)
-            save_png(pic, w, h, thalion, os.path.join(OUT_DIR, name0))
-            cols = ["<figure class=col><figcaption>Thalion (Amiga/Falcon)</figcaption>"
-                    "<img src='%s'></figure>" % name0]
-            for m in methods or (e.method,):
-                v = variants[m][k] if methods else e
-                _, vste, vst = colours_of(v)
-                imgs = []
-                for title, cs in (("STE", vste), ("ST", vst)):
-                    fn = "%s_%d_%s_%s.png" % (sl, j, m.replace(" ", ""), title)
-                    save_png(pic, w, h, cs, os.path.join(OUT_DIR, fn))
-                    imgs.append("<img src='%s' title='%s'>" % (fn, title))
-                if methods:
-                    head = ("<label><input type=radio name='%s' value='%s'%s> %s</label>"
-                            % (sl, m, " checked" if m == e.method else "", m))
-                else:
-                    head = m
-                cols.append("<figure class='col m' data-slug='%s' data-method='%s'>"
-                            "<figcaption>%s <span>STE above, ST below</span></figcaption>%s"
-                            "</figure>" % (sl, m, head, "".join(imgs)))
-            rows.append("<p>%s</p><div class=pics>%s</div>" % (html.escape(caption), "".join(cols)))
-        parts.append("<section>%s</section>" % "\n".join(rows))
-    index = "".join("<a href='#%s'>%s</a> " % (slug(es[k].names), html.escape(es[k].names[0]))
-                    for k in picked)
-    data = json.dumps({"default": DEFAULT_METHOD, "choices": choices,
-                       "lines": "".join(corr.lines)})
-    page = SHEET.replace("@INDEX@", index).replace("@PARTS@", "\n".join(parts)) \
-                .replace("@DATA@", data.replace("</", "<\\/"))
-    path = os.path.join(OUT_DIR, "index.html")
-    with open(path, "w") as f:
-        f.write(page)
-    return path
-
-
-SHEET = """<!doctype html><html><head><meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<title>ST palettes</title><style>
-body{font:14px sans-serif;background:#222;color:#ddd;margin:16px;padding-bottom:220px}
-a{color:#9cf;margin-right:6px}
-table{border-collapse:collapse;margin:6px 0}
-td,th{border:1px solid #444;padding:2px 4px;font:12px monospace;text-align:center}
-th{text-align:left;white-space:nowrap}
-table.pal td{width:18px;height:18px}
-.hand{background:#753 !important}
-.use{color:#aaa}
-.pics{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
-figure{margin:0}figcaption{font-size:13px;margin-bottom:3px}
-figcaption span{color:#888;font-size:11px}
-.col{padding:4px;border:2px solid transparent;border-radius:4px}
-.col.on{border-color:#6c6;background:#2c3a2c}
-img{display:block;image-rendering:pixelated;width:320px;max-width:100%;margin-bottom:3px}
-label{cursor:pointer;font-weight:bold}
-section{border-top:1px solid #555;margin-top:16px}
-#out{position:fixed;left:0;right:0;bottom:0;background:#333;border-top:2px solid #6c6;
- padding:8px 16px;display:flex;gap:12px;align-items:flex-start}
-#out textarea{flex:1;height:150px;font:12px monospace;background:#111;color:#dfd;border:1px solid #555}
-#out div{display:flex;flex-direction:column;gap:6px;width:220px}
-button{font:13px sans-serif;padding:4px 8px}
-</style></head><body>
-<h1>ST palettes</h1>
-<p>Built from the original files by tools/st_palettes.py sheet.  Contains
-Thalion's graphics and colours: stays in build/, never into the repository
-or a published page.  Brown = set by hand in tools/st_palettes.txt.</p>
-<p>Choose a method per palette (only palettes whose pictures the build
-counts can be weighted).  The box at the bottom holds the method lines that
-differ from the default; "Download" gives the whole tools/st_palettes.txt
-with them.  Then build again (tools/build_st.sh).</p>
-<p>@INDEX@</p>
-@PARTS@
-<div id=out><textarea id=lines readonly></textarea><div>
-<span id=count></span>
-<button id=copy>Copy method lines</button>
-<button id=save>Download st_palettes.txt</button></div></div>
-<script>
-const D = @DATA@;
-function chosen(c) {
-  const r = document.querySelector("input[name='" + c.slug + "']:checked");
-  return r ? r.value : c.method;
-}
-function methodLines() {
-  return D.choices.filter(c => chosen(c) !== D.default)
-                  .map(c => (c.name + " method " + chosen(c) + "      ").slice(0, 29) +
-                            (c.note ? "# " + c.note : "")).map(l => l.trimEnd());
-}
-function update() {
-  for (const f of document.querySelectorAll(".col.m"))
-    f.classList.toggle("on", chosen({slug: f.dataset.slug, method: ""}) === f.dataset.method);
-  const l = methodLines();
-  document.getElementById("lines").value = l.join("\\n");
-  const changed = D.choices.filter(c => chosen(c) !== c.method).length;
-  document.getElementById("count").textContent = l.length + " method lines (default " +
-    D.default + "), " + changed + " changed against the file";
-}
-function wholeFile() {
-  let t = D.lines.replace(/\\n*$/, "\\n");
-  const l = methodLines();
-  if (l.length && !/^# Methods/m.test(t))
-    t += "\\n# Methods (default " + D.default + "), chosen in st_palettes.py sheet\\n";
-  if (l.length) t += l.join("\\n") + "\\n";
-  return t;
-}
-document.addEventListener("change", update);
-document.getElementById("copy").onclick = () => {
-  const t = document.getElementById("lines");
-  t.select();
-  navigator.clipboard ? navigator.clipboard.writeText(t.value) : document.execCommand("copy");
-};
-document.getElementById("save").onclick = () => {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([wholeFile()], {type: "text/plain"}));
-  a.download = "st_palettes.txt";
-  a.click();
-};
-update();
-</script>
-</body></html>
-"""
+    raise SystemExit("st_palettes: the review sheet is now the palette editor:\n"
+                     "  python3 tools/palette_editor/palette_sheet.py %s\n"
+                     "  -> build/palette_editor/index.html"
+                     % " ".join('"%s"' % n for n in a.names))
 
 
 # ---------------------------------------------------------------- older views
@@ -1012,8 +1325,6 @@ def main():
     u = p.add_subparsers(dest="command", required=True)
     q = u.add_parser("build")
     q.add_argument("-o", default="build/STPAL.DAT")
-    q.add_argument("--no-sheet", action="store_true",
-                   help="without the review sheet (it takes a few seconds)")
     q = u.add_parser("sheet")
     q.add_argument("names", nargs="*", help='e.g. "pal 12" "combat 39" main')
     for name in ("ramp", "screen", "measure"):

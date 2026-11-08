@@ -59,7 +59,7 @@ is sourced**, before the first step, it settles what the steps read:
   and its path is the default.
 - `tools/game_files.py` finds the game files in what names them, a folder,
   a zip or disk images, and unpacks zips and disks into `build/game_files/`
-  (`adf_read.py`; DMS through `xdms`, IPF through `ipf_to_adf.py`).
+  (`adf_read.py`; DMS through `dms_to_adf.py`, IPF through `ipf_to_adf.py`).
 - `tools/fetch_vbcc.py` fetches vasm and vlink, only if one is missing,
   into `ambermoon_gamedata/bin/` (Linux x86-64).
 - `tools/thalion_prepare.py` writes **`build/thalion/Amberfiles`** for
@@ -74,15 +74,16 @@ is sourced**, before the first step, it settles what the steps read:
    its absence is no stop. A vasm other than 1.9a, or `VASM_EXTRA` set,
    warns; without the YM SNDH there is a hint. `build_name.py` writes the
    build's name.
-2. **Library data from `AM2_CPU`:** `am2cpu_auszug.py` →
-   `build/am2cpu_daten.i`; `textmarken.py` → `build/textmarken.i`;
+2. **Library data from `AM2_CPU`:** `am2cpu_extract.py` →
+   `build/am2cpu_daten.i`; `text_labels.py` → `build/textmarken.i`;
    `am2cpu_code.py` → `build/am2cpu_code.i` (needs an m68k `objdump`);
    `intro_auszug.py` → `build/intro_daten.i`.
 3. **Constants against Thalion's source** (`ambchest.py`).
-4. **YM music from the SNDH**, only with the YM SNDH file: `ym_auszug.py
+4. **YM music from the SNDH**, only with the YM SNDH file: `ym_extract.py
    --sndh` → `build/MUSIK_YM.BIN`.
 5. **Delivery** (`deliver_data`, in each machine's step "Game files and
-   delivery"): game files renamed to 8.3, save game folders from
+   delivery"): game files renamed to 8.3 (the table is in
+   `game_names.py`), save game folders from
    `Save.nn/`, the YM music, `BUILD.TXT`; `*.INF` left alone.
 
 Under `build_all.sh` steps 1–4 and the source checks run once.
@@ -147,18 +148,18 @@ a key and goes back to the desktop.
 ## Inside a build
 
 **A new piece from `AM2_CPU`** (step 2). Data goes into the table
-`STUECKE` of `am2cpu_auszug.py` (name, hunk, offset, length, evidence),
+`PIECES` of `am2cpu_extract.py` (name, hunk, offset, length, evidence),
 Thalion's routines into `STUECKE` of `am2cpu_code.py` (entry name, hunk,
 from, to, embedded tables, evidence). A name a routine refers to goes
-into `NAMEN` in `am2cpu_lesen.py`, whose disassembler `am2cpu_code.py`
+into `NAMES` in `am2cpu_read.py`, whose disassembler `am2cpu_code.py`
 uses. `am2cpu_code.py` stops on
 a relocation without a name, a jump out of the piece, a hardware address
 or an instruction the 68000 lacks. A piece Thalion calls only on a
 68020 (`Draw_floor`/`Draw_ceiling`) goes into `CPU_020` with the evidence,
 and may use what `ERLAUBT_020` allows: 32-bit division and multiplication,
 nothing else (finding 198). To read a contract in `AM2_CPU` before that:
-`am2cpu_lesen.py dis <Name>`, or a place as hunk:offset (`dis 0:C4A2 -n
-8`, `daten 4:76A8 -l 40`, `wer 4:76BA`).
+`am2cpu_read.py dis <Name>`, or a place as hunk:offset (`dis 0:C4A2 -n
+8`, `data 4:76A8 -l 40`, `who 4:76BA`).
 
 **The engine** (`tools/build_engine.sh`, called by both builds):
 `tools/musik_dsp.sh` assembles the DSP mixer with `a56` and requires the
@@ -180,8 +181,9 @@ appendices of this documentation into `build/doku/`. **Test builds, only
 with `TESTBUILDS=1`:** `FEEMESS`, `FEECHECK`, `INTROMES`, `INTROPRF`,
 `INTRDIAG`, `EXTRDIAG`, `EXTROPRF` (chapter 10) and `FREQ.TOS`, the one tool
 only they need; a player has no use for them. **The ST build** adds the ST palettes
-(`STPAL.DAT`; with Pillow also the check page
-`build/palette_editor/index.html`, without it one warning and no page, the
+(`STPAL.DAT`, and always the palette editor's page
+`build/palette_editor/index.html`; without `node` its check of
+`st_group.js` against `st_palettes.py` is left out with one warning, the
 game files the same), the ST fantasy intro (`FANTSYST.TOS`), the ST intro
 (`INTROST.TOS`), the ST extro (`EXTROST.TOS`), its loader and, when it runs alone, the
 source checks.
@@ -233,9 +235,49 @@ What each check says and what it does not: `docs/16-Pruefwerkzeuge.md`.
 | `LADEFEHLERTEST` | the first `Load_subfile` in the game fails |
 | `ABSTURZTEST` | bombs about five seconds in, to test the emergency exit |
 | `ENTPACKPRUEF`, `RASTERPRUEF` | self-tests of unpacking and raster list |
+| `COARSE_WALLS` | D10 built on: coarse 3D walls while the view moves (a line `COARSE_WALLS=` in `AMBER.INF` still decides) |
+| `WALLS_THALION` | Thalion's loop for opaque walls again instead of `D3_WALLS.S` (the way back from D8) |
+| `WALLCHECK`, `WALLCHECK_COARSE` | each wall is drawn both ways and the differences counted (`wchk_*`, read in the debugger); the second for D10's pairs |
+| `COARSE_ALWAYS` | every frame coarse, for measuring |
+| `ZOOM_THALION` | Thalion's horizontal scaling of enlarged 3D objects again instead of `Zoom_columns` (the way back from D12) |
+| `ZOOMCHECK` | each enlarged object is scaled both ways and the points compared; before the first, `ZOOMCHECK_RANDOM` invented objects (default 5000) through Thalion's whole `draw_zoomshape` (`zchk_*`) |
+| `GEOM_THALION` | Thalion's `rotate_y` and `Quicksort` again instead of `Rotate_grid` and `Sort_faces` (the way back from D13) |
+| `GEOMCHECK` | each rotation and sort runs both ways and the output is compared; before the first call `GEOMCHECK_ROT` invented grids (2000) and `GEOMCHECK_SORT` invented lists (300) (`geo_*`) |
 
 A diagnostic build overwrites `ATARI/` like a normal one: set it aside,
 build normally, then copy it back under a name of its own.
+
+## Release packages
+
+`python3 tools/make_packages.py GAME_FILES... [--ref REF] [--out DIR]`
+builds the packages for testers and players: the programs without the
+game (docs/14 F). One zip per game version, named
+`ambermoon-atari-<VERSION>-for-<game version>-<de|en|fr>.zip`, by default
+in `ambermoon_gamedata/packages/`; a folder inside the repository is
+refused.
+
+- It clones the repository into a temporary folder and checks out one
+  commit (default `HEAD`), so `BUILD.TXT` names that commit; changes not
+  committed are not in the packages, and the tool says so.
+- It runs `build_all.sh` there with nothing of the caller's setup but
+  Thalion's source, `objdump` and the vasm/vlink folders of
+  `ambermoon_gamedata/`: no `build.cfg`, no `TESTBUILDS`, no `VASM_EXTRA`,
+  no YM SNDH, and `AMBER_DOWNLOAD=NO`.
+- A zip holds `README.TXT` (from `tools/package_readme.txt`, with the
+  build's name and the game version filled in), `install.py`, the tools
+  `install.py` needs, and of `ATARI/` only the programs, `STPAL.DAT`,
+  `MUSIK_YM.INF`, `AMBER.INF` and `BUILD.TXT`. Game files and
+  `MUSIK_YM.BIN` stay out; the player brings them.
+- Then it unpacks each zip and runs its `install.py` with the same game
+  files, as a player would. It stops if the result is not the delivered
+  `ATARI/` byte for byte (a new file of the build must be named in
+  `PROGRAMS` or in `game_names.py`), if a program equals a game file, or
+  if `BUILD.TXT` carries a `+` (the build changed a tracked file).
+
+On the player's PC, `python3 install.py GAME_FILES [--ym FILE] [--saves
+OLD_ATARI] [--force]` puts the game files and the YM music next to the
+programs (chapter 11). Publishing the zips is a step of its own; they
+never go into the repository.
 
 ## Symbol map
 

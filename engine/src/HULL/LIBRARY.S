@@ -2393,7 +2393,20 @@ pmsb_out:
 ;
 ; VblQ_handler und Musik_vbl retten alle Register; VblQ_handler prueft
 ; Module_Sp und Q_block selbst.
+;
+;   Timer        capped at TIMER_CAP after the queue.  DEVIATION (goal 1),
+;                docs/17-deviations.md D11: Thalion's Make_2D_move compares
+;                only the low word of the long Timer (cmp.w d3,d2 / bmi), and
+;                in 2D Timer is cleared only after a step.  Standing still for
+;                32768 frames (9:06 min at VGA, 10:55 min at RGB) made the low
+;                word negative, and no 2D move was taken for as long again
+;                (finding 275; the same in AM2_CPU 1.07, 0:$E2BC).  Any value
+;                from M2_movement_speed (8) up acts the same in 2D; 3D clears
+;                Timer every frame (M3_DisUpd) and clips at Max_3D_VBLs (13).
+;                No register is touched.
 ; ***************************************************************************
+TIMER_CAP	equ	$1000
+
 Bibliothek_vbl:
 	bsr	Drogen_setzen		; first: the colours of Drugged_FX (FALCON_LIB.S; ST: none)
 	addq.w	#1,VBL_counter
@@ -2402,6 +2415,12 @@ Bibliothek_vbl:
 	bsr	Zeiger_vbl		; der Zeiger folgt in jedem Bild (269)
 	bsr	Drogen_farben		; Drugged_FX on the colours (FALCON_LIB.S; ST: none)
 	jsr	VblQ_handler
+	; DEVIATION (goal 1), docs/17-deviations.md D11: keep Thalion's word
+	; compare in Make_2D_move from going negative.
+	cmp.l	#TIMER_CAP,Timer
+	bls.s	bv_timer_ok
+	move.l	#TIMER_CAP,Timer
+bv_timer_ok:
 	jmp	Musik_vbl		; Tonpuffer und Takt (MUSIK_SUP.S)
 
 ; ***************************************************************************

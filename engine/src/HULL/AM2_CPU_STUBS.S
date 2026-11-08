@@ -7,7 +7,7 @@
 ; in AM2_CPU (Routinen, Daten) oder in Texten, die dort einkompiliert waren.
 ; Es ist genau die Liste von tools/vollprobe.py, abzueglich dessen, was
 ; unsere Schicht schon echt stellt (*_SUP.S, LIBRARY.S, FALCON.S ...) und
-; was tools/am2cpu_auszug.py beim Bau aus AM2_CPU holt
+; was tools/am2cpu_extract.py beim Bau aus AM2_CPU holt
 ; (build/am2cpu_daten.i).  Diese Datei schrumpft; sie ersetzt die frueheren
 ; ACTIONS_, CONTROLS_, DISPLAY_, EVENTS_, INVENTOR_, MAIN_, MODULE_C_ und
 ; WORDS_STUBS.S.
@@ -39,14 +39,14 @@
 ; Der Diagnoseschirm und Diagnostics_list1 sind echt (DIAGNOSE_SUP.S, 267).
 
 ; --- Meldungen: echt seit 2026-09-28.  Die Textlisten (Recup1_text ...)
-; baut tools/am2cpu_auszug.py aus AM2_CPU, die Einzeltexte (Divide_*_text,
-; That_text ...) und Magic_txt setzt tools/textmarken.py in Text.amb;
+; baut tools/am2cpu_extract.py aus AM2_CPU, die Einzeltexte (Divide_*_text,
+; That_text ...) und Magic_txt setzt tools/text_labels.py in Text.amb;
 ; Attrskill_nr und Charges_txt sind Stuecke aus AM2_CPU. ---
 
 	SECTION	Fast_BSS,bss
 	even
 ; --- C: Grafik: keine mehr.  Die 2D-Grafik (Compass, Eye_*, Status_icons,
-; Chequered ...) kommt seit 2026-09-29 aus AM2_CPU (tools/am2cpu_auszug.py,
+; Chequered ...) kommt seit 2026-09-29 aus AM2_CPU (tools/am2cpu_extract.py,
 ; Erkenntnis 256), Chared_portraits seit 2026-09-30 (261). ---
 
 ; --- Variablen der Bibliothek.  Thalions Code liest oder schreibt sie; wer

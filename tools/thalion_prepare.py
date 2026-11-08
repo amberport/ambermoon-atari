@@ -12,7 +12,7 @@ own (build/thalion/Amberfiles); Thalion's files stay as they are.  For a
 
 Made files (raw, Load_file reads raw files as they are):
 
-    Text.amb          from AM2_CPU, in the layout of 1.20 (textmarken.py)
+    Text.amb          from AM2_CPU, in the layout of 1.20 (text_labels.py)
     Objects.amb       the item table from AM2_CPU (count word, 60 byte each)
     Button_graphics   from AM2_CPU (1.2x: hunk 5)
     Dict.amb          = Dictionary.<language>
@@ -87,13 +87,13 @@ class OldCpu:
         h = self.hunks[oh]
         if ov not in h["reloc"]:
             raise Error("no pointer at old %d:$%X" % (oh, ov))
-        return h["reloc"][ov], longword(h["daten"], ov)
+        return h["reloc"][ov], longword(h["data"], ov)
 
 
 def part1(old):
     """-> the 46 texts of part 1, each with its zero byte."""
-    import am2cpu_auszug as A
-    lists = sorted(m[1] for m in A.MELDUNG_LISTEN if m)
+    import am2cpu_extract as A
+    lists = sorted(m[1] for m in A.MESSAGE_LISTS if m)
     texts = []
     for nr, place in enumerate(TEXT_PLACES):
         if isinstance(place, tuple):           # World_map_names in hunk 6
@@ -106,7 +106,7 @@ def part1(old):
             start = max(a for a in lists if a <= place)
             oh, ov = old.label(4, start)
             target = old.pointer(oh, ov + place - start)
-        texts.append(text_at(old.hunks[target[0]]["daten"], target[1]))
+        texts.append(text_at(old.hunks[target[0]]["data"], target[1]))
     return texts
 
 
@@ -231,15 +231,15 @@ def number_fields_of(text, names, reverse_order):
 
 
 def text_amb(old):
-    import textmarken as T
-    d = old.hunks[old.label(6, 0x104)[0]]["daten"]   # the data hunk
+    import text_labels as T
+    d = old.hunks[old.label(6, 0x104)[0]]["data"]   # the data hunk
     t1 = part1(old)
-    lists, l_start, e_start = part3(old, d, len(T.LISTEN))
+    lists, l_start, e_start = part3(old, d, len(T.LISTS))
     p_start, p_end = find_prompts(d, l_start)
-    singles = part4(old, d, e_start, T.EINZEL)
+    singles = part4(old, d, e_start, T.SINGLES)
     # the version lines lie in the code hunk of 1.0x
     for h in old.hunks:
-        m = am2cpu_old.VERSION.search(h["daten"])
+        m = am2cpu_old.VERSION.search(h["data"])
         if m:
             break
     else:
@@ -279,14 +279,14 @@ def text_amb(old):
     result += b"\0\0" + ver1 + ver2
     while len(result) % 4:
         result.append(0)
-    labels, _ = T.zerlegen(bytes(result))        # the same check as the build's
+    labels, _ = T.parse_text_amb(bytes(result))        # the same check as the build's
     return bytes(result)
 
 
 def item_table(old):
     """The item table: word n, then n records of 60 bytes; the name (last
     20 bytes) printable.  Exactly one in the data hunk."""
-    d = old.hunks[old.label(6, 0x104)[0]]["daten"]
+    d = old.hunks[old.label(6, 0x104)[0]]["data"]
     hits = []
     for p in range(0, len(d) - 2, 2):
         n = word(d, p)
@@ -308,7 +308,7 @@ def item_table(old):
 
 def buttons(old):
     oh, ov = old.label(5, 0)
-    d = old.hunks[oh]["daten"]
+    d = old.hunks[oh]["data"]
     if ov + BUTTONS_SIZE > len(d):
         raise Error("Button_graphics runs past the data hunk")
     return d[ov:ov + BUTTONS_SIZE]

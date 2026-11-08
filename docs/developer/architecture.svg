@@ -56,9 +56,9 @@
   <!-- build time -->
   <rect x="630" y="60" width="306" height="262" rx="6" fill="#ffffff" stroke="#5b7bb0" stroke-dasharray="4 3"/>
   <text x="646" y="84" font-size="15" font-weight="bold" fill="#222">Build time · tools/build_all.sh</text>
-  <text x="646" y="108" font-size="13" fill="#333">AM2_CPU → am2cpu_auszug.py,</text>
+  <text x="646" y="108" font-size="13" fill="#333">AM2_CPU → am2cpu_extract.py,</text>
   <text x="660" y="124" font-size="13" fill="#333">am2cpu_code.py → build/*.i</text>
-  <text x="646" y="146" font-size="13" fill="#333">Text.amb → textmarken.py</text>
+  <text x="646" y="146" font-size="13" fill="#333">Text.amb → text_labels.py</text>
   <text x="660" y="162" font-size="13" fill="#333">(where library texts lie)</text>
   <text x="646" y="184" font-size="13" fill="#333">Ambermoon_intro, Extro →</text>
   <text x="660" y="200" font-size="13" fill="#333">amiga_programm.py (K1, K2)</text>

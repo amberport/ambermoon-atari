@@ -20,26 +20,26 @@ In total: 425 names; 72 routines, 222 data and variables, 119 constants and offs
 | `Clear_1plane_block` | routine | `engine/src/HULL/D3_SUP.S:465` | 1 | 1 | eine Ebene in einem Rechteck loeschen. | in: d0.w/d1.w = linke obere Ecke (x Vielfaches von 16), d5.w = Ebene, d6.w = Breite in 16er-Gruppen, d7.w = Zeilen (im Original d2/d3/a0/a6 gesichert, der Rest unberuehrt; AM2_CPU 0:$21592); all re... |
 | `Clear_all_claims` | routine | `engine/src/HULL/MEMORY.S:269` | 1 | 1 | set every claim counter to zero (0:$23D9E). | all registers preserved |
 | `Clear_memory` | routine | `engine/src/HULL/MEMORY.S:479` | 9 | 7 | fill a block with zeros. | in: d0.b = handle; all registers preserved |
-| `Clear_screen` | routine | `engine/src/HULL/LIBRARY.S:967` | 1 | 1 | fill a whole screen with colour 0. | in: a0 = screen; all registers preserved |
+| `Clear_screen` | routine | `engine/src/HULL/LIBRARY.S:969` | 1 | 1 | fill a whole screen with colour 0. | in: a0 = screen; all registers preserved |
 | `Close_current_file` | routine | `engine/src/HULL/FILES_SUP.S:445` | 2 | 1 | close the open file (0:$26220). | all registers preserved |
 | `Copy_memory` | routine | `engine/src/HULL/VARIOUS_SUP.S:440` | 6 | 5 | d0 Byte von (a0) nach (a1). Alle Register bleiben. | all registers preserved |
-| `Copy_screen` | routine | `engine/src/HULL/LIBRARY.S:1219` | 16 | 5 | the shown screen whole into the back one (0:$21456). | all registers preserved |
+| `Copy_screen` | routine | `engine/src/HULL/LIBRARY.S:1221` | 16 | 5 | the shown screen whole into the back one (0:$21456). | all registers preserved |
 | `Create_fake_handle` | routine | `engine/src/HULL/MEMORY.S:323` | 3 | 3 | wrap memory that is not ours in a handle. | in: a0 = the graphic in memory; out: d0 = handle, 0 if no slot was free; other registers preserved |
 | `Decompress` | routine | `engine/src/HULL/FILES_SUP.S:1442` | 1 | 1 | Thalions Symbol, entpackt einen LOB-Block an Ort und Stelle. | in: a0 = Puffer, der den gepackten Block am Anfang traegt; all registers preserved |
 | `Destroy_fake_handle` | routine | `engine/src/HULL/MEMORY.S:356` | 3 | 3 | remove a handle made by Create_fake_handle. | in: d0.b = handle; all registers preserved |
 | `DI_CR` | routine | `engine/src/HULL/DIAGNOSE_SUP.S:110` | 33 | 2 | neue Zeile. Nach 28 Zeilen auf einen Klick warten, Schirm loeschen, oben weiter. Alle Register bleiben. | all registers preserved |
 | `DI_Print` | routine | `engine/src/HULL/DIAGNOSE_SUP.S:92` | 26 | 2 | eine Zeichenkette an die Schreibstelle. a1 = Text mit Endnull. Die Schreibstelle rueckt um seine Laenge vor. Alle Register bleiben. | all registers preserved |
 | `DI_Print_text` | routine | `engine/src/HULL/DIAGNOSE_SUP.S:72` | 2 | 2 | eine Liste von Zeilen ausgeben. | all registers preserved |
-| `Draw_box` | routine | `engine/src/HULL/LIBRARY.S:893` | 84 | 22 | fill a rectangle with one colour. | in: d0.w/d1.w = one corner, d2.w/d3.w = the opposite corner (both inclusive, any order: two corners, not position and size), d4.w = Thalion's colour number (the bank of each line comes on top, 0 st... |
-| `Draw_hline` | routine | `engine/src/HULL/LIBRARY.S:2126` | 4 | 2 | a horizontal line. | in: d0.w/d2.w = the two ends (any order), d1.w = y, d4.w = colour; d3 is not used; all registers preserved |
-| `Draw_vline` | routine | `engine/src/HULL/LIBRARY.S:2139` | 2 | 1 | a vertical line. | in: d0.w = x, d1.w/d3.w = the two ends (any order), d4.w = colour; all registers preserved |
-| `Duplicate_block` | routine | `engine/src/HULL/LIBRARY.S:1264` | 2 | 1 | a rectangle from the shown screen into the back one (0:$215F0). Combat brings changed areas level with it (COMOBS.S Draw_combat_screen). | in: d0.w/d1.w = top left corner (x rounded down to 16), d5.w = planes, 1 to Screen_depth (else nothing happens), d6.w = width in 16-pixel blocks, d7.w = height in lines; all registers preserved |
+| `Draw_box` | routine | `engine/src/HULL/LIBRARY.S:895` | 84 | 22 | fill a rectangle with one colour. | in: d0.w/d1.w = one corner, d2.w/d3.w = the opposite corner (both inclusive, any order: two corners, not position and size), d4.w = Thalion's colour number (the bank of each line comes on top, 0 st... |
+| `Draw_hline` | routine | `engine/src/HULL/LIBRARY.S:2128` | 4 | 2 | a horizontal line. | in: d0.w/d2.w = the two ends (any order), d1.w = y, d4.w = colour; d3 is not used; all registers preserved |
+| `Draw_vline` | routine | `engine/src/HULL/LIBRARY.S:2141` | 2 | 1 | a vertical line. | in: d0.w = x, d1.w/d3.w = the two ends (any order), d4.w = colour; all registers preserved |
+| `Duplicate_block` | routine | `engine/src/HULL/LIBRARY.S:1266` | 2 | 1 | a rectangle from the shown screen into the back one (0:$215F0). Combat brings changed areas level with it (COMOBS.S Draw_combat_screen). | in: d0.w/d1.w = top left corner (x rounded down to 16), d5.w = planes, 1 to Screen_depth (else nothing happens), d6.w = width in 16-pixel blocks, d7.w = height in lines; all registers preserved |
 | `Exit_diagnostic_screen` | routine | `engine/src/HULL/DIAGNOSE_SUP.S:60` | 6 | 2 | Bereiche herunter, auf einen Klick warten, dann Update_screen. Thalions Main_status springt mit jmp hinein; dann kehrt Update_screen zu d... | all registers preserved |
-| `Exit_program` | routine | `engine/src/MAIN.S:290` | 7 | 4 | back to the desktop in order. Never returns. | in: Return_value.l = the result for the loader (Pterm takes its low word); registers and stack do not matter, Thalion jumps in from any depth |
+| `Exit_program` | routine | `engine/src/MAIN.S:363` | 7 | 4 | back to the desktop in order. Never returns. | in: Return_value.l = the result for the loader (Pterm takes its low word); registers and stack do not matter, Thalion jumps in from any depth |
 | `File_allocate` | routine | `engine/src/HULL/MEMORY.S:455` | 1 | 1 | memory for a file entry; no file cache here. | in: d0.l = length, d1 = file type, d2 = entry; out: d0 = handle. Without memory it does not return (Allocate_CHIP); other registers preserved |
 | `Free_memory` | routine | `engine/src/HULL/MEMORY.S:377` | 100 | 23 | give a block back. | in: d0.b = handle (an unused one does nothing); all registers preserved |
 | `Free_pointer` | routine | `engine/src/HULL/MEMORY.S:239` | 71 | 19 | let go of a claimed handle; counts the claim down, not below zero (0:$24B6E). | in: d0.b = handle; all registers preserved |
-| `Get_block` | routine | `engine/src/HULL/LIBRARY.S:2196` | 5 | 5 | save a part of Work_screen, in Thalion's format or ours. | in: a0 = destination, d0.w/d1.w = top left corner (x a multiple of 16), d5.w = planes of the destination (below), d6.w = width in 16-pixel blocks, d7.w = height in lines; all registers preserved |
+| `Get_block` | routine | `engine/src/HULL/LIBRARY.S:2198` | 5 | 5 | save a part of Work_screen, in Thalion's format or ours. | in: a0 = destination, d0.w/d1.w = top left corner (x a multiple of 16), d5.w = planes of the destination (below), d6.w = width in 16-pixel blocks, d7.w = height in lines; all registers preserved |
 | `Get_memory_length` | routine | `engine/src/HULL/MEMORY.S:501` | 4 | 3 | the length of a block. | in: d0.b = handle; out: d0.l = length in bytes, 0 if the handle is not in use; other registers preserved |
 | `Get_pixel` | routine | `engine/src/HULL/EFFECTS_SUP.S:20` | 2 | 2 | the colour of a point in Work_screen. | in: d0.w = x, d1.w = y; out: d4 = colour 0-255. A gradient slot (R_range) comes back as bank + gradient colour, as it was drawn: Thalion's 3D_MAP.S compares it with C3_raster_colour. On the ST: Tha... |
 | `Get_saved_game` | routine | `engine/src/HULL/SPIELSTAND.S:70` | 1 | 1 | einen Spielstand zu Arbeitsdateien machen. | in: d0.w = Platz (0 = Neues Spiel, 1-10); all registers preserved |
@@ -52,11 +52,11 @@ In total: 425 names; 72 routines, 222 data and variables, 119 constants and offs
 | `Load_file` | routine | `engine/src/HULL/FILES_SUP.S:1212` | 13 | 8 | Thalions Symbol. Eine *ganze* Datei holen, ausgepackt. | in: d0 = Dateinummer (0: Name in a0, wie in AM2_CPU 1.20); out: d0 = Speicher-Handle (.b), null wenn es nicht geklappt hat |
 | `Load_subfile` | routine | `engine/src/HULL/FILES_SUP.S:125` | 36 | 13 | Thalions Symbol. Einen Eintrag aus einem Container holen. | in: d0 = Nummer des Eintrags (.w, ab eins) d1 = Dateinummer (die rs.b-Aufzaehlung aus GAME_OFF.S); out: d0 = Speicher-Handle (.b), null wenn es nicht geklappt hat |
 | `Load_unique_subfile` | routine | `engine/src/HULL/FILES_SUP.S:519` | 1 | 1 | ein Teil einer Datei als **eigene Kopie** laden. | in: d0.w = Teil, d1.w = Dateinummer (wie Load_subfile); out: d0 = Speicher-Handle, null wenn es nicht geklappt hat |
-| `Mouse_off` | routine | `engine/src/HULL/LIBRARY.S:1651` | 3 | 2 | show and hide the mouse pointer; the original's names. | all registers preserved |
-| `Mouse_on` | routine | `engine/src/HULL/LIBRARY.S:1648` | 3 | 2 | show and hide the mouse pointer; the original's names. | all registers preserved |
-| `Music_routine` | routine | `engine/src/HULL/MUSIK_YM.S:72` | 1 | 1 | the switch: Thalion's jump table into the music player (4 bytes per entry). In the code section: Thalion jumps into it. | in: +0 a0 = song (Sonic Arranger), +12 d0 = part, +16 stop, +24 the beat; +4, +8, +20 are not called by the game |
+| `Mouse_off` | routine | `engine/src/HULL/LIBRARY.S:1653` | 3 | 2 | show and hide the mouse pointer; the original's names. | all registers preserved |
+| `Mouse_on` | routine | `engine/src/HULL/LIBRARY.S:1650` | 3 | 2 | show and hide the mouse pointer; the original's names. | all registers preserved |
+| `Music_routine` | routine | `engine/src/HULL/MUSIK_YM.S:76` | 1 | 1 | the switch: Thalion's jump table into the music player (4 bytes per entry). In the code section: Thalion jumps into it. | in: +0 a0 = song (Sonic Arranger), +12 d0 = part, +16 stop, +24 the beat; +4, +8, +20 are not called by the game |
 | `My_vsync` | routine | `engine/src/HULL/FADE_SUP.S:235` | 7 | 4 | ein Bild abwarten. **Rettet alle Register.** | all registers preserved |
-| `Plot_pixel` | routine | `engine/src/HULL/LIBRARY.S:2152` | 5 | 3 | one point. | in: d0.w = x, d1.w = y, d4.w = colour; all registers preserved |
+| `Plot_pixel` | routine | `engine/src/HULL/LIBRARY.S:2154` | 5 | 3 | one point. | in: d0.w = x, d1.w = y, d4.w = colour; all registers preserved |
 | `Pop_CA` | routine | `engine/src/HULL/EFFECTS_SUP.S:93` | 2 | 1 | put a clip area on top, take the topmost off (macros Push CA,<record> / Pop CA). The full screen is never taken off. | in: a0 = CA record X1, X2, Y1, Y2 (Push_CA only); all registers preserved |
 | `Pop_MA` | routine | `engine/src/HULL/AREAS.S:71` | 1 | 1 | the mouse area: the pointer cannot leave the topmost rectangle. | in: a0 = the area record (Push_MA only); all registers preserved |
 | `Pop_Mptr` | routine | `engine/src/HULL/AREAS.S:184` | 1 | 1 | the mouse pointer as a stack. | in: a0 = Thalion's pointer record (Push_Mptr, Change_Mptr); all registers preserved |
@@ -65,252 +65,252 @@ In total: 425 names; 72 routines, 222 data and variables, 119 constants and offs
 | `Push_Mptr` | routine | `engine/src/HULL/AREAS.S:168` | 1 | 1 | the mouse pointer as a stack. | in: a0 = Thalion's pointer record (Push_Mptr, Change_Mptr); all registers preserved |
 | `Put_masked_block` | routine | `engine/src/HULL/LIBRARY.S:347` | 29 | 11 | **Thalion's** masked block on a block boundary. | in: as Put_masked_block2, d0.w a multiple of 16; all registers preserved |
 | `Put_masked_block2` | routine | `engine/src/HULL/LIBRARY.S:350` | 10 | 4 | **Thalion's full contract**, masked, any x. | in: a0 = graphic, d0.w = x, d1.w = y, d4.w = colour offset, d5.w = planes of the source, d6.w = width in 16-pixel blocks, d7.w = height in lines. Colour 0 is transparent. Clipped against the topmos... |
-| `Put_masked_icon` | routine | `engine/src/HULL/LIBRARY.S:2593` | 5 | 4 | a 16x16 icon, masked (colour 0 transparent). | in: a0 = icon (Thalion's format, d5 plane words per line), d0.w/d1.w = corner (x a multiple of 16), d4.w = colour base, d5.w = planes of the source; all registers preserved |
-| `Put_masked_silhouette` | routine | `engine/src/HULL/LIBRARY.S:2261` | 10 | 7 | the shape of a graphic in one colour. | in: a0 = graphic (Thalion's format), d0.w/d1.w = corner, d4.w = colour, d5.w = planes of the source, d6.w = width in blocks, d7.w = height in lines. Clipped against the topmost CA; all registers pr... |
+| `Put_masked_icon` | routine | `engine/src/HULL/LIBRARY.S:2595` | 5 | 4 | a 16x16 icon, masked (colour 0 transparent). | in: a0 = icon (Thalion's format, d5 plane words per line), d0.w/d1.w = corner (x a multiple of 16), d4.w = colour base, d5.w = planes of the source; all registers preserved |
+| `Put_masked_silhouette` | routine | `engine/src/HULL/LIBRARY.S:2263` | 10 | 7 | the shape of a graphic in one colour. | in: a0 = graphic (Thalion's format), d0.w/d1.w = corner, d4.w = colour, d5.w = planes of the source, d6.w = width in blocks, d7.w = height in lines. Clipped against the topmost CA; all registers pr... |
 | `Put_saved_game` | routine | `engine/src/HULL/SPIELSTAND.S:110` | 1 | 1 | die Arbeitsdateien als Spielstand ablegen. | in: d0.w = Platz (1-10; 0 tut nichts, wie in 1.20); all registers preserved |
-| `Put_text_line` | routine | `engine/src/HULL/WORDS_SUP.S:117` | 115 | 14 | print one line of text at a position. | in: d0.w = x, d1.w = y, a0 = text, ending with a zero byte. The ink is not a parameter but the variable Ink_colour, as in the original; out: a0 = behind the terminating zero; other registers preserved |
+| `Put_text_line` | routine | `engine/src/HULL/WORDS_SUP.S:190` | 115 | 14 | print one line of text at a position. | in: d0.w = x, d1.w = y, a0 = text, ending with a zero byte. The ink is not a parameter but the variable Ink_colour, as in the original; out: a0 = behind the terminating zero; other registers preserved |
 | `Put_unmasked_block` | routine | `engine/src/HULL/LIBRARY.S:61` | 43 | 15 | **Thalion's full contract**, not only the name. | in: a0 = source: d5 < 8 Thalion's data, line-interleaved, d5 planes; d5 = 8 our screen format. d0.w = x (rounded down to a multiple of 16), d1.w = y, d4.w = colour offset for the planes from d5 up,... |
-| `Put_unmasked_icon` | routine | `engine/src/HULL/LIBRARY.S:2538` | 6 | 2 | a 16x16 icon, unmasked, not clipped. | in: a0 = icon (Thalion's format), d0.w/d1.w = corner (x rounded down to 16), d4.w = colour offset, d5.w = planes of the source; all registers preserved |
+| `Put_unmasked_icon` | routine | `engine/src/HULL/LIBRARY.S:2540` | 6 | 2 | a 16x16 icon, unmasked, not clipped. | in: a0 = icon (Thalion's format), d0.w/d1.w = corner (x rounded down to 16), d4.w = colour offset, d5.w = planes of the source; all registers preserved |
 | `Read_key` | routine | `engine/src/HULL/VARIOUS_SUP.S:54` | 3 | 2 | fetch a key without waiting. | out: d0.l = key code as in Thalion's Read_key (bits below), 0 = none; other registers preserved |
 | `Read_Mev` | routine | `engine/src/HULL/VARIOUS_SUP.S:397` | 2 | 2 | ein Mausereignis holen, aus der Warteschlange der Bibliothek. | out: d0 = X, d1 = Y, d2 = Button_state (Maus_vbl), 0 = keines |
 | `Reallocate_memory` | routine | `engine/src/HULL/MEMORY.S:462` | 1 | 1 | is the entry still in the file cache? Never here. | in: d0 = entry, d1 = file type; out: d0 = 0 (not there); other registers preserved |
-| `Restart_game` | routine | `engine/src/MAIN.S:203` | 2 | 2 | stacks back to their start, Thalion's Init_program, then the outer loop. Never returns. | in: Initial_save, Intro_menu_choice (variables); registers and stack do not matter, the stack is set anew |
+| `Restart_game` | routine | `engine/src/MAIN.S:211` | 2 | 2 | stacks back to their start, Thalion's Init_program, then the outer loop. Never returns. | in: Initial_save, Intro_menu_choice (variables); registers and stack do not matter, the stack is set anew |
 | `Save_encrypted_file` | routine | `engine/src/HULL/SPIELSTAND.S:199` | 2 | 2 | like Save_file, but wrapped in JH encryption. | in: d0.l = length, d1.w = file number (0: name in a1), a0 = data . The caller's data is never touched; all registers preserved |
 | `Save_file` | routine | `engine/src/HULL/SPIELSTAND.S:177` | 1 | 1 | einen Speicherblock als ganze Datei schreiben. | in: d0.l = Laenge d1.w = Dateinummer; 0 heisst: Name in a1 a0 = Daten (1.20: movem d0-d3/a0-a1/a5); all registers preserved |
 | `Save_subfile` | routine | `engine/src/HULL/FILES_SUP.S:912` | 9 | 7 | Thalions Symbol. Einen Eintrag in den Container zurueck. | in: d0 = Nummer des Eintrags (.w, ab eins) d1 = Dateinummer a0 = Daten |
 | `Set_fade` | routine | `engine/src/HULL/FADE_SUP.S:47` | 7 | 1 | read a raster list, set or fade the colour banks. | in: d0.w = kind (Set_new, Fade_out, Start_fade_in), d1.w = first screen line (-1: all), d2.w = last screen line, a0 = raster list (not for Fade_out). Returns when the fade is done; all registers pr... |
 | `Show_MOVEP_screen` | routine | `engine/src/HULL/D3_SUP.S:212` | 1 | 1 | den 3D-Puffer auf den Schirm bringen. | in: d0.w/d1.w = linke obere Ecke (x Vielfaches von 16), d6.w = Breite in 16er-Gruppen, d7.w = Zeilen, a0 = Puffer (d6*8 Byte je Zeile) (wie im Original, AM2_CPU 0:$21B06); all registers preserved |
 | `Shrink_memory` | routine | `engine/src/HULL/MEMORY.S:533` | 3 | 2 | make a block shorter; the address stays. | in: d0.b = handle, d1.l = new length (not longer than now); all registers preserved |
-| `Switch_screens` | routine | `engine/src/HULL/LIBRARY.S:1014` | 38 | 13 | show the back screen; without copying it back (above). | all registers preserved |
-| `Update_screen` | routine | `engine/src/HULL/LIBRARY.S:999` | 188 | 23 |  | all registers preserved |
+| `Switch_screens` | routine | `engine/src/HULL/LIBRARY.S:1016` | 38 | 13 | show the back screen; without copying it back (above). | all registers preserved |
+| `Update_screen` | routine | `engine/src/HULL/LIBRARY.S:1001` | 188 | 23 |  | all registers preserved |
 | `Wait_4_fade` | routine | `engine/src/HULL/FADE_SUP.S:222` | 7 | 2 | in the original, waiting for the copper. Our Set_fade is done when it returns; nothing is left to do here. | all registers preserved |
 
 ## Data and variables
 
 | Name | Kind | Defined in | Uses | Files | Description |
 |---|---|---|---:|---:|---|
-| `Age_nr` | text | `build/textmarken.i:172` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Age_txt` | text | `build/textmarken.i:170` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Ageddeath_text` | data | `build/am2cpu_daten.i:1488` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Aging_text` | data | `build/am2cpu_daten.i:1486` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Ankh_symbol` | data | `build/am2cpu_daten.i:1245` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `APR_txt` | text | `build/textmarken.i:144` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
+| `Age_nr` | text | `build/textmarken.i:172` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Age_txt` | text | `build/textmarken.i:170` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Ageddeath_text` | data | `build/am2cpu_daten.i:1488` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Aging_text` | data | `build/am2cpu_daten.i:1486` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Ankh_symbol` | data | `build/am2cpu_daten.i:1245` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `APR_txt` | text | `build/textmarken.i:144` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
 | `ATN_table` | data | `engine/src/HULL/VARIOUS_SUP.S:474` | 2 | 1 | Arcustangens, 1025 Worte. Index k (0..1024) = Dx/Dy * 1024; Wert = round(atan(k/1024) / 2pi * 4096), passend zu Calculate_ATN in VARIOUS.... |
-| `Attack2_text` | data | `build/am2cpu_daten.i:1498` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Attack_text` | data | `build/am2cpu_daten.i:1496` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Attr2_txt` | text | `build/textmarken.i:240` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Attr_txt` | text | `build/textmarken.i:176` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Attribute_names` | text | `build/textmarken.i:134` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Attrs_txt` | text | `build/textmarken.i:156` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Attrskill_nr` | data | `build/am2cpu_daten.i:580` | 4 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Automap_icon_names` | text | `build/textmarken.i:114` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Automap_pal` | data | `build/am2cpu_daten.i:1292` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Back_3D_Mptr` | data | `build/am2cpu_daten.i:1666` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Attack2_text` | data | `build/am2cpu_daten.i:1498` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Attack_text` | data | `build/am2cpu_daten.i:1496` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Attr2_txt` | text | `build/textmarken.i:240` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Attr_txt` | text | `build/textmarken.i:176` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Attribute_names` | text | `build/textmarken.i:134` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Attrs_txt` | text | `build/textmarken.i:156` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Attrskill_nr` | data | `build/am2cpu_daten.i:580` | 4 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Automap_icon_names` | text | `build/textmarken.i:114` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Automap_pal` | data | `build/am2cpu_daten.i:1292` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Back_3D_Mptr` | data | `build/am2cpu_daten.i:1666` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `Blitter_or_CPU` | data | `engine/src/HULL/D3_SUP.S:59` | 4 | 1 | $FF: Thalions CPU-Fassungen und die FAST-Dateien (Wall3D/Object3D im Format des 3D-Puffers). Auf dem Atari gibt es keinen Amiga-Blitter;... |
-| `Both_txt` | text | `build/textmarken.i:166` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Broken` | data | `build/am2cpu_daten.i:1286` | 3 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Broken_text` | data | `build/am2cpu_daten.i:1500` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Button_down` | data | `build/am2cpu_daten.i:174` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Button_state` | variable | `engine/engine.s:281` | 9 | 3 |  |
-| `Button_up` | data | `build/am2cpu_daten.i:157` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `BuySell_req_text` | data | `build/am2cpu_daten.i:1490` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `C3_palettes` | data | `build/am2cpu_daten.i:1385` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Both_txt` | text | `build/textmarken.i:166` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Broken` | data | `build/am2cpu_daten.i:1286` | 3 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Broken_text` | data | `build/am2cpu_daten.i:1500` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Button_down` | data | `build/am2cpu_daten.i:174` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Button_state` | variable | `engine/engine.s:282` | 9 | 3 |  |
+| `Button_up` | data | `build/am2cpu_daten.i:157` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `BuySell_req_text` | data | `build/am2cpu_daten.i:1490` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `C3_palettes` | data | `build/am2cpu_daten.i:1385` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `CA_Sp` | data | `engine/src/HULL/EFFECTS_SUP.S:67` | 2 | 1 | Stapelzeiger -> aktueller Eintrag |
-| `Chared_headline` | text | `build/textmarken.i:262` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Chared_portraits` | data | `build/am2cpu_daten.i:341` | 3 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Charges_txt` | data | `build/am2cpu_daten.i:585` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Chequered` | data | `build/am2cpu_daten.i:1169` | 3 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Class_names` | text | `build/textmarken.i:128` | 3 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Classes_txt` | text | `build/textmarken.i:200` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Click_Mptr` | data | `build/am2cpu_daten.i:1794` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Chared_headline` | text | `build/textmarken.i:262` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Chared_portraits` | data | `build/am2cpu_daten.i:341` | 3 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Charges_txt` | data | `build/am2cpu_daten.i:585` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Chequered` | data | `build/am2cpu_daten.i:1169` | 3 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Class_names` | text | `build/textmarken.i:128` | 3 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Classes_txt` | text | `build/textmarken.i:200` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Click_Mptr` | data | `build/am2cpu_daten.i:1794` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `cls_bottom` | variable | `build/am2cpu_code.i:4915` | 3 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `cls_top` | variable | `build/am2cpu_code.i:4914` | 2 | 1 | AM2_CPU code, tools/am2cpu_code.py |
-| `Combat_bg_2D_table` | data | `build/am2cpu_daten.i:590` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Combat_bg_3D_table` | data | `build/am2cpu_daten.i:598` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Compass` | data | `build/am2cpu_daten.i:1176` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Compass_txt` | text | `build/textmarken.i:168` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Condition_names` | text | `build/textmarken.i:142` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Condition_object_index_table` | data | `build/am2cpu_daten.i:575` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Conditions_txt` | text | `build/textmarken.i:160` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
+| `Combat_bg_2D_table` | data | `build/am2cpu_daten.i:590` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Combat_bg_3D_table` | data | `build/am2cpu_daten.i:598` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Compass` | data | `build/am2cpu_daten.i:1176` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Compass_txt` | text | `build/textmarken.i:168` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Condition_names` | text | `build/textmarken.i:142` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Condition_object_index_table` | data | `build/am2cpu_daten.i:575` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Conditions_txt` | text | `build/textmarken.i:160` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
 | `Control_icons` | variable | `engine/src/HULL/CONTROLS_SUP.S:95` | 3 | 1 | aus Button_graphics, Lade_tastengrafik |
 | `CPU_68020_plus` | variable | `engine/src/HULL/D3_SUP.S:63` | 1 | 1 | 0 = 68000-Weg (D3_einrichten) |
-| `Cross_hatch` | data | `build/am2cpu_daten.i:633` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Cross_hatch` | data | `build/am2cpu_daten.i:633` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `Current_filename` | variable | `engine/src/HULL/FILES_SUP.S:1071` | 1 | 1 | Thalions Name: Zeiger auf den Dateinamen |
-| `Cursed_txt` | text | `build/textmarken.i:244` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Damage_nr` | text | `build/textmarken.i:218` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Damage_star` | data | `build/am2cpu_daten.i:914` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Damage_txt` | text | `build/textmarken.i:216` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Daynight_icons` | data | `build/am2cpu_daten.i:1069` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Death_mask` | data | `build/am2cpu_daten.i:1215` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Default_MA` | data | `build/am2cpu_daten.i:628` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Default_Mptr` | data | `build/am2cpu_daten.i:1586` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Destruction_table` | data | `build/am2cpu_daten.i:614` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Cursed_txt` | text | `build/textmarken.i:244` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Damage_nr` | text | `build/textmarken.i:218` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Damage_star` | data | `build/am2cpu_daten.i:914` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Damage_txt` | text | `build/textmarken.i:216` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Daynight_icons` | data | `build/am2cpu_daten.i:1069` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Death_mask` | data | `build/am2cpu_daten.i:1215` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Default_MA` | data | `build/am2cpu_daten.i:628` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Default_Mptr` | data | `build/am2cpu_daten.i:1586` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Destruction_table` | data | `build/am2cpu_daten.i:614` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `Diagnostics_list1` | data | `engine/src/HULL/DIAGNOSE_SUP.S:217` | 1 | 1 | die Diagnosetasten der Bibliothek, wie in AM2_CPU (4:$4DE0): ein Eintrag, Amiga-Taste + "1". Format wie Thalions Diagnostics_list2 (DIAGN... |
-| `Disk_request_text` | data | `build/am2cpu_daten.i:1476` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Dissolve` | data | `build/am2cpu_daten.i:456` | 5 | 4 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Divide_end_text` | text | `build/textmarken.i:47` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Divide_inter_text` | text | `build/textmarken.i:44` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Divide_start_text` | text | `build/textmarken.i:41` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Down_2D_Mptr` | data | `build/am2cpu_daten.i:1602` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Downleft_2D_Mptr` | data | `build/am2cpu_daten.i:1642` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Downright_2D_Mptr` | data | `build/am2cpu_daten.i:1650` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Disk_request_text` | data | `build/am2cpu_daten.i:1476` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Dissolve` | data | `build/am2cpu_daten.i:456` | 5 | 4 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Divide_end_text` | text | `build/textmarken.i:47` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Divide_inter_text` | text | `build/textmarken.i:44` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Divide_start_text` | text | `build/textmarken.i:41` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Down_2D_Mptr` | data | `build/am2cpu_daten.i:1602` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Downleft_2D_Mptr` | data | `build/am2cpu_daten.i:1642` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Downright_2D_Mptr` | data | `build/am2cpu_daten.i:1650` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `dpoly_koos3d` | variable | `build/am2cpu_code.i:4916` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `Draw_ceiling` | data | `build/am2cpu_code.i:2188` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `Draw_floor` | data | `build/am2cpu_code.i:2223` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `Draw_zoom_shape` | data | `build/am2cpu_code.i:2649` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `Draw_zoom_silhouette` | data | `build/am2cpu_code.i:2872` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `draw_zoomshape` | data | `build/am2cpu_code.i:1524` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
-| `Empty_portrait` | data | `build/am2cpu_daten.i:127` | 3 | 3 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `EP_divide_text` | data | `build/am2cpu_daten.i:1504` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `EP_txt` | text | `build/textmarken.i:178` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Event_pix_palette_table` | data | `build/am2cpu_daten.i:191` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Experience_nr` | text | `build/textmarken.i:182` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Experience_txt` | text | `build/textmarken.i:180` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Eye_Mptr` | data | `build/am2cpu_daten.i:1730` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Eye_off` | data | `build/am2cpu_daten.i:1013` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Eye_on` | data | `build/am2cpu_daten.i:1041` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `EyeMouth_Mptr` | data | `build/am2cpu_daten.i:1786` | 3 | 3 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Empty_portrait` | data | `build/am2cpu_daten.i:127` | 3 | 3 | AM2_CPU data, tools/am2cpu_extract.py |
+| `EP_divide_text` | data | `build/am2cpu_daten.i:1504` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `EP_txt` | text | `build/textmarken.i:178` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Event_pix_palette_table` | data | `build/am2cpu_daten.i:191` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Experience_nr` | text | `build/textmarken.i:182` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Experience_txt` | text | `build/textmarken.i:180` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Eye_Mptr` | data | `build/am2cpu_daten.i:1730` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Eye_off` | data | `build/am2cpu_daten.i:1013` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Eye_on` | data | `build/am2cpu_daten.i:1041` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `EyeMouth_Mptr` | data | `build/am2cpu_daten.i:1786` | 3 | 3 | AM2_CPU data, tools/am2cpu_extract.py |
 | `Fade_colour` | data | `build/am2cpu_code.i:13` | 3 | 3 | AM2_CPU code, tools/am2cpu_code.py |
-| `Female_txt` | text | `build/textmarken.i:164` | 3 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Fingers_nr` | text | `build/textmarken.i:214` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Fingers_txt` | text | `build/textmarken.i:212` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
+| `Female_txt` | text | `build/textmarken.i:164` | 3 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Fingers_nr` | text | `build/textmarken.i:214` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Fingers_txt` | text | `build/textmarken.i:212` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
 | `Floor_source_gfx` | variable | `build/am2cpu_code.i:4958` | 2 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `Floor_X` | variable | `build/am2cpu_code.i:4907` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `Floor_Z` | variable | `build/am2cpu_code.i:4908` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
-| `Food_Mptr` | data | `build/am2cpu_daten.i:1762` | 4 | 4 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Food_price_text` | data | `build/am2cpu_daten.i:1492` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Food_txt` | text | `build/textmarken.i:198` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Forward_3D_Mptr` | data | `build/am2cpu_daten.i:1658` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Giant_eagle_shape` | data | `build/am2cpu_daten.i:873` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Gold_Mptr` | data | `build/am2cpu_daten.i:1754` | 3 | 3 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Gold_txt` | text | `build/textmarken.i:196` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Goldfood_txt` | text | `build/textmarken.i:192` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Hand_Mptr` | data | `build/am2cpu_daten.i:1778` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Hands_nr` | text | `build/textmarken.i:210` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Hands_txt` | text | `build/textmarken.i:208` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `He_txt` | text | `build/textmarken.i:146` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Hers_txt` | text | `build/textmarken.i:152` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `His_txt` | text | `build/textmarken.i:150` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Hit_text` | data | `build/am2cpu_daten.i:1502` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Ink_colour` | variable | `engine/engine.s:282` | 96 | 16 |  |
+| `Food_Mptr` | data | `build/am2cpu_daten.i:1762` | 4 | 4 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Food_price_text` | data | `build/am2cpu_daten.i:1492` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Food_txt` | text | `build/textmarken.i:198` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Forward_3D_Mptr` | data | `build/am2cpu_daten.i:1658` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Giant_eagle_shape` | data | `build/am2cpu_daten.i:873` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Gold_Mptr` | data | `build/am2cpu_daten.i:1754` | 3 | 3 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Gold_txt` | text | `build/textmarken.i:196` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Goldfood_txt` | text | `build/textmarken.i:192` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Hand_Mptr` | data | `build/am2cpu_daten.i:1778` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Hands_nr` | text | `build/textmarken.i:210` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Hands_txt` | text | `build/textmarken.i:208` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `He_txt` | text | `build/textmarken.i:146` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Hers_txt` | text | `build/textmarken.i:152` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `His_txt` | text | `build/textmarken.i:150` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Hit_text` | data | `build/am2cpu_daten.i:1502` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Ink_colour` | variable | `engine/engine.s:283` | 96 | 16 |  |
 | `Insert_horizon` | data | `build/am2cpu_code.i:52` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
-| `Inventory_headline` | text | `build/textmarken.i:264` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Item_type_names` | text | `build/textmarken.i:140` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Known_error_text` | data | `build/am2cpu_daten.i:1474` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Language_names` | text | `build/textmarken.i:126` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Language_txt` | text | `build/textmarken.i:158` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Left_2D_Mptr` | data | `build/am2cpu_daten.i:1610` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Left_3D_Mptr` | data | `build/am2cpu_daten.i:1674` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Legend_txt` | text | `build/textmarken.i:252` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Level_start_EPs` | data | `build/am2cpu_daten.i:548` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `LP_max_nr` | text | `build/textmarken.i:226` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `LP_max_txt` | text | `build/textmarken.i:224` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `LP_txt` | text | `build/textmarken.i:184` | 3 | 3 | labels in Text.amb, tools/textmarken.py |
-| `Magic8_stars` | data | `build/am2cpu_daten.i:978` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Magic_action_text` | data | `build/am2cpu_daten.i:1506` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Magic_object_text` | data | `build/am2cpu_daten.i:1508` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Magic_stars` | data | `build/am2cpu_daten.i:951` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Magic_txt` | text | `build/textmarken.i:122` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Main_pal` | data | `build/am2cpu_daten.i:8` | 12 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Make_level_text` | data | `build/am2cpu_daten.i:1494` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Male_txt` | text | `build/textmarken.i:162` | 3 | 2 | labels in Text.amb, tools/textmarken.py |
-| `MBA_nr` | text | `build/textmarken.i:238` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `MBA_txt` | text | `build/textmarken.i:236` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `MBW_nr` | text | `build/textmarken.i:234` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `MBW_txt` | text | `build/textmarken.i:232` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `MonKnow_line` | text | `build/textmarken.i:260` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Mouse_X` | variable | `engine/engine.s:279` | 24 | 10 |  |
-| `Mouse_Y` | variable | `engine/engine.s:280` | 31 | 11 |  |
-| `Mouth_Mptr` | data | `build/am2cpu_daten.i:1738` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `No_recup_text` | data | `build/am2cpu_daten.i:1480` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Inventory_headline` | text | `build/textmarken.i:264` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Item_type_names` | text | `build/textmarken.i:140` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Known_error_text` | data | `build/am2cpu_daten.i:1474` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Language_names` | text | `build/textmarken.i:126` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Language_txt` | text | `build/textmarken.i:158` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Left_2D_Mptr` | data | `build/am2cpu_daten.i:1610` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Left_3D_Mptr` | data | `build/am2cpu_daten.i:1674` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Legend_txt` | text | `build/textmarken.i:252` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Level_start_EPs` | data | `build/am2cpu_daten.i:548` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `LP_max_nr` | text | `build/textmarken.i:226` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `LP_max_txt` | text | `build/textmarken.i:224` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `LP_txt` | text | `build/textmarken.i:184` | 3 | 3 | labels in Text.amb, tools/text_labels.py |
+| `Magic8_stars` | data | `build/am2cpu_daten.i:978` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Magic_action_text` | data | `build/am2cpu_daten.i:1506` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Magic_object_text` | data | `build/am2cpu_daten.i:1508` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Magic_stars` | data | `build/am2cpu_daten.i:951` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Magic_txt` | text | `build/textmarken.i:122` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Main_pal` | data | `build/am2cpu_daten.i:8` | 12 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Make_level_text` | data | `build/am2cpu_daten.i:1494` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Male_txt` | text | `build/textmarken.i:162` | 3 | 2 | labels in Text.amb, tools/text_labels.py |
+| `MBA_nr` | text | `build/textmarken.i:238` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `MBA_txt` | text | `build/textmarken.i:236` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `MBW_nr` | text | `build/textmarken.i:234` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `MBW_txt` | text | `build/textmarken.i:232` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `MonKnow_line` | text | `build/textmarken.i:260` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Mouse_X` | variable | `engine/engine.s:280` | 24 | 10 |  |
+| `Mouse_Y` | variable | `engine/engine.s:281` | 31 | 11 |  |
+| `Mouth_Mptr` | data | `build/am2cpu_daten.i:1738` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `No_recup_text` | data | `build/am2cpu_daten.i:1480` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `Object_data` | variable | `engine/src/HULL/INVENTOR_SUP.S:27` | 79 | 13 | Thalions Item-Tabelle. Fester Puffer mit genau diesem Namen, damit sein "lea Object_data+4,a1" unveraendert laeuft; im Original steht sie... |
-| `Off_screen` | variable | `engine/engine.s:308` | 3 | 3 |  |
-| `Off_txt` | text | `build/textmarken.i:258` | 2 | 1 | labels in Text.amb, tools/textmarken.py |
-| `On_txt` | text | `build/textmarken.i:256` | 2 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Option_names` | text | `build/textmarken.i:116` | 2 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Ouch` | data | `build/am2cpu_daten.i:526` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Out_of_memory_text` | text | `build/textmarken.i:38` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Pick_Mptr` | data | `build/am2cpu_daten.i:1770` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Off_screen` | variable | `engine/engine.s:309` | 3 | 3 |  |
+| `Off_txt` | text | `build/textmarken.i:258` | 2 | 1 | labels in Text.amb, tools/text_labels.py |
+| `On_txt` | text | `build/textmarken.i:256` | 2 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Option_names` | text | `build/textmarken.i:116` | 2 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Ouch` | data | `build/am2cpu_daten.i:526` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Out_of_memory_text` | text | `build/textmarken.i:38` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Pick_Mptr` | data | `build/am2cpu_daten.i:1770` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `Pixel_buffer` | variable | `engine/src/HULL/EFFECTS_SUP.S:70` | 1 | 1 | ein Trunc zu 16 Punkten, mit Luft |
-| `PP_max_nr` | text | `build/textmarken.i:230` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `PP_max_txt` | text | `build/textmarken.i:228` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `PP_txt` | text | `build/textmarken.i:186` | 3 | 3 | labels in Text.amb, tools/textmarken.py |
-| `Prompts` | text | `build/textmarken.i:112` | 20 | 5 | labels in Text.amb, tools/textmarken.py |
-| `ProtDam_txt` | text | `build/textmarken.i:194` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Protection_nr` | text | `build/textmarken.i:222` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Protection_txt` | text | `build/textmarken.i:220` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
+| `PP_max_nr` | text | `build/textmarken.i:230` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `PP_max_txt` | text | `build/textmarken.i:228` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `PP_txt` | text | `build/textmarken.i:186` | 3 | 3 | labels in Text.amb, tools/text_labels.py |
+| `Prompts` | text | `build/textmarken.i:112` | 20 | 5 | labels in Text.amb, tools/text_labels.py |
+| `ProtDam_txt` | text | `build/textmarken.i:194` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Protection_nr` | text | `build/textmarken.i:222` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Protection_txt` | text | `build/textmarken.i:220` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
 | `put_dpoly` | data | `build/am2cpu_code.i:69` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
-| `Race_heights` | data | `build/am2cpu_daten.i:335` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Race_names` | text | `build/textmarken.i:130` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
+| `Race_heights` | data | `build/am2cpu_daten.i:335` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Race_names` | text | `build/textmarken.i:130` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
 | `Recolour_block` | data | `build/am2cpu_code.i:2472` | 2 | 1 | AM2_CPU code, tools/am2cpu_code.py |
-| `Recup1_text` | data | `build/am2cpu_daten.i:1482` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Recup2_text` | data | `build/am2cpu_daten.i:1484` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Red_cross` | data | `build/am2cpu_daten.i:622` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Return_value` | variable | `engine/src/MAIN.S:467` | 7 | 3 |  |
-| `Right_2D_Mptr` | data | `build/am2cpu_daten.i:1618` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Right_3D_Mptr` | data | `build/am2cpu_daten.i:1682` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Recup1_text` | data | `build/am2cpu_daten.i:1482` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Recup2_text` | data | `build/am2cpu_daten.i:1484` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Red_cross` | data | `build/am2cpu_daten.i:622` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Return_value` | variable | `engine/src/MAIN.S:551` | 7 | 3 |  |
+| `Right_2D_Mptr` | data | `build/am2cpu_daten.i:1618` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Right_3D_Mptr` | data | `build/am2cpu_daten.i:1682` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `Rune_flag` | variable | `engine/src/HULL/WORDS_SUP.S:32` | 1 | 1 |  |
-| `Save_disk_request_text` | data | `build/am2cpu_daten.i:1478` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Screen_flag` | variable | `engine/engine.s:311` | 2 | 1 |  |
-| `Sex_txt` | text | `build/textmarken.i:202` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Shadow_colour` | variable | `engine/engine.s:283` | 32 | 7 |  |
-| `She_txt` | text | `build/textmarken.i:148` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Short_attr_names` | text | `build/textmarken.i:138` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Short_skill_names` | text | `build/textmarken.i:136` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Sinus_table` | data | `build/am2cpu_daten.i:203` | 6 | 3 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Skill2_txt` | text | `build/textmarken.i:242` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Skill_names` | text | `build/textmarken.i:132` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Skill_txt` | text | `build/textmarken.i:174` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Skills_txt` | text | `build/textmarken.i:154` | 2 | 2 | labels in Text.amb, tools/textmarken.py |
-| `Sky_ranges` | data | `build/am2cpu_daten.i:1300` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `SLP_txt` | text | `build/textmarken.i:188` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Song_names` | text | `build/textmarken.i:118` | 3 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Spell_class_names` | text | `build/textmarken.i:120` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Spell_data` | data | `build/am2cpu_daten.i:346` | 11 | 5 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Spell_icons` | data | `build/am2cpu_daten.i:416` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Spell_names` | text | `build/textmarken.i:124` | 6 | 3 | labels in Text.amb, tools/textmarken.py |
-| `Stationary_dimensions` | data | `build/am2cpu_daten.i:569` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Status_icons` | data | `build/am2cpu_daten.i:639` | 3 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Status_L` | data | `build/am2cpu_daten.i:68` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Status_M` | data | `build/am2cpu_daten.i:86` | 6 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Status_R` | data | `build/am2cpu_daten.i:104` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Status_TB` | data | `build/am2cpu_daten.i:122` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Swordshield` | data | `build/am2cpu_daten.i:1204` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Tactic_pal` | data | `build/am2cpu_daten.i:606` | 2 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Text_error_text` | text | `build/textmarken.i:33` | 2 | 1 | labels in Text.amb, tools/textmarken.py |
-| `That_text` | text | `build/textmarken.i:110` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `TP_txt` | text | `build/textmarken.i:190` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Travel_music` | data | `build/am2cpu_daten.i:564` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Travel_speed` | data | `build/am2cpu_daten.i:559` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Turn180_left_Mptr` | data | `build/am2cpu_daten.i:1706` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Turn180_right_Mptr` | data | `build/am2cpu_daten.i:1714` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Turnleft_3D_Mptr` | data | `build/am2cpu_daten.i:1690` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Turnright_3D_Mptr` | data | `build/am2cpu_daten.i:1698` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Up_2D_Mptr` | data | `build/am2cpu_daten.i:1594` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Upleft_2D_Mptr` | data | `build/am2cpu_daten.i:1626` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Upright_2D_Mptr` | data | `build/am2cpu_daten.i:1634` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `VBL_counter` | variable | `engine/src/HULL/LIBRARY.S:2512` | 4 | 1 |  |
-| `Version_string1` | text | `build/textmarken.i:266` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Version_string2` | text | `build/textmarken.i:268` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Vertical_screen_offset` | variable | `engine/engine.s:310` | 4 | 2 | Bildschuetteln, -4..4 Zeilen (COMBAT_M.S) |
-| `Weight2_nr` | text | `build/textmarken.i:206` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Weight2_txt` | text | `build/textmarken.i:204` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Weight_nr1` | text | `build/textmarken.i:248` | 2 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Weight_nr2` | text | `build/textmarken.i:250` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Weight_txt` | text | `build/textmarken.i:246` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
-| `Windchain` | data | `build/am2cpu_daten.i:997` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Window_icons` | data | `build/am2cpu_daten.i:16` | 3 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Work_screen` | variable | `engine/engine.s:309` | 4 | 2 |  |
-| `World_data` | data | `build/am2cpu_daten.i:196` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Save_disk_request_text` | data | `build/am2cpu_daten.i:1478` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Screen_flag` | variable | `engine/engine.s:312` | 2 | 1 |  |
+| `Sex_txt` | text | `build/textmarken.i:202` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Shadow_colour` | variable | `engine/engine.s:284` | 32 | 7 |  |
+| `She_txt` | text | `build/textmarken.i:148` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Short_attr_names` | text | `build/textmarken.i:138` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Short_skill_names` | text | `build/textmarken.i:136` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Sinus_table` | data | `build/am2cpu_daten.i:203` | 6 | 3 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Skill2_txt` | text | `build/textmarken.i:242` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Skill_names` | text | `build/textmarken.i:132` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Skill_txt` | text | `build/textmarken.i:174` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Skills_txt` | text | `build/textmarken.i:154` | 2 | 2 | labels in Text.amb, tools/text_labels.py |
+| `Sky_ranges` | data | `build/am2cpu_daten.i:1300` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `SLP_txt` | text | `build/textmarken.i:188` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Song_names` | text | `build/textmarken.i:118` | 3 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Spell_class_names` | text | `build/textmarken.i:120` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Spell_data` | data | `build/am2cpu_daten.i:346` | 11 | 5 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Spell_icons` | data | `build/am2cpu_daten.i:416` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Spell_names` | text | `build/textmarken.i:124` | 6 | 3 | labels in Text.amb, tools/text_labels.py |
+| `Stationary_dimensions` | data | `build/am2cpu_daten.i:569` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Status_icons` | data | `build/am2cpu_daten.i:639` | 3 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Status_L` | data | `build/am2cpu_daten.i:68` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Status_M` | data | `build/am2cpu_daten.i:86` | 6 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Status_R` | data | `build/am2cpu_daten.i:104` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Status_TB` | data | `build/am2cpu_daten.i:122` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Swordshield` | data | `build/am2cpu_daten.i:1204` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Tactic_pal` | data | `build/am2cpu_daten.i:606` | 2 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Text_error_text` | text | `build/textmarken.i:33` | 2 | 1 | labels in Text.amb, tools/text_labels.py |
+| `That_text` | text | `build/textmarken.i:110` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `TP_txt` | text | `build/textmarken.i:190` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Travel_music` | data | `build/am2cpu_daten.i:564` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Travel_speed` | data | `build/am2cpu_daten.i:559` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Turn180_left_Mptr` | data | `build/am2cpu_daten.i:1706` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Turn180_right_Mptr` | data | `build/am2cpu_daten.i:1714` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Turnleft_3D_Mptr` | data | `build/am2cpu_daten.i:1690` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Turnright_3D_Mptr` | data | `build/am2cpu_daten.i:1698` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Up_2D_Mptr` | data | `build/am2cpu_daten.i:1594` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Upleft_2D_Mptr` | data | `build/am2cpu_daten.i:1626` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Upright_2D_Mptr` | data | `build/am2cpu_daten.i:1634` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `VBL_counter` | variable | `engine/src/HULL/LIBRARY.S:2514` | 4 | 1 |  |
+| `Version_string1` | text | `build/textmarken.i:266` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Version_string2` | text | `build/textmarken.i:268` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Vertical_screen_offset` | variable | `engine/engine.s:311` | 4 | 2 | Bildschuetteln, -4..4 Zeilen (COMBAT_M.S) |
+| `Weight2_nr` | text | `build/textmarken.i:206` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Weight2_txt` | text | `build/textmarken.i:204` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Weight_nr1` | text | `build/textmarken.i:248` | 2 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Weight_nr2` | text | `build/textmarken.i:250` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Weight_txt` | text | `build/textmarken.i:246` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
+| `Windchain` | data | `build/am2cpu_daten.i:997` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Window_icons` | data | `build/am2cpu_daten.i:16` | 3 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Work_screen` | variable | `engine/engine.s:310` | 4 | 2 |  |
+| `World_data` | data | `build/am2cpu_daten.i:196` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
 | `World_map_names` | data | `engine/src/HULL/WORDS_SUP.S:26` | 1 | 1 |  |
-| `World_move_delay` | data | `build/am2cpu_daten.i:554` | 1 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `Wrong_answer_text` | data | `build/am2cpu_daten.i:1510` | 2 | 1 | AM2_CPU data, tools/am2cpu_auszug.py |
-| `YAH_text` | text | `build/textmarken.i:254` | 1 | 1 | labels in Text.amb, tools/textmarken.py |
+| `World_move_delay` | data | `build/am2cpu_daten.i:554` | 1 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `Wrong_answer_text` | data | `build/am2cpu_daten.i:1510` | 2 | 1 | AM2_CPU data, tools/am2cpu_extract.py |
+| `YAH_text` | text | `build/textmarken.i:254` | 1 | 1 | labels in Text.amb, tools/text_labels.py |
 | `zoom_screen` | variable | `build/am2cpu_code.i:4904` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `zoom_screen2` | variable | `build/am2cpu_code.i:4905` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `Zoomscreen1_ptr` | variable | `build/am2cpu_code.i:4948` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
 | `Zoomscreen2_ptr` | variable | `build/am2cpu_code.i:4949` | 1 | 1 | AM2_CPU code, tools/am2cpu_code.py |
-| `Zzz_Mptr` | data | `build/am2cpu_daten.i:1722` | 3 | 2 | AM2_CPU data, tools/am2cpu_auszug.py |
+| `Zzz_Mptr` | data | `build/am2cpu_daten.i:1722` | 3 | 2 | AM2_CPU data, tools/am2cpu_extract.py |
 
 ## Macros
 
@@ -459,22 +459,22 @@ Routines of our layer that Thalion's code does not call (capitalised names; lowe
 
 | Name | Defined in | Description | Registers |
 |---|---|---|---|
-| `Absturz_pruefen` | `engine/src/MAIN.S:360` | Diagnoseschalter ABSTURZTEST (VASM_EXTRA= "-DABSTURZTEST=1"): etwa fuenf Sekunden nach Init_program (250 VBL) ein illegaler Befehl, vier... |  |
-| `Amiga_nach_videl` | `engine/src/HULL/RASTER.S:155` | ein Farbwort $0RGB in ein VIDEL-Register umrechnen. |  |
-| `Anzeige_setzen` | `engine/src/HULL/LIBRARY.S:1144` | den neuen Schirm anzeigen und warten, bis er es ist (0:$21436, dort ueber die Copperliste und 0:$21528). Erst danach darf in den bisher s... |  |
+| `Absturz_pruefen` | `engine/src/MAIN.S:433` | Diagnoseschalter ABSTURZTEST (VASM_EXTRA= "-DABSTURZTEST=1"): etwa fuenf Sekunden nach Init_program (250 VBL) ein illegaler Befehl, vier... |  |
+| `Amiga_nach_videl` | `engine/src/HULL/RASTER.S:161` | ein Farbwort $0RGB in ein VIDEL-Register umrechnen. |  |
+| `Anzeige_setzen` | `engine/src/HULL/LIBRARY.S:1146` | den neuen Schirm anzeigen und warten, bis er es ist (0:$21436, dort ueber die Copperliste und 0:$21528). Erst danach darf in den bisher s... |  |
 | `Bank0_setzen` | `engine/src/HULL/FALCON_LIB.S:804` (+1) | 32 Amiga-Farbworte nach Bank 0 (Farbe 0 bis 31). | all registers preserved |
 | `Bank_setzen` | `engine/src/HULL/FALCON_LIB.S:816` | 32 Amiga-Farbworte nach VIDEL. | changes d0-d3/a0-a2 |
-| `Basis_setzen` | `engine/src/HULL/LIBRARY.S:1169` | die Videobasis aus Schirm_vorn und Vertical_screen_offset. | all registers preserved |
+| `Basis_setzen` | `engine/src/HULL/LIBRARY.S:1171` | die Videobasis aus Schirm_vorn und Vertical_screen_offset. | all registers preserved |
 | `Behaelter_oeffnen` | `engine/src/HULL/FILES_SUP.S:383` | eine Datei oeffnen und ls_offen setzen. | in: d1 = Dateinummer, d0.w = Modus (0 lesen, 2 lesen und schreiben); out: a2 = Name; d0 = Handle (> 0), 0 = kein Name hinterlegt, negativ = GEMDOS-Fehler. Die Flags folgen d0 |
-| `Bereich_aktuell` | `engine/src/HULL/RASTER.S:756` | Zb_tab fuer die Rasterliste der Zeichnung (Zeichenliste, LIBRARY.S); neu gebaut nur, wenn die Liste wechselt. Alle Register bleiben. | all registers preserved |
-| `Bereich_nacharbeiten` | `engine/src/HULL/RASTER.S:638` (+1) | nach dem Zeichnen die Verlaufsfarbe auf den Platz der Zeile setzen (Schritt 3). | in: d0.w/d1.w = eine Ecke, d2.w/d3.w = die andere (einschliesslich, in beliebiger Ordnung), gezeichnet in Work_screen; all registers preserved |
-| `Bereich_rueck` | `engine/src/HULL/RASTER.S:785` (+1) | Get_block: Plaetze im gesicherten Ausschnitt wieder zur Farbe, die gezeichnet wurde (Bank + Verlaufsfarbe). | in: a0 = Ziel, d0/d1 = Ecke (X auf einer Blockgrenze), d5 = Ebenen des Ziels, d6 = Breite in Bloecken, d7 = Hoehe, wie Get_block; all registers preserved |
-| `Bereich_tabelle` | `engine/src/HULL/RASTER.S:914` | die Zeilentabelle einer Rasterliste bauen. | in: a0 = Rasterliste oder 0; all registers preserved |
-| `Bereiche_anfang` | `engine/src/HULL/RASTER.S:1232` | alle Plaetze schwarz (Palette_anfang). |  |
-| `Bereiche_sammeln` | `engine/src/HULL/RASTER.S:1070` (+1) | die Verlaeufe einer Liste fuer Set_fade. | in: a0 = Rasterliste (oder 0), d1/d2 = Zeilenbereich, d5 = Art; out: d0.w = Zahl der Plaetze, die Bereiche_schritt blendet; other registers preserved |
-| `Bereiche_schritt` | `engine/src/HULL/RASTER.S:1192` (+1) | ein Schritt der Blende fuer die vorgemerkten Plaetze. | in: d6.w = Stufe (wie Dim_colours); all registers preserved |
-| `Bibliothek_vbl` | `engine/src/HULL/LIBRARY.S:2395` | was die Bibliothek je Bild im VBL tut. Gerufen aus Raster_vbl (RASTER.S), das in der TOS-VBL-Warteschlange haengt. |  |
-| `Bildpuffer_anlegen` | `engine/src/MAIN.S:385` | die beiden Schirme des Doppelpuffers. |  |
+| `Bereich_aktuell` | `engine/src/HULL/RASTER.S:762` | Zb_tab fuer die Rasterliste der Zeichnung (Zeichenliste, LIBRARY.S); neu gebaut nur, wenn die Liste wechselt. Alle Register bleiben. | all registers preserved |
+| `Bereich_nacharbeiten` | `engine/src/HULL/RASTER.S:644` (+1) | nach dem Zeichnen die Verlaufsfarbe auf den Platz der Zeile setzen (Schritt 3). | in: d0.w/d1.w = eine Ecke, d2.w/d3.w = die andere (einschliesslich, in beliebiger Ordnung), gezeichnet in Work_screen; all registers preserved |
+| `Bereich_rueck` | `engine/src/HULL/RASTER.S:791` (+1) | Get_block: Plaetze im gesicherten Ausschnitt wieder zur Farbe, die gezeichnet wurde (Bank + Verlaufsfarbe). | in: a0 = Ziel, d0/d1 = Ecke (X auf einer Blockgrenze), d5 = Ebenen des Ziels, d6 = Breite in Bloecken, d7 = Hoehe, wie Get_block; all registers preserved |
+| `Bereich_tabelle` | `engine/src/HULL/RASTER.S:920` | die Zeilentabelle einer Rasterliste bauen. | in: a0 = Rasterliste oder 0; all registers preserved |
+| `Bereiche_anfang` | `engine/src/HULL/RASTER.S:1238` | alle Plaetze schwarz (Palette_anfang). |  |
+| `Bereiche_sammeln` | `engine/src/HULL/RASTER.S:1076` (+1) | die Verlaeufe einer Liste fuer Set_fade. | in: a0 = Rasterliste (oder 0), d1/d2 = Zeilenbereich, d5 = Art; out: d0.w = Zahl der Plaetze, die Bereiche_schritt blendet; other registers preserved |
+| `Bereiche_schritt` | `engine/src/HULL/RASTER.S:1198` (+1) | ein Schritt der Blende fuer die vorgemerkten Plaetze. | in: d6.w = Stufe (wie Dim_colours); all registers preserved |
+| `Bibliothek_vbl` | `engine/src/HULL/LIBRARY.S:2397` | was die Bibliothek je Bild im VBL tut. Gerufen aus Raster_vbl (RASTER.S), das in der TOS-VBL-Warteschlange haengt. |  |
+| `Bildpuffer_anlegen` | `engine/src/MAIN.S:458` | die beiden Schirme des Doppelpuffers. |  |
 | `Bl_sichtbar` | `engine/src/HULL/LIBRARY.S:286` | liegt Zielblock d1.w (gezaehlt ab X/16) in bl_links..bl_rechts? C gesetzt = nein. Alle Register bleiben. | all registers preserved |
 | `Block_adresse` | `engine/src/HULL/MEMORY.S:227` | dasselbe ohne Zaehlen, fuer unsere eigene Schicht. |  |
 | `Block_beschneiden` | `engine/src/HULL/LIBRARY.S:203` | die Pruefung, mit der Thalions Blockroutinen im Original beginnen. In AM2_CPU 1.20 nachgelesen, in allen dreien gleich: Put_unmasked_bloc... | in: d0 = X, d1 = Y, d5 = Ebenen der Quelle, d6 = Breite in Bloecken, d7 = Hoehe, a0 = Quelle (je Bildzeile d5 Plane-Zeilen zu d6 Worten; bei d5 = PLANES unsere Daten, je Zeile d6 Bloecke zu TROW);... |
@@ -482,8 +482,9 @@ Routines of our layer that Thalion's code does not call (capitalised names; lowe
 | `Box_fuellen` | `engine/src/HULL/FALCON_LIB.S:205` (+1) | the fill of Draw_box, line by line with the bank per span. | in: as Draw_box leaves them: a0 = first block of the first line, a2 = first line, a3 = Thalion's colour, d0 = offset in the first block, d2 = width in pixels, d3 = lines - 1. The caller saves the r... |
 | `Cache030_ein` | `engine/src/HULL/D3_SUP.S:153` | Befehls- und Datencache des 68030. | all registers preserved |
 | `Cache030_zurueck` | `engine/src/HULL/D3_SUP.S:163` | Befehls- und Datencache des 68030. | all registers preserved |
+| `Check_game_files` | `engine/src/MAIN.S:293` | are the game files the ones this program was built for? The engine takes places and library data from the game files at build time (am2cp... | all registers preserved |
 | `Claim_pointer_d6` | `engine/src/HULL/FILES_SUP.S:678` |  |  |
-| `Close_screen` | `engine/src/HULL/FALCON.S:180` (+1) |  |  |
+| `Close_screen` | `engine/src/HULL/FALCON.S:187` (+1) |  |  |
 | `Cpu_kennung` | `engine/src/HULL/D3_SUP.S:112` | d0.l = Wert des Cookies _CPU (0, 10, 20, 30, 40, 60), -1 ohne Cookie-Jar oder ohne _CPU (alter ST). Nur im Supervisormodus. |  |
 | `D3_einrichten` | `engine/src/HULL/D3_SUP.S:87` | CPU_68020_plus nach D3_CPU setzen, auf dem 68030 die Caches einschalten (Cache030_ein). | all registers preserved |
 | `Datei_lesen` | `engine/src/HULL/FILES_SUP.S:1098` | eine ganze Datei in einen frischen Speicherblock holen. | in: d1 = Dateinummer (0: Name in a0); out: d0 = Speicher-Handle (null = Fehler), d1 = gelesene Laenge |
@@ -497,19 +498,20 @@ Routines of our layer that Thalion's code does not call (capitalised names; lowe
 | `Drogen_farben` | `engine/src/HULL/FALCON_LIB.S:908` (+1) | Thalion's Drugged_FX on the colours, every frame (VBL). | all registers preserved |
 | `Drogen_platz` | `engine/src/HULL/FALCON_LIB.S:1004` | d3.w = place, a4 = Vid_stufe. Fills the place's part of Dr_puffer: the VIDEL address of its colour 1, then 31 colours. | changes d0-d2/d4/d7/a0-a2 |
 | `Drogen_setzen` | `engine/src/HULL/FALCON_LIB.S:973` (+1) | write Dr_puffer into the VIDEL palette. First thing in the VBL (Bibliothek_vbl), so the writes fall into the top border. | all registers preserved |
-| `Einstellungen_lesen` | `engine/src/MAIN.S:256` | AMBER.INF, the one settings file (E17, shared/SETTINGS.S), read once at the start: after Ordner_suchen (Datei_name puts AMBFILES\ in fron... | all registers preserved |
+| `Einstellungen_lesen` | `engine/src/MAIN.S:264` | AMBER.INF, the one settings file (E17, shared/SETTINGS.S), read once at the start: after Ordner_suchen (Datei_name puts AMBFILES\ in fron... | all registers preserved |
 | `Eintrag_aus_datei` | `engine/src/HULL/FILES_SUP.S:464` | the way back when Fseek lands elsewhere: read the whole file and copy the entry out, as Load_subfile did until 2026-10-21. | in: d1 = file number, d4 = offset, d5 = length; out: d0 = memory handle (zero: not loaded) |
 | `Eintrag_in_datei` | `engine/src/HULL/FILES_SUP.S:962` | the way back when Fseek lands elsewhere: read the whole file, replace the entry, write the whole file, as Save_subfile did until 2026-10-21. | in: d6 = file number, d7 = entry, a3 = data |
 | `Eintrag_lage` | `engine/src/HULL/FILES_SUP.S:697` | wo liegt ein Eintrag im Container und wie lang ist er? | in: a0 = Containeranfang, d0 = Eintragsnummer (ab eins); out: d0 = Versatz (null = gibt es nicht oder leer), d1 = Laenge |
 | `Eintrag_lesen` | `engine/src/HULL/FILES_SUP.S:233` | read one entry of a container, and only that entry. | in: d1 = file number of the container (after Teildatei_waehlen), d7 = entry (from one); out: d0 = memory handle (zero: not loaded), d5 = length, d2 = container id ('AMNC' ...), d3.w = number of ent... |
 | `Eintrag_suchen` | `engine/src/HULL/FILES_SUP.S:309` | in der offenen Containerdatei an einen Eintrag gehen. | in: d7 = entry (from one); out: d0 = 0 at the entry, ES_GIBTSNICHT, ES_DANEBEN, or a read error (negative GEMDOS error or ERROR_INCOMPLETE_READ); d2 = id, d3 = number of entries, d4 = offset, d5 =... |
 | `Enter_supervisor` | `engine/src/HULL/FALCON.S:28` (+1) |  |  |
-| `Farbbank` | `engine/src/HULL/LIBRARY.S:522` | welche Farbbank gilt in dieser Bildzeile? | in: d0.w = Bildzeile; out: d0.w = Bankversatz (erste Farbnummer der Bank); other registers preserved |
-| `Farbbank_spanne` | `engine/src/HULL/LIBRARY.S:551` | Farbbank, dazu wie weit sie gilt. | in: d0.w = Bildzeile; out: d0.w = Bankversatz, d1.w = erste Zeile, ab der eine andere Bank gelten kann ($FFFF: keine); other registers preserved |
+| `Farbbank` | `engine/src/HULL/LIBRARY.S:524` | welche Farbbank gilt in dieser Bildzeile? | in: d0.w = Bildzeile; out: d0.w = Bankversatz (erste Farbnummer der Bank); other registers preserved |
+| `Farbbank_spanne` | `engine/src/HULL/LIBRARY.S:553` | Farbbank, dazu wie weit sie gilt. | in: d0.w = Bildzeile; out: d0.w = Bankversatz, d1.w = erste Zeile, ab der eine andere Bank gelten kann ($FFFF: keine); other registers preserved |
 | `Farbe0_flackern` | `engine/src/HULL/DIAGNOSE_SUP.S:194` | der eine Eintrag in Diagnostics_list1 (0:$263DA). | all registers preserved |
 | `Fehler_umsetzen` | `engine/src/HULL/FILES_SUP.S:1036` | d0.l: GEMDOS-Fehler -> AmigaDOS-Nummer (.w), wie sie Disk_errors in Thalions CONTROLS.S kennt. Positive Werte bleiben (das sind schon Tha... |  |
-| `Fleck_adresse` | `engine/src/HULL/LIBRARY.S:2056` |  |  |
-| `Fleck_lage` | `engine/src/HULL/LIBRARY.S:2033` |  |  |
+| `Find_version` | `engine/src/HULL/WORDS_SUP.S:98` | the version lines of a Text.amb, for the message of Check_game_files when the game files are not the build's. Thalion's Version_string1 a... | in: a0 = the file, d2.l = its length; all registers preserved |
+| `Fleck_adresse` | `engine/src/HULL/LIBRARY.S:2058` |  |  |
+| `Fleck_lage` | `engine/src/HULL/LIBRARY.S:2035` |  |  |
 | `Get_block_orig` | `engine/src/HULL/FALCON_LIB.S:397` (+1) | Get_block with a destination in Thalion's format (d5 < SCHIRM_FORMAT): the lower d5 planes, line by line, in each line plane by plane. Co... |  |
 | `Ist_lob` | `engine/src/HULL/FILES_SUP.S:590` |  |  |
 | `JH_decrypt` | `engine/src/HULL/FILES_SUP.S:39` | Jurie Horneman's 16-bit XOR stream. | in: a0 = data (decrypted in place) d0 = length in bytes (.l) d1 = start key (.w); all registers preserved |
@@ -518,63 +520,63 @@ Routines of our layer that Thalion's code does not call (capitalised names; lowe
 | `Kill_all_memory` | `engine/src/HULL/MEMORY.S:556` |  |  |
 | `Lade_keymap` | `engine/src/HULL/VARIOUS_SUP.S:198` | Thalions Datei Keymap nach Keymap_daten (Erkenntnis 260). |  |
 | `Lade_tastengrafik` | `engine/src/HULL/CONTROLS_SUP.S:55` | fuellt Control_icons aus Button_graphics, einmal beim Start (MAIN.S). | all registers preserved |
-| `Lade_texte` | `engine/src/HULL/WORDS_SUP.S:48` | Text.amb ganz nach Textdaten (build/textmarken.i). | all registers preserved |
+| `Lade_texte` | `engine/src/HULL/WORDS_SUP.S:55` | Text.amb ganz nach Textdaten (build/textmarken.i). | all registers preserved |
 | `Ladefehler_schirm` | `engine/src/HULL/DIAGNOSE_SUP.S:157` | "FILE COULDN'T BE LOADED :", Dateiart und Teil, dann Programmende. Wie in AM2_CPU 0:$2637C (Erkenntnis 268). | in: d0.w = Teil, d1.w = Dateiart (Thalions Nummer). Kehrt nicht zurueck |
 | `Leave_supervisor` | `engine/src/HULL/FALCON.S:36` (+1) |  |  |
 | `Load_objects` | `engine/src/HULL/INVENTOR_SUP.S:34` | Objects.amb in den Object_data-Puffer. |  |
 | `LOB_decompress` | `engine/src/HULL/FILES_SUP.S:70` | unpack a LOB body. | in: a0 = packed body (behind the LOB header) a1 = destination d0 = unpacked size (.l); all registers preserved |
 | `MA_uebernehmen` | `engine/src/HULL/AREAS.S:88` |  |  |
 | `MA_vollbild` | `engine/src/HULL/AREAS.S:144` |  |  |
-| `Main_loop` | `engine/src/MAIN.S:241` |  |  |
+| `Main_loop` | `engine/src/MAIN.S:249` |  |  |
 | `Masked_icon` | `engine/src/HULL/FALCON_LIB.S:435` (+1) | Put_masked_icon on the Falcon. Contract and method in LIBRARY.S. |  |
 | `Maskiert_setzen` | `engine/src/HULL/LIBRARY.S:372` | der Setzteil von Put_masked_block2: Quelle mit acht Ebenen, schon beschnitten (bl_links/bl_rechts). Alle Register bleiben. | all registers preserved |
 | `Maus_eingrenzen` | `engine/src/HULL/AREAS.S:101` | den Zeiger in den laufenden Bereich holen. | all registers preserved |
-| `Maus_vbl` | `engine/src/HULL/LIBRARY.S:2425` | Button_state bilden und ein Mausereignis ablegen. | all registers preserved |
-| `Maus_zittern` | `engine/src/HULL/LIBRARY.S:2475` | the shaking pointer of Thalion's Drugged_FX. | all registers preserved |
+| `Maus_vbl` | `engine/src/HULL/LIBRARY.S:2427` | Button_state bilden und ein Mausereignis ablegen. | all registers preserved |
+| `Maus_zittern` | `engine/src/HULL/LIBRARY.S:2477` | the shaking pointer of Thalion's Drugged_FX. | all registers preserved |
 | `Mem_eintrag` | `engine/src/HULL/MEMORY.S:177` |  |  |
-| `Mouse_install` | `engine/src/HULL/LIBRARY.S:1672` |  |  |
-| `Mouse_int` | `engine/src/HULL/LIBRARY.S:1755` |  |  |
-| `Mouse_remove` | `engine/src/HULL/LIBRARY.S:1728` |  |  |
+| `Mouse_install` | `engine/src/HULL/LIBRARY.S:1674` |  |  |
+| `Mouse_int` | `engine/src/HULL/LIBRARY.S:1757` |  |  |
+| `Mouse_remove` | `engine/src/HULL/LIBRARY.S:1730` |  |  |
 | `Musik_exec_basis` | `engine/src/HULL/MUSIK_SUP.S:56` |  |  |
-| `Musik_inf_lesen` | `engine/src/HULL/MUSIK_SUP.S:100` | the choice of the mixer at run time, from MUSIC= in AMBER.INF (E17, shared/SETTINGS.S): OFF, DSP, CPU, YM (MUSIK_YM.S). |  |
-| `Musik_install` | `engine/src/HULL/MUSIK_SUP.S:148` (+1) | from start (MAIN.S), supervisor, after Ordner_suchen. |  |
-| `Musik_mess_schreiben` | `engine/src/HULL/MUSIK_SUP.S:282` | the records as text to MESS_xxx.TXT. From Musik_remove, before switching off. All registers stay. It comes first and has a capital name b... |  |
-| `Musik_remove` | `engine/src/HULL/MUSIK_SUP.S:154` (+1) | from Exit_program, Speicher_voll and the emergency exit (MAIN.S); harmless without Musik_install. All registers stay. |  |
-| `Musik_vbl` | `engine/src/HULL/MUSIK_SUP.S:156` (+1) | every frame from Bibliothek_vbl (LIBRARY.S). All registers stay. |  |
-| `Notausgang` | `engine/src/MAIN.S:336` | der Abbau, wenn das Programm nicht ueber Exit_program endet. |  |
+| `Musik_inf_lesen` | `engine/src/HULL/MUSIK_SUP.S:92` | the choice of the mixer at run time, from MUSIC= in AMBER.INF (E17; MAIN.S reads it in Einstellungen_lesen through shared/SETTINGS.S, bef... |  |
+| `Musik_install` | `engine/src/HULL/MUSIK_SUP.S:130` (+1) | from start (MAIN.S), supervisor, after Ordner_suchen. |  |
+| `Musik_mess_schreiben` | `engine/src/HULL/MUSIK_SUP.S:264` | the records as text to MESS_xxx.TXT. From Musik_remove, before switching off. All registers stay. It comes first and has a capital name b... |  |
+| `Musik_remove` | `engine/src/HULL/MUSIK_SUP.S:136` (+1) | from Exit_program, Speicher_voll and the emergency exit (MAIN.S); harmless without Musik_install. All registers stay. |  |
+| `Musik_vbl` | `engine/src/HULL/MUSIK_SUP.S:138` (+1) | every frame from Bibliothek_vbl (LIBRARY.S). All registers stay. |  |
+| `Notausgang` | `engine/src/MAIN.S:409` | der Abbau, wenn das Programm nicht ueber Exit_program endet. |  |
 | `Offen_lesen` | `engine/src/HULL/FILES_SUP.S:409` | aus der offenen Datei (ls_offen) lesen. | in: a0 = Ziel, d0 = Laenge; out: d0 = 0 alles gelesen, sonst GEMDOS-Fehler (negativ) oder ERROR_INCOMPLETE_READ. Die Flags folgen d0 |
 | `Open_screen` | `engine/src/HULL/FALCON.S:49` (+1) |  |  |
 | `Ordner_suchen` | `engine/src/HULL/FILES_SUP.S:1378` | liegt neben uns der Ordner AMBFILES? -> dn_im_ordner | all registers preserved |
 | `Packkopf_aufloesen` | `engine/src/HULL/FILES_SUP.S:542` | die Packschicht eines AMNP/AMPC-Eintrags abnehmen. | in: d6 = Handle des Eintrags, d5 = seine Laenge; out: d6 = Handle der Daten (null bei Speichermangel) |
 | `Palette_anfang` | `engine/src/HULL/FALCON_LIB.S:861` (+1) | die 256 Farben in Grundstellung, beim Oeffnen des Schirms. | all registers preserved |
-| `Plaetze_zeigen` | `engine/src/HULL/RASTER.S:1217` | Slot_ist in die Baenke 3-7. Alle Register bleiben. | all registers preserved |
+| `Plaetze_zeigen` | `engine/src/HULL/RASTER.S:1223` | Slot_ist in die Baenke 3-7. Alle Register bleiben. | all registers preserved |
 | `Platz_einsetzen` | `engine/src/HULL/SPIELSTAND.S:148` | die Nummer des Spielstandordners in alle fuenf Pfade schreiben ("SAVE.nn"). Wie in 1.20 (0:$29A0E), dort mit DecR_convert. | in: d0.w = Platz, 0-10; all registers preserved |
-| `Platz_rueck` | `engine/src/HULL/RASTER.S:883` (+1) | Get_pixel: ein Platz wird wieder Bank + Verlaufsfarbe. | in: d1.w = Bildzeile, d4.w = Schirmfarbe. OUT: d4.w; other registers preserved |
+| `Platz_rueck` | `engine/src/HULL/RASTER.S:889` (+1) | Get_pixel: ein Platz wird wieder Bank + Verlaufsfarbe. | in: d1.w = Bildzeile, d4.w = Schirmfarbe. OUT: d4.w; other registers preserved |
 | `Platz_setzen` | `engine/src/HULL/FALCON_LIB.S:777` (+1) | die Palette eines Platzes der Rasterliste in seine Bank. | all registers preserved |
 | `Pm2_schnell` | `engine/src/HULL/FALCON_LIB.S:720` (+1) | nothing yet, C set Zeiger_bild Zeiger_in_puffer first: nothing to do Bereich_nacharbeiten, Bereich_rueck (RASTER.S) and Drogen_setzen, Dr... |  |
 | `Pointer_convert` | `engine/src/HULL/FALCON_LIB.S:740` (+1) | Set_mouse_ptr's conversion of the pointer (AREAS.S calls it; the ST's of the same name is in ST_LIB.S). Library split phase 3 (2026-10-24... | in: a0 = Thalion's lines (three plane words per line, 16 lines), a1 = zg_bild, a2 = zg_maske; all registers preserved |
 | `Pruefe_entpacker` | `engine/src/HULL/FILES_SUP.S:1708` | Selbsttest der ganzen Kette (Stufe B). |  |
 | `Pub_zeilen` | `engine/src/HULL/FALCON_LIB.S:57` (+1) | the lines of Put_unmasked_block for a source in Thalion's format (d5 < SCHIRM_FORMAT): eight planes, the bank of each line. | in: as Put_unmasked_block leaves them: a0 = first visible source block, a1 = first visible target block, a2 = first line, d4 = colour offset, d5 = planes of the source, d6 = source width in blocks,... |
-| `Put_char` | `engine/src/HULL/LIBRARY.S:720` | das Quellwort wandert in die obere Haelfte eines Langworts und wird um X mod 16 nach rechts geschoben. Danach steht der linke Teil im obe... |  |
-| `Put_char_at` | `engine/src/HULL/LIBRARY.S:750` |  |  |
+| `Put_char` | `engine/src/HULL/LIBRARY.S:722` | das Quellwort wandert in die obere Haelfte eines Langworts und wird um X mod 16 nach rechts geschoben. Danach steht der linke Teil im obe... |  |
+| `Put_char_at` | `engine/src/HULL/LIBRARY.S:752` |  |  |
 | `Quelle_aufweiten` | `engine/src/HULL/FALCON_LIB.S:297` (+1) | eine Originalgrafik mit d5 < PLANES Ebenen ins Schirmformat. | in: a0 = Quelle, zeilenverschachtelt (je Bildzeile d5 Plane-Zeilen zu d6 Worten), d1 = Y, d4 = Farbversatz, d5 = Ebenen, d6 = Bloecke, d7 = Zeilen; out: a0 = pmo_puffer (acht Ebenen, wortverzahnt)... |
-| `Raster_install` | `engine/src/HULL/RASTER.S:78` | den Interrupt aufsetzen und abraeumen. |  |
-| `Raster_int` | `engine/src/HULL/RASTER.S:453` | der Timer-B-Interrupt, einmal je Bildzeile. |  |
-| `Raster_liste_setzen` | `engine/src/HULL/RASTER.S:194` | Thalions Rasterliste in Schritte uebersetzen. | in: a0 = Rasterliste (R_palette / R_range / R_end) |
-| `Raster_pruefschieben` | `engine/src/HULL/RASTER.S:384` | die Kante je Bild eine Zeile tiefer legen. |  |
-| `Raster_remove` | `engine/src/HULL/RASTER.S:123` | den Interrupt aufsetzen und abraeumen. |  |
-| `Raster_schritt` | `engine/src/HULL/RASTER.S:409` | einen Schritt ausfuehren. a0 = Schritt. |  |
-| `Raster_start` | `engine/src/HULL/RASTER.S:308` | je Bild einmal, in der VBL. |  |
-| `Raster_vbl` | `engine/src/HULL/RASTER.S:348` | haengt in der VBL-Warteschlange und macht je Bild scharf. |  |
-| `Rasterbank` | `engine/src/HULL/LIBRARY.S:517` |  | in: d0.w = Bildzeile; out: d0.w = Bankversatz (erste Farbnummer der Bank); other registers preserved |
-| `Rasterbank_spanne` | `engine/src/HULL/LIBRARY.S:603` | Rasterbank mit Grenze (d1), wie Farbbank_spanne, ohne Merker: fuer den Mauszeiger im VBL. |  |
-| `Schirmwechsel` | `engine/src/HULL/LIBRARY.S:1031` |  |  |
+| `Raster_install` | `engine/src/HULL/RASTER.S:84` | den Interrupt aufsetzen und abraeumen. |  |
+| `Raster_int` | `engine/src/HULL/RASTER.S:459` | der Timer-B-Interrupt, einmal je Bildzeile. |  |
+| `Raster_liste_setzen` | `engine/src/HULL/RASTER.S:200` | Thalions Rasterliste in Schritte uebersetzen. | in: a0 = Rasterliste (R_palette / R_range / R_end) |
+| `Raster_pruefschieben` | `engine/src/HULL/RASTER.S:390` | die Kante je Bild eine Zeile tiefer legen. |  |
+| `Raster_remove` | `engine/src/HULL/RASTER.S:129` | den Interrupt aufsetzen und abraeumen. |  |
+| `Raster_schritt` | `engine/src/HULL/RASTER.S:415` | einen Schritt ausfuehren. a0 = Schritt. |  |
+| `Raster_start` | `engine/src/HULL/RASTER.S:314` | je Bild einmal, in der VBL. |  |
+| `Raster_vbl` | `engine/src/HULL/RASTER.S:354` | haengt in der VBL-Warteschlange und macht je Bild scharf. |  |
+| `Rasterbank` | `engine/src/HULL/LIBRARY.S:519` |  | in: d0.w = Bildzeile; out: d0.w = Bankversatz (erste Farbnummer der Bank); other registers preserved |
+| `Rasterbank_spanne` | `engine/src/HULL/LIBRARY.S:605` | Rasterbank mit Grenze (d1), wie Farbbank_spanne, ohne Merker: fuer den Mauszeiger im VBL. |  |
+| `Schirmwechsel` | `engine/src/HULL/LIBRARY.S:1033` |  |  |
 | `Set_mouse_ptr` | `engine/src/HULL/AREAS.S:236` | einen Zeigersatz Thalions zum laufenden Zeiger machen. | in: a0 = Satz (Hotspot x, y; 16 Zeilen zu drei Ebenenworten) ; a5 = vars; all registers preserved |
-| `Set_st_palette` | `engine/src/HULL/FALCON.S:257` |  |  |
-| `Set_videl_palette` | `engine/src/HULL/FALCON.S:246` |  |  |
+| `Set_st_palette` | `engine/src/HULL/FALCON.S:264` |  |  |
+| `Set_videl_palette` | `engine/src/HULL/FALCON.S:253` |  |  |
 | `Speicher_anfordern` | `engine/src/HULL/MEMORY.S:105` |  |  |
 | `Speicher_holen` | `engine/src/HULL/MEMORY.S:121` |  |  |
-| `Speicher_voll` | `engine/src/MAIN.S:429` | der letzte Halt, wenn kein ST-RAM mehr kommt. Im Spiel springt der Speicherverwalter nach Thalions Out_of_memory, wie im Original (MEMORY... |  |
+| `Speicher_voll` | `engine/src/MAIN.S:502` | der letzte Halt, wenn kein ST-RAM mehr kommt. Im Spiel springt der Speicherverwalter nach Thalions Out_of_memory, wie im Original (MEMORY... |  |
 | `St_abschrift_aktiv` | `engine/src/HULL/ST_LIB.S:3627` | fuer Show_MOVEP_screen. Z frei, wenn ein 3D-Bild mit Abschriften laeuft. Alle Register bleiben. | all registers preserved |
 | `St_abschrift_alle_weg` | `engine/src/HULL/ST_LIB.S:3085` | all copies and all parks go back to TOS (Kill_unclaimed_memory, Thalion's way out of a full memory). | all registers preserved |
 | `St_abschrift_bild` | `engine/src/HULL/ST_LIB.S:3121` | Beginn eines 3D-Bilds. Alle Register bleiben. | all registers preserved |
@@ -606,23 +608,23 @@ Routines of our layer that Thalion's code does not call (capitalised names; lowe
 | `Startmenue` | `engine/src/HULL/STARTMENUE.S:56` | zeigen, waehlen lassen, Intro_menu_choice setzen. Kehrt zurueck, ausser bei QUIT. | in: a5 = vars, Schirm offen, Maus installiert; all registers preserved |
 | `Teildatei_waehlen` | `engine/src/HULL/FILES_SUP.S:629` | welcher Behaelter einer mehrteiligen Datei? | in: d1 = Dateinummer (Thalions), Map_nr; out: d1 = Dateinummer des Behaelters (unsere Nummern ab 48); other registers preserved |
 | `Unmasked_icon` | `engine/src/HULL/FALCON_LIB.S:717` (+1) | the hooks the ST fills (ST_LIB.S). The Falcon has no fast path there yet: Unmasked_icon goes straight back to the generic body, Pm2_schne... |  |
-| `Update_mouse` | `engine/src/HULL/LIBRARY.S:1473` | der Name des Originals. Thalions Code ruft ihn nicht (dort fuehrt die Bibliothek das Sprite im Interrupt); unsere Warteschleifen (Startme... | all registers preserved |
+| `Update_mouse` | `engine/src/HULL/LIBRARY.S:1475` | der Name des Originals. Thalions Code ruft ihn nicht (dort fuehrt die Bibliothek das Sprite im Interrupt); unsere Warteschleifen (Startme... | all registers preserved |
 | `Zeichen_nacharbeiten` | `engine/src/HULL/FALCON_LIB.S:698` (+1) | R_range afterwork for one character of Put_char_at: eight points from txt_x/txt_y(a5), d6 lines. All registers are preserved. (Was the en... | all registers preserved |
-| `Zeichenliste` | `engine/src/HULL/LIBRARY.S:623` | die Rasterliste, die fuer eine Zeichnung gilt (die Regeln oben bei Farbbank). Auch Zeilenersatz (RASTER.S) fragt hier. | out: d1.l = Rasterliste oder 0, Z bei 0. Zerstoert a0. zl_stapel ist derselbe Weg ohne die Schirmpruefung (Rasterbank) |
-| `Zeiger_aus_puffer` | `engine/src/HULL/LIBRARY.S:1963` |  |  |
-| `Zeiger_aus_rechteck` | `engine/src/HULL/LIBRARY.S:1985` |  |  |
+| `Zeichenliste` | `engine/src/HULL/LIBRARY.S:625` | die Rasterliste, die fuer eine Zeichnung gilt (die Regeln oben bei Farbbank). Auch Zeilenersatz (RASTER.S) fragt hier. | out: d1.l = Rasterliste oder 0, Z bei 0. Zerstoert a0. zl_stapel ist derselbe Weg ohne die Schirmpruefung (Rasterbank) |
+| `Zeiger_aus_puffer` | `engine/src/HULL/LIBRARY.S:1965` |  |  |
+| `Zeiger_aus_rechteck` | `engine/src/HULL/LIBRARY.S:1987` |  |  |
 | `Zeiger_bild` | `engine/src/HULL/FALCON_LIB.S:724` (+1) | nothing to do Bereich_nacharbeiten, Bereich_rueck (RASTER.S) and Drogen_setzen, Drogen_farben (below) are called from LIBRARY.S under the... |  |
-| `Zeiger_hinten_weg` | `engine/src/HULL/LIBRARY.S:1415` |  |  |
-| `Zeiger_hinten_zeichnen` | `engine/src/HULL/LIBRARY.S:1389` |  |  |
-| `Zeiger_in_puffer` | `engine/src/HULL/LIBRARY.S:1833` |  |  |
-| `Zeiger_nachfuehren` | `engine/src/HULL/LIBRARY.S:1496` | den Zeiger im sichtbaren Schirm an die Mausstelle. | all registers preserved |
-| `Zeiger_satz_hinten` | `engine/src/HULL/LIBRARY.S:1372` |  |  |
-| `Zeiger_satz_vorn` | `engine/src/HULL/LIBRARY.S:1380` |  |  |
-| `Zeiger_vbl` | `engine/src/HULL/LIBRARY.S:1450` | aus Bibliothek_vbl, Supervisor. Alle Register bleiben. | all registers preserved |
-| `Zeigerecke` | `engine/src/HULL/LIBRARY.S:1811` | aus der Mausstelle die linke obere Ecke des Zeigerbilds. |  |
-| `Zeigertakt_balken` | `engine/src/HULL/LIBRARY.S:1090` |  |  |
-| `Zeigertakt_zeigen` | `engine/src/HULL/LIBRARY.S:1063` | Diagnose, Schalter ZEIGERTAKT (Erkenntnis 269). | all registers preserved |
-| `Zeilenersatz` | `engine/src/HULL/RASTER.S:591` | welche Farbe in einer Zeile ersetzt wird, und wodurch. | in: d0.w = Bildzeile; out: d0.w = Verlaufsfarbe (Thalions Nummer 1..31; 0 = keine), d1.w = Platz (Schirmfarbe 96..255); Z gesetzt bei d0 = 0; other registers preserved |
+| `Zeiger_hinten_weg` | `engine/src/HULL/LIBRARY.S:1417` |  |  |
+| `Zeiger_hinten_zeichnen` | `engine/src/HULL/LIBRARY.S:1391` |  |  |
+| `Zeiger_in_puffer` | `engine/src/HULL/LIBRARY.S:1835` |  |  |
+| `Zeiger_nachfuehren` | `engine/src/HULL/LIBRARY.S:1498` | den Zeiger im sichtbaren Schirm an die Mausstelle. | all registers preserved |
+| `Zeiger_satz_hinten` | `engine/src/HULL/LIBRARY.S:1374` |  |  |
+| `Zeiger_satz_vorn` | `engine/src/HULL/LIBRARY.S:1382` |  |  |
+| `Zeiger_vbl` | `engine/src/HULL/LIBRARY.S:1452` | aus Bibliothek_vbl, Supervisor. Alle Register bleiben. | all registers preserved |
+| `Zeigerecke` | `engine/src/HULL/LIBRARY.S:1813` | aus der Mausstelle die linke obere Ecke des Zeigerbilds. |  |
+| `Zeigertakt_balken` | `engine/src/HULL/LIBRARY.S:1092` |  |  |
+| `Zeigertakt_zeigen` | `engine/src/HULL/LIBRARY.S:1065` | Diagnose, Schalter ZEIGERTAKT (Erkenntnis 269). | all registers preserved |
+| `Zeilenersatz` | `engine/src/HULL/RASTER.S:597` | welche Farbe in einer Zeile ersetzt wird, und wodurch. | in: d0.w = Bildzeile; out: d0.w = Verlaufsfarbe (Thalions Nummer 1..31; 0 = keine), d1.w = Platz (Schirmfarbe 96..255); Z gesetzt bei d0 = 0; other registers preserved |
 | `Zeilenfarbe` | `engine/src/HULL/FALCON_LIB.S:380` (+1) | the Falcon version: the bank of the line. Contract in LIBRARY.S. |  |
 | `Zoom_aus` | `engine/src/HULL/COMBAT_SUP.S:347` |  |  |
 | `Zoom_silhouette_zeichnen` | `engine/src/HULL/COMBAT_SUP.S:122` | der Blitterteil als CPU-Code. |  |

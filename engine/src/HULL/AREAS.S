@@ -162,7 +162,7 @@ MA_vollbild:
 ;     .Do1:  jsr Push_Mptr
 ;
 ; Die Saetze sind die des Originals (build/am2cpu_daten.i, aus AM2_CPU
-; Hunk 4, tools/am2cpu_auszug.py): Hotspot x, y, dann 16 Zeilen zu drei
+; Hunk 4, tools/am2cpu_extract.py): Hotspot x, y, dann 16 Zeilen zu drei
 ; Ebenenworten.  Der Stapel fuehrt ihre Adressen.
 ; ***************************************************************************
 Push_Mptr:
@@ -277,7 +277,7 @@ zg_maske:	ds.b	MPTR_SIZE
 ; Koordinaten gelesen; der Linker haette nichts gemerkt.  Dieselbe Falle wie
 ; bei Number (157) und Put_masked_block (160).
 ;
-; **Der Satz kommt seit 2026-09-29 aus AM2_CPU** (am2cpu_auszug.py, 4:$491A):
+; **Der Satz kommt seit 2026-09-29 aus AM2_CPU** (am2cpu_extract.py, 4:$491A):
 ; 0,319,0,199, das ganze Bild.  Bis dahin stand hier 0,SCRW-MPTR_W,0,
 ; SCRH-MPTR_H, damit unser Zeigerzeichnen nicht ueber das Bildende schrieb;
 ; die Maus erreichte so die letzte Reihe der Taktikflaeche und die untere

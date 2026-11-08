@@ -6,12 +6,12 @@
 *An unofficial fan project. It is not affiliated with Thalion or with the current rights holders.*
 
 <p align="center">
-  <a href="#screenshots"><img src="docs/screenshots/falcon-spannenberg.png" width="24%" alt="Falcon030: the city of Spannenberg in 3D"></a>
-  <a href="#screenshots"><img src="docs/screenshots/st-spannenberg.png" width="24%" alt="ST/STE: the same place"></a>
-  <a href="#screenshots"><img src="docs/screenshots/falcon-lyramion.png" width="24%" alt="Falcon030: the Lyramion islands in 2D"></a>
-  <a href="#screenshots"><img src="docs/screenshots/st-lyramion.png" width="24%" alt="ST/STE: the same place"></a>
+  <a href="SCREENSHOTS.md"><img src="docs/screenshots/falcon-spannenberg.png" width="24%" alt="Falcon030: the city of Spannenberg in 3D"></a>
+  <a href="SCREENSHOTS.md"><img src="docs/screenshots/st-spannenberg.png" width="24%" alt="ST/STE: the same place"></a>
+  <a href="SCREENSHOTS.md"><img src="docs/screenshots/falcon-lyramion.png" width="24%" alt="Falcon030: the Lyramion islands in 2D"></a>
+  <a href="SCREENSHOTS.md"><img src="docs/screenshots/st-lyramion.png" width="24%" alt="ST/STE: the same place"></a>
   <br>
-  <sub>Falcon030 and ST/STE at the same places. More under <a href="#screenshots">Screenshots</a>.</sub>
+  <sub>Falcon030 and ST/STE at the same places. More in the <a href="SCREENSHOTS.md">screenshots</a>.</sub>
 </p>
 
 To me, *Ambermoon* is more than one of the great role-playing games of the 16-bit era. The game has stayed with me for many years and helped shape my enthusiasm for that era, its technology and the particular way games were made back then.
@@ -39,7 +39,7 @@ That is how this project began.
 - **16 colours**, reduced from the original's 32.
 - **Uses what the machine has:** the STE's 4-bit palette and the blitter where present; `PLAIN_ST=YES` makes an STE behave like a plain ST.
 - **Big Alec's YM music**, the fantasy intro, the intro with its start menu, and the extro (without music).
-- **A palette check page:** with Pillow installed, every ST build writes `build/palette_editor/index.html` from your own game files. For each palette it shows Thalion's colours next to the STE and ST results of each reduction method; choose a method per palette and download the resulting `tools/st_palettes.txt` for the next build.
+- **A palette editor:** every ST build writes `build/palette_editor/index.html` from your own game files. For each palette it shows Thalion's colours and pictures from the game as STE and ST show them; choose the method, the number of UI registers and colours with a register of their own by click, see the result at once, and download the resulting `tools/st_palettes.txt` for the next build.
 
 **On both machines**
 - **One folder for the Falcon and the ST:** one `AMBER.TOS` detects the machine.
@@ -54,68 +54,17 @@ That is how this project began.
 
 ---
 
-## Screenshots
-
-The same moments on both machines, Falcon030 on the left, ST/STE on the right. The Falcon030 shows Thalion's 32 colours per screen area; the ST/STE shows 16 per screen area, reduced live through the palette. The pictures come from the emulator Hatari, at the native resolution, with the German game files 1.20.
-
-**The fantasy intro: the fairy and the Fantasy logo**
-
-<p>
-  <img src="docs/screenshots/falcon-fantasy.png" width="49%" alt="Falcon030: The fantasy intro: the fairy and the Fantasy logo">
-  <img src="docs/screenshots/st-fantasy.png" width="49%" alt="ST/STE: The fantasy intro: the fairy and the Fantasy logo">
-</p>
-
-**The intro: the meteor falls on Twinlake**
-
-<p>
-  <img src="docs/screenshots/falcon-twinlake.png" width="49%" alt="Falcon030: The intro: the meteor falls on Twinlake">
-  <img src="docs/screenshots/st-twinlake.png" width="49%" alt="ST/STE: The intro: the meteor falls on Twinlake">
-</p>
-
-**Grandfather's house (2D)**
-
-<p>
-  <img src="docs/screenshots/falcon-house.png" width="49%" alt="Falcon030: Grandfather's house (2D)">
-  <img src="docs/screenshots/st-house.png" width="49%" alt="ST/STE: Grandfather's house (2D)">
-</p>
-
-**The Lyramion islands (2D)**
-
-<p>
-  <img src="docs/screenshots/falcon-lyramion.png" width="49%" alt="Falcon030: The Lyramion islands (2D)">
-  <img src="docs/screenshots/st-lyramion.png" width="49%" alt="ST/STE: The Lyramion islands (2D)">
-</p>
-
-**Grandfather's cellar (3D)**
-
-<p>
-  <img src="docs/screenshots/falcon-cellar.png" width="49%" alt="Falcon030: Grandfather's cellar (3D)">
-  <img src="docs/screenshots/st-cellar.png" width="49%" alt="ST/STE: Grandfather's cellar (3D)">
-</p>
-
-**The city of Spannenberg (3D)**
-
-<p>
-  <img src="docs/screenshots/falcon-spannenberg.png" width="49%" alt="Falcon030: The city of Spannenberg (3D)">
-  <img src="docs/screenshots/st-spannenberg.png" width="49%" alt="ST/STE: The city of Spannenberg (3D)">
-</p>
-
-**The house of the trainers (2D)**
-
-<p>
-  <img src="docs/screenshots/falcon-trainers.png" width="49%" alt="Falcon030: The house of the trainers (2D)">
-  <img src="docs/screenshots/st-trainers.png" width="49%" alt="ST/STE: The house of the trainers (2D)">
-</p>
-
 ## Quickstart
 
-New in this version: more versions of the game and a simpler build, see the [release notes](RELEASE-NOTES.md).
+**Prebuilt binaries and installation guide:** [amberport/ambermoon-atari-packages](https://github.com/amberport/ambermoon-atari-packages). The rest of this section is about building the port from source.
+
+New in this version: faster 3D, better ST colours and ready-built programs, see the [release notes](RELEASE-NOTES.md).
 
 ### What you need
 
 **To play:** an Atari Falcon030 (tested: a real Falcon with 14 MB, and Hatari with 4 MB) or an Atari ST/STE with 4 MB (target: 8 MHz 68000), and a hard disk.
 
-**The game files of one Amiga version of Ambermoon.** They are not in this repository. Any of these forms works: the zip as downloaded, the disk images (ADF, IPF, or DMS with `xdms` installed), or the folder `Amberfiles`.
+**The game files of one Amiga version of Ambermoon.** They are not in this repository. Any of these forms works: the zip as downloaded, the disk images (ADF, IPF or DMS), or the folder `Amberfiles`.
 
 | version | from | state |
 |---|---|---|
@@ -139,8 +88,7 @@ sudo apt install python3 binutils-m68k-linux-gnu
 
 **Optional:**
 
-- `xdms`, for game files as DMS images (`sudo apt install xdms`).
-- Pillow, only for the ST palette check page (`sudo apt install python3-pil`). Without it the build warns and the game is complete.
+- node, only for the palette editor's check at build time (`sudo apt install nodejs`). Without it the build warns, the page is still written and the game is complete.
 - Big Alec's YM music, to download by hand: `ambermon.snd` from the [SNDH archive](https://sndh.atari.org/?ID=5364) (the entry *Big Alec: Ambermoon*, file `big_alec/ambermon.snd`), into `ambermoon_gamedata/`. Without it the YM stays silent, and the ST has no music.
 - `a56`, only if you change the Falcon's music mixer (`sudo apt install a56`). Without it the build takes the assembled mixer from the repository.
 
@@ -173,7 +121,7 @@ sudo apt install python3 binutils-m68k-linux-gnu
 
    ```text
    Done in 0:53. No warnings. YM music on; diagnostic switches: none (release build).
-   Built: Ambermoon Atari 0.8 (6c5aae5) for Ambermoon v1.07 26-3-1994 / English
+   Built: Ambermoon Atari 0.8.5 (6c5aae5) for Ambermoon v1.07 26-3-1994 / English
    ```
 
    The rest of the output goes into `build/build.log` (`VERBOSE=1` shows all of it). If something is missing or fails, the build names the step and shows the last lines of the log.
@@ -211,7 +159,7 @@ Run `AMBER.TOS` on either machine; it finds out which one it runs on. It leads t
 The game shows its build at the start:
 
 ```text
-Ambermoon Atari 0.8 (6c5aae5)
+Ambermoon Atari 0.8.5 (6c5aae5)
 for Ambermoon v1.07 26-3-1994 / English
 ```
 
@@ -232,15 +180,17 @@ The ST always plays the YM music; there only `MUSIC=OFF` counts.
 
 ### Known limitations
 
-State: 2026-11-02.
+State: 2026-11-08.
 
-- **ST, 3D on 8 MHz is slow.** Thalion's 3D code runs unchanged; a real gain would mean replacing parts of it with our own. That would break the first principle of this project (see "Goals of the project") and is deliberately not decided yet.
-- **YM music: 18 pieces instead of 32.** Big Alec's YM version covers 18 of Thalion's pieces; with YM, the other places stay silent, intro and extro too.
+- **ST, 3D on 8 MHz is still slow.** Some of Thalion's 3D code is now our own (walls, enlarged objects, point grid and sort, listed in [docs/17-deviations.md](docs/17-deviations.md)), which gains about one VBL per frame; most of a 3D frame is still Thalion's code.
+- **YM music: 18 pieces instead of 32.** Big Alec's YM version covers 18 of Thalion's pieces; with YM, the other places stay silent, intro and extro too. Grandfather's house, where the game starts, is one of them. `AMBFILES\MUSIK_YM.INF` says which YM piece plays for which of Thalion's pieces and can be changed.
 - **ST: the intro's start menu** does not yet highlight the entry under the pointer.
 - **ST: the "drugged" effect** shows no colours; only the mouse pointer shakes.
-- **ST: the palettes are not fine-tuned yet**, for example the tactic field in combat is too bright; the build writes a check page for it.
+- **ST: the palettes are not fine-tuned everywhere yet**; the build writes a palette editor page for corrections.
 - **Falcon: not at full speed yet.** The 2D maps are meant to need at most 4 screen refreshes (VBLs) per picture drawn; scrolling text is slow; moving the mouse costs frames in 3D.
-- **Speed work is measured, not guessed.** Both machines were profiled in Hatari and the Falcon's picture times checked with a frame counter on the real machine, so we know where the time goes and which points to work on. Examples: on the ST, about 80 % of a 3D picture is Thalion's own code, so our layer alone can win 10–15 % at most; on the Falcon, floor and ceiling take about 4 of 9 screen refreshes (VBLs) per 3D picture. Some of these points wait for a decision, because they would replace Thalion's code.
+- **Speed work is measured**, in Hatari and on the real machines; the numbers are in `docs/`.
+- **Mega STE at 16 MHz:** the intro and the fantasy intro run at 8 MHz for now and set the clock back at the end; not tested on the hardware yet.
+- **Falcon with a CT60:** the game runs (first test), but 3D is about as fast as on the 68030; TT-RAM (Alt-RAM) is not used yet.
 - **Not tested yet:** a whole game through to the end; save games exchanged with the Amiga version; parts of combat (spells, flight, the death of a party member); the smallest memory it runs with (4 MB on a real Falcon).
 - **Some names are still German.** Many file, routine and variable names in our code and tools, and some notes, are German; they are becoming English step by step.
 
@@ -250,8 +200,8 @@ Ideas, nothing of it is promised or measured:
 
 - **YM pieces of our own** for the 14 that are missing, as SNDH files in one shared folder, perhaps made by a converter from Sonic Arranger; and loading `ambermon.snd` directly, without a build step.
 - **STE: DMA sound instead of YM**, so the ST plays Thalion's original music with the Amiga samples. It costs much processor time; probably too much for 3D on 8 MHz.
-- **ST: faster 3D**, either by the decision above or by more precomputation in our layer, which leaves Thalion's code alone.
-- **Faster machines:** Mega STE at 16 MHz with cache, TT030, a Falcon with an accelerator card. Not tested on purpose; they may gain by themselves.
+- **ST: faster 3D**, by more of our own code in place of Thalion's 3D routines or by more precomputation in our layer.
+- **Faster machines:** Mega STE at 16 MHz with cache, TT030, a Falcon with an accelerator card. A CT60 runs the game but does not gain in 3D yet; using its TT-RAM is the next step.
 - **Save games exchanged with the Amiga version:** the format is Thalion's, unchanged; it only needs testing.
 
 ---

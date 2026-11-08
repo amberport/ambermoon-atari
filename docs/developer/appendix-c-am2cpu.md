@@ -8,59 +8,59 @@
 
 | Name | Location | Bytes | Evidence |
 |---|---|---:|---|
-| `Main_pal` | 4:$5B18 | 64 | Hunk 4, Hauptpalette |
-| `Window_icons` | 3:$00C0 | 768 | Hunk 3, Fensterrahmen |
-| `Status_L` | 3:$19D8 | 216 | Hunk 3, Statusleiste links |
-| `Status_M` | 3:$1AB0 | 216 | Hunk 3, Statusleiste Mitte |
-| `Status_R` | 3:$1B88 | 216 | Hunk 3, Statusleiste rechts |
-| `Status_TB` | 3:$1C60 | 12 | Hunk 3, Riegel ueber/unter dem Portrait |
-| `Empty_portrait` | 3:$2DA8 | 408 | Hunk 3, leerer Platz |
-| `Button_up` | 3:$2860 | 204 | Hunk 3, Tastenrahmen |
-| `Button_down` | 3:$292C | 204 | Hunk 3, Tastenrahmen gedrueckt |
-| `Event_pix_palette_table` | 4:$770A | 9 | Hunk 4, Ereignisbild-Paletten |
-| `World_data` | 4:$75FE | 42 | Hunk 4, Weltdaten |
-| `Sinus_table` | 4:$65C4 | 2048 | Hunk 4, Sinustabelle |
-| `Race_heights` | 4:$76A8 | 30 | Hunk 4, Rassengroessen |
-| `Chared_portraits` | 4:$76BA | 16 | Hunk 4, Portraits des Charaktereditors |
-| `Spell_data` | 4:$61AA | 1050 | Hunk 4, Zauberdaten |
-| `Spell_icons` | 3:$1C6C | 576 | Hunk 3, Zaubersymbole |
-| `Dissolve` | 3:$2F40 | 1056 | Hunk 3, Aufloesen |
-| `Ouch` | 3:$166C | 276 | Hunk 3, Sprechblase |
-| `Level_start_EPs` | 4:$75C6 | 22 | Hunk 4, Start-EP je Klasse (Max_classes) |
-| `World_move_delay` | 4:$75DC | 11 | Hunk 4, Schrittpause je Reiseart |
-| `Travel_speed` | 4:$75E7 | 11 | Hunk 4, Zeitraffer je Reiseart |
-| `Travel_music` | 4:$75F2 | 11 | Hunk 4, Musik je Reiseart |
-| `Stationary_dimensions` | 4:$7712 | 20 | Hunk 4, Standbildmasse |
-| `Condition_object_index_table` | 4:$7726 | 16 | Hunk 4, Zustand -> Gegenstand |
-| `Attrskill_nr` | 4:$070E | 4 | Hunk 4, Bonuszahl |
-| `Charges_txt` | 4:$0712 | 5 | Hunk 4, Ladungen |
-| `Combat_bg_2D_table` | 4:$7628 | 64 | Hunk 4, Kampfhintergruende 2D |
-| `Combat_bg_3D_table` | 4:$7668 | 64 | Hunk 4, Kampfhintergruende 3D |
-| `Tactic_pal` | 4:$5B98 | 64 | Hunk 4, Taktikpalette |
-| `Destruction_table` | 4:$76CA | 64 | Hunk 4, Zerstoerungsschaden |
-| `Red_cross` | 3:$35A4 | 26 | Hunk 3, rotes Kreuz |
-| `Default_MA` | 4:$491A | 8 | Hunk 4, Mausbereich Vollbild |
-| `Cross_hatch` | 3:$00A0 | 32 | Hunk 3, Schraffur 16x16, 1 Ebene (Options_ModInit) |
-| `Status_icons` | 3:$03C0 | 3680 | Hunk 3, 23 Zustandssymbole 16x16, 5 Ebenen (Icon_size) |
-| `Giant_eagle_shape` | 3:$1220 | 580 | Hunk 3, Adler 32x29, 5 Ebenen (Giant_eagle_HDOB) |
-| `Damage_star` | 3:$1464 | 520 | Hunk 3, Schadensstern 32x26, 5 Ebenen |
-| `Magic_stars` | 3:$1780 | 360 | Hunk 3, vier Funken 16x9, 5 Ebenen |
-| `Magic8_stars` | 3:$18E8 | 240 | Hunk 3, vier Sterne 16x10, 3 Ebenen (Minikarte) |
-| `Windchain` | 3:$1EAC | 180 | Hunk 3, Windkette 32x15, 3 Ebenen |
-| `Eye_off` | 3:$1F60 | 384 | Hunk 3, Auge zu 32x32, 3 Ebenen |
-| `Eye_on` | 3:$20E0 | 384 | Hunk 3, Auge offen 32x32, 3 Ebenen |
-| `Daynight_icons` | 3:$2260 | 1536 | Hunk 3, vier Tageszeiten 32x32, 3 Ebenen |
-| `Chequered` | 3:$29F8 | 44 | Hunk 3, Schraffur gesperrter Tasten 32x11, 1 Ebene |
-| `Compass` | 3:$2A24 | 384 | Hunk 3, Kompass 32x32, 3 Ebenen |
-| `Swordshield` | 3:$2BA4 | 108 | Hunk 3, Schwert und Schild 16x9, 3 Ebenen |
-| `Death_mask` | 3:$2C10 | 408 | Hunk 3, Totenmaske 32x34, 3 Ebenen |
-| `Ankh_symbol` | 3:$3360 | 580 | Hunk 3, Ankh 32x29, 5 Ebenen (Heiler) |
-| `Broken` | 3:$35BE | 32 | Hunk 3, Aufdruck kaputt 16x16, 1 Ebene |
-| `Automap_pal` | 4:$5B58 | 64 | Hunk 4, Automap-Palette |
-| `Sky_ranges` | 4:$5BD8 | 1296 | Hunk 4, Himmelsverlaeufe 3D-Staedte |
-| `C3_palettes` | 4:$60E8 | 192 | Hunk 4, Paletten 3D-Staedte |
-| `Datei_arten` | 4:$49E8 | 990 | Hunk 4, Namen der Dateiarten |
-| `Ladefehler_text` | 4:$4DC6 | 26 | Hunk 4, FILE COULDN'T BE LOADED : |
+| `Main_pal` | 4:$5B18 | 64 | hunk 4, main palette |
+| `Window_icons` | 3:$00C0 | 768 | hunk 3, window frame |
+| `Status_L` | 3:$19D8 | 216 | hunk 3, status bar left |
+| `Status_M` | 3:$1AB0 | 216 | hunk 3, status bar middle |
+| `Status_R` | 3:$1B88 | 216 | hunk 3, status bar right |
+| `Status_TB` | 3:$1C60 | 12 | hunk 3, bar above/below the portrait |
+| `Empty_portrait` | 3:$2DA8 | 408 | hunk 3, empty place |
+| `Button_up` | 3:$2860 | 204 | hunk 3, button frame |
+| `Button_down` | 3:$292C | 204 | hunk 3, button frame pressed |
+| `Event_pix_palette_table` | 4:$770A | 9 | hunk 4, event picture palettes |
+| `World_data` | 4:$75FE | 42 | hunk 4, world data |
+| `Sinus_table` | 4:$65C4 | 2048 | hunk 4, sine table |
+| `Race_heights` | 4:$76A8 | 30 | hunk 4, race heights |
+| `Chared_portraits` | 4:$76BA | 16 | hunk 4, portraits of the character editor |
+| `Spell_data` | 4:$61AA | 1050 | hunk 4, spell data |
+| `Spell_icons` | 3:$1C6C | 576 | hunk 3, spell symbols |
+| `Dissolve` | 3:$2F40 | 1056 | hunk 3, dissolve |
+| `Ouch` | 3:$166C | 276 | hunk 3, speech bubble |
+| `Level_start_EPs` | 4:$75C6 | 22 | hunk 4, start EP per class (Max_classes) |
+| `World_move_delay` | 4:$75DC | 11 | hunk 4, step pause per travel mode |
+| `Travel_speed` | 4:$75E7 | 11 | hunk 4, time lapse per travel mode |
+| `Travel_music` | 4:$75F2 | 11 | hunk 4, music per travel mode |
+| `Stationary_dimensions` | 4:$7712 | 20 | hunk 4, stationary picture sizes |
+| `Condition_object_index_table` | 4:$7726 | 16 | hunk 4, condition -> item |
+| `Attrskill_nr` | 4:$070E | 4 | hunk 4, bonus number |
+| `Charges_txt` | 4:$0712 | 5 | hunk 4, charges |
+| `Combat_bg_2D_table` | 4:$7628 | 64 | hunk 4, combat backgrounds 2D |
+| `Combat_bg_3D_table` | 4:$7668 | 64 | hunk 4, combat backgrounds 3D |
+| `Tactic_pal` | 4:$5B98 | 64 | hunk 4, tactic palette |
+| `Destruction_table` | 4:$76CA | 64 | hunk 4, destruction damage |
+| `Red_cross` | 3:$35A4 | 26 | hunk 3, red cross |
+| `Default_MA` | 4:$491A | 8 | hunk 4, mouse area full picture |
+| `Cross_hatch` | 3:$00A0 | 32 | hunk 3, hatching 16x16, 1 plane (Options_ModInit) |
+| `Status_icons` | 3:$03C0 | 3680 | hunk 3, 23 condition symbols 16x16, 5 planes (Icon_size) |
+| `Giant_eagle_shape` | 3:$1220 | 580 | hunk 3, eagle 32x29, 5 planes (Giant_eagle_HDOB) |
+| `Damage_star` | 3:$1464 | 520 | hunk 3, damage star 32x26, 5 planes |
+| `Magic_stars` | 3:$1780 | 360 | hunk 3, four sparks 16x9, 5 planes |
+| `Magic8_stars` | 3:$18E8 | 240 | hunk 3, four stars 16x10, 3 planes (minimap) |
+| `Windchain` | 3:$1EAC | 180 | hunk 3, wind chain 32x15, 3 planes |
+| `Eye_off` | 3:$1F60 | 384 | hunk 3, eye closed 32x32, 3 planes |
+| `Eye_on` | 3:$20E0 | 384 | hunk 3, eye open 32x32, 3 planes |
+| `Daynight_icons` | 3:$2260 | 1536 | hunk 3, four times of day 32x32, 3 planes |
+| `Chequered` | 3:$29F8 | 44 | hunk 3, hatching of disabled buttons 32x11, 1 plane |
+| `Compass` | 3:$2A24 | 384 | hunk 3, compass 32x32, 3 planes |
+| `Swordshield` | 3:$2BA4 | 108 | hunk 3, sword and shield 16x9, 3 planes |
+| `Death_mask` | 3:$2C10 | 408 | hunk 3, death mask 32x34, 3 planes |
+| `Ankh_symbol` | 3:$3360 | 580 | hunk 3, ankh 32x29, 5 planes (healer) |
+| `Broken` | 3:$35BE | 32 | hunk 3, overlay broken 16x16, 1 plane |
+| `Automap_pal` | 4:$5B58 | 64 | hunk 4, automap palette |
+| `Sky_ranges` | 4:$5BD8 | 1296 | hunk 4, sky gradients of 3D cities |
+| `C3_palettes` | 4:$60E8 | 192 | hunk 4, palettes of 3D cities |
+| `Datei_arten` | 4:$49E8 | 990 | hunk 4, names of the file kinds |
+| `Ladefehler_text` | 4:$4DC6 | 26 | hunk 4, FILE COULDN'T BE LOADED : |
 
 **Mouse pointers:** 28 records of 100 bytes from 4:$5028, 26 of them under Thalion's names: `Default_Mptr`, `Up_2D_Mptr`, `Down_2D_Mptr`, `Left_2D_Mptr`, `Right_2D_Mptr`, `Upleft_2D_Mptr`, `Upright_2D_Mptr`, `Downleft_2D_Mptr`, `Downright_2D_Mptr`, `Forward_3D_Mptr`, `Back_3D_Mptr`, `Left_3D_Mptr`, `Right_3D_Mptr`, `Turnleft_3D_Mptr`, `Turnright_3D_Mptr`, `Turn180_left_Mptr`, `Turn180_right_Mptr`, `Zzz_Mptr`, `Eye_Mptr`, `Mouth_Mptr`, `Gold_Mptr`, `Food_Mptr`, `Pick_Mptr`, `Hand_Mptr`, `EyeMouth_Mptr`, `Click_Mptr`.
 

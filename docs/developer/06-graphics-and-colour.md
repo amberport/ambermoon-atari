@@ -206,6 +206,26 @@ the palette is reduced** (`ST_LIB.S`, `docs/12-ST-Port.md`):
    machine are in `tools/st_palettes.txt`. Only a palette not in the file
    is computed at run time (`St_bauen`, about a second on 8 MHz). This is
    deviation D1 from goal 2 (`docs/17-deviations.md`).
+7. **Per palette, `tools/st_palettes.txt` can steer the build's grouping**
+   (format in its head):
+   - `method`: `unweighted` (as `St_bauen`, the default) or `weighted N`
+     (by how many points of each colour the game shows, every colour at
+     least N %; the worlds need it, e.g. Lyramion's sea). Either may end in
+     ` oklab`: the distance of two colours is measured in OKLab, hue and
+     saturation counting double, instead of RGB; the register values stay
+     the RGB means. Build time only, `St_bauen` stays RGB.
+   - `own C …`: these colours (1..25) form a register of their own, which
+     no other colour joins (e.g. a bridge's brown that a method puts with
+     the meadow's green).
+   - `ramp N`: Thalion's UI ramp 26..31 takes at most N registers (1..5,
+     default 5); the rest go to the map colours.
+   - `colour`, `ste`, `st`: a colour into a register, a register's value
+     by hand.
+
+   The palette editor (`build/palette_editor/index.html`, chapter 11)
+   sets these lines by click and recomputes the palette at once in the
+   browser; the ST build checks that its computation gives what
+   `STPAL.DAT` holds.
 
 Colour words: the ST has 3 bits per channel, the STE 4, with the lowest
 bit stored as bit 3 of each nibble (`st_ste_wort`). The program detects

@@ -62,7 +62,9 @@ intro is a different program.
 - the folder *above* `Amberfiles/`, the `Amberfiles` folder itself, or a
   folder with one of these somewhere below it;
 - disk images: a folder with the ADF, DMS or IPF files of one version, or
-  one of those files (then its folder counts). DMS needs the program `xdms`;
+  one of those files (then its folder counts). DMS images are read by
+  `tools/dms_to_adf.py`; only the methods QUICK, MEDIUM, DEEP and encrypted
+  images need the program `xdms`;
 - a zip holding any of these, as downloaded.
 
 Zips and disks are unpacked once per content into `build/game_files/`;
@@ -109,9 +111,9 @@ Thalion's source and vasm and vlink.
 | an m68k `objdump` (GNU binutils) | `tools/am2cpu_code.py` disassembles Thalion's routines in `AM2_CPU` with it | required, see below |
 | Python 3, standard library only | all extracts and checks | required; tested with 3.14, the code needs 3.9 or newer |
 | a POSIX shell (`sh`) and the usual command-line tools | the build scripts | `dash`, `bash` |
-| optional: `xdms` | game files as DMS images | Ubuntu package `xdms` |
+| optional: `xdms` | only DMS images packed with QUICK, MEDIUM, DEEP or encryption; the English 1.07 disks are read without it | Ubuntu package `xdms` |
 | optional: `a56`, the DSP56001 assembler | only if you change the Falcon's music mixer | Ubuntu package `a56` |
-| optional: Pillow, the Python imaging library | only the palette check page `build/palette_editor/index.html`. Without it the ST build gives one warning and leaves the page out; the game files are the same | Ubuntu package `python3-pil` |
+| optional: `node` (Node.js) | only the ST build's check that the palette editor's page `build/palette_editor/index.html` groups the colours as `STPAL.DAT` does. Without it the ST build gives one warning and writes the page unchecked; the game files are the same | Ubuntu package `nodejs` |
 
 **vasm 2.0f does not build this project.** It reports warning 40 for
 Thalion's label `Touch:` and warning 53 for our macros `rseven` and
@@ -138,9 +140,10 @@ that file, or it stops. The ST build does not use the DSP at all.
 The m68k `objdump` is looked for in this order: the variable
 `AMBER_OBJDUMP` (variable or `build.cfg`); `m68k-atari-mintelf-objdump`,
 `m68k-atari-mint-objdump`, `m68k-amiga-elf-objdump`,
-`m68k-linux-gnu-objdump` in the `PATH`; the binary inside the VS Code
-extension *atari-st-dev*, for Linux or macOS. Any other name works
-through `AMBER_OBJDUMP`.
+`m68k-linux-gnu-objdump` in the `PATH`; then any other
+`m68k-*-objdump` in the `PATH` (such as Homebrew's `m68k-elf-objdump`
+on macOS); then the binary inside the VS Code extension *atari-st-dev*,
+for Linux or macOS. Any other name works through `AMBER_OBJDUMP`.
 
 ### vasm and vlink from their sources
 
@@ -178,10 +181,10 @@ their own package names.
    sudo apt install python3 binutils-m68k-linux-gnu
    ```
 
-   `binutils-m68k-linux-gnu` brings `m68k-linux-gnu-objdump`. Add `xdms`
-   for DMS images, `a56` if you will change the mixer, `python3-pil` for
-   the palette check page, and `build-essential` if you are not on x86-64
-   and have to compile vasm and vlink.
+   `binutils-m68k-linux-gnu` brings `m68k-linux-gnu-objdump`. Add `a56`
+   if you will change the mixer, `nodejs` for the palette editor's
+   check, and `build-essential` if you are not on x86-64 and have to
+   compile vasm and vlink.
 
    *Check:* `m68k-linux-gnu-objdump --version` names its version.
 
@@ -233,7 +236,7 @@ their own package names.
    there (see "When the build stops" below).
 
    *Check:* the closing lines say `Done in m:ss. No warnings.` (without
-   Pillow, its one warning) and `Built: Ambermoon Atari …` with the version
+   `node`, its one warning) and `Built: Ambermoon Atari …` with the version
    of your game files,
    `ATARI/AMBER.TOS` exists, and `ATARI/AMBFILES/` holds `ENGINE.TOS` and
    `ENGINEST.TOS`.
@@ -259,15 +262,15 @@ an ordinary macOS volume.
 3. **objdump.** The simplest is the VS Code extension *atari-st-dev*:
    it ships a macOS binary (`sdk/darwin/opt/cross-mint/bin/`), and the
    build finds it there by itself. GNU binutils built for an m68k target
-   work too; if their `objdump` has none of the names above, set
-   `AMBER_OBJDUMP` in `build.cfg`.
+   work too: any `m68k-*-objdump` in the `PATH` is found, such as
+   Homebrew's `m68k-elf-objdump`; for another name set `AMBER_OBJDUMP` in
+   `build.cfg`.
 
    *Check:* `python3 tools/paths.py` lists `AMBER_OBJDUMP` as "not set,
    searched"; the build names the `objdump` it found under "Sources and
    switches".
 
-4. Repository, game files and build as under Linux, steps 2 and 3. Without
-   `xdms`, use the game files as a zip of ADF or IPF images, or as a folder.
+4. Repository, game files and build as under Linux, steps 2 and 3.
 
 ## Windows
 
@@ -319,6 +322,12 @@ Settings, such as `MUSIC=OFF`, go into `ATARI/AMBFILES/AMBER.INF`
 only; both write into the same `ATARI/`, and both take the game files on
 the command line too. `TESTBUILDS=1 sh tools/build_all.sh` also builds
 the test versions of the intros and the extro (chapter 9).
+
+**Packages for others:** to hand the programs to someone without the
+game files, `python3 tools/make_packages.py GAME_FILES...` builds one zip
+per game version from a clean clone of the current commit; the receiver
+adds their own game files with the `install.py` inside (chapter 9,
+"Release packages").
 
 **A build empties `ATARI/`** apart from `*.INF` and the other machine's
 programs, and that includes the save games. If you play from this folder,

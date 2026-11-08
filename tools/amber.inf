@@ -6,3 +6,5 @@ MUSIC=DSP        ; OFF, DSP, CPU, YM (Falcon); on the ST only OFF counts
 PLAIN_ST=NO      ; ST only.  NO: as detected (STE, Mega STE use their
                  ; extras).  YES: an STE or Mega STE runs like a plain
                  ; ST, to test the plain ST path.
+COARSE_WALLS=NO  ; YES: while the view moves, the 3D walls are drawn
+                 ; in pairs of columns, faster; standing, as always.
