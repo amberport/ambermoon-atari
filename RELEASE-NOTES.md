@@ -25,7 +25,7 @@ Optional: `COARSE_WALLS=YES` in `AMBER.INF` draws the walls coarser while the vi
 
 ### Building and installing
 
-- Ready-built programs: `install.py` adds your own game files and, if you have it, the YM music. It needs only Python 3, takes the game as a zip or as disk images, and keeps your save games when you update.
+- Prebuilt binaries, one package per game version. To install them, run the Python tool `install.py` from the package on a PC: it copies your own game files (a zip or disk images) next to the programs and adds the YM music if you have it. On an update it also takes over your save games. It needs only Python 3.
 - Pillow is no longer needed. node is needed only for a check of the palette editor; without it the build warns.
 - `objdump` is found under more names, with hints for macOS.
 
